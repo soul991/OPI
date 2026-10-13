@@ -1,0 +1,9 @@
+# Cursor Rule: Model Training Phase Reporting
+
+Whenever executing a major model training session on the OPI project:
+1. Always preserve an out-of-sample holdout test partition (e.g. data/ipo_holdout_test.csv). Do not train on 100% of data.
+2. After training, document the iteration in `phases/Phase <N>/` following sequential numbering (Phase 1, Phase 2, etc.).
+3. Each phase folder must contain:
+   - `1_planning_and_goals.md`: Scope and objectives.
+   - `2_building_and_execution.md`: Full build steps and executed commands.
+   - `3_outcome_and_verdict.md`: Holdout evaluation metrics, comparisons vs GMP and mean baselines, verdict and review.
