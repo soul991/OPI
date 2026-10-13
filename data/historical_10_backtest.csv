@@ -1,0 +1,11 @@
+symbol,company_name,category,listing_date,train_samples,issue_price,listing_price,sub_total,issue_size_cr,predicted_gain_pct,actual_gain_pct,error_pct,prob_gain_gt_10pct,model_signal,direction_correct,description
+ADLABS,Adlabs Entertainment,Flop / Loss,2015-04-06,126,215.0,162.2,1.09,365.87,-8.05,-24.56,16.51,3.9,AVOID (High Risk / Flop),True,"Theme park operator, poor institutional interest and weak demand"
+DMART,Avenue Supermarts,Blockbuster / Pop,2017-03-21,174,299.0,600.0,104.48,1870.0,30.41,100.67,-70.26,99.3,APPLY (High Conviction),True,"Radhakishan Damani's retail chain, massive 104x oversubscription"
+CLEDUCATE,Cl Educate,Flop / Loss,2017-03-31,175,502.0,402.0,1.9,238.95,-6.66,-19.92,13.26,0.5,AVOID (High Risk / Flop),True,"Edtech/test-prep firm, poor NII subscription (0.21x) and overpricing"
+IRCTC,Irctc,Blockbuster / Pop,2019-10-14,247,320.0,626.0,111.91,645.12,48.07,95.62,-47.55,99.4,APPLY (High Conviction),True,"Railway monopoly, PSU digital moat, massive 112x oversubscription"
+SBICARD,Sbi Cards And Payment Services,Flop / Loss,2020-03-16,254,755.0,661.0,26.54,10354.77,12.31,-12.45,24.76,89.9,APPLY (Moderate),False,High demand (26x) crushed on listing day by global COVID-19 pandemic crash
+HAPPIEST,Happiest Minds Technologies,Blockbuster / Pop,2020-09-17,258,166.0,350.0,150.98,702.02,65.47,110.84,-45.37,99.7,APPLY (High Conviction),True,"Ashok Soota's digital IT services firm, 151x subscription frenzy"
+ZOMATO,Zomato,High Growth / Pop,2021-07-23,296,76.0,115.0,22.58,9375.0,9.63,51.32,-41.69,38.9,NEUTRAL / CAUTION,True,"India's first major tech consumer unicorn listing, strong tech hype"
+PAYTM,One 97,Flop / Loss,2021-11-18,318,2150.0,1955.0,2.01,18915.9,-1.54,-9.07,7.53,7.7,AVOID (High Risk / Flop),True,"Mega-size ₹18,916 Cr issue, severe valuation excess, NII snub (0.24x)"
+LIC,Life Insurance Of India,Flop / Loss,2022-05-17,344,949.0,867.2,2.05,21008.48,0.78,-8.62,9.4,4.9,AVOID (High Risk / Flop),True,"Largest Indian IPO ₹21,008 Cr, heavy retail float, weak macro timing"
+TATATECH,Tata Technologies,Blockbuster / Pop,2023-11-30,428,500.0,1200.0,51.18,3042.51,57.36,140.0,-82.64,99.4,APPLY (High Conviction),True,"First Tata group IPO in 19 years, global ER&D, massive 51x subscription"
