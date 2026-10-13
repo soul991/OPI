@@ -37,7 +37,7 @@ Permutation importance computed on the unseen holdout test set reveals which fea
 
 ## 3. Case Studies: Model vs Actual vs GMP
 
-Examining individual IPO outcomes in the holdout comparison report ([`holdout_comparison_report.csv`](file:///Users/istakahamed06/Documents/OPI/data/holdout_comparison_report.csv)) illustrates how the model operates:
+Examining individual IPO outcomes in the holdout comparison report ([`holdout_comparison_report.csv`](../../data/holdout_comparison_report.csv)) illustrates how the model operates:
 
 ### Success Case 1: Filtering Out False GMP Positives (*Powerica*)
 - **Metrics**: Issue Price ₹395 | GMP was **+1.01%** (signaling a modest positive opening).

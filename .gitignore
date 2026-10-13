@@ -8,3 +8,7 @@ env/
 .idea/
 .vscode/
 files.zip
+files/
+
+# Trained model binaries — regenerate with: python3 model/train.py
+*.joblib

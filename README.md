@@ -85,7 +85,7 @@ python3 model/predict.py new_ipo.csv
 ---
 
 ## AI Agent Rules & Phase Reporting
-Any AI agent modifying or retraining models in this repository must comply with [`RULES.md`](file:///Users/istakahamed06/Documents/OPI/RULES.md). All major training iterations must create sequential phase directories (`phases/Phase 1/`, `phases/Phase 2/`, ...) with:
+Any AI agent modifying or retraining models in this repository must comply with [`RULES.md`](RULES.md). All major training iterations must create sequential phase directories (`phases/Phase 1/`, `phases/Phase 2/`, ...) with:
 1. `1_planning_and_goals.md`
 2. `2_building_and_execution.md`
 3. `3_outcome_and_verdict.md`

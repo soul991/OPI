@@ -64,7 +64,7 @@ Using `yfinance`, 4,678 days of daily trading history from 2007 to 2026 were ind
 
 ## 4. Model Architecture & Training Protocol
 
-In [`model/train.py`](file:///Users/istakahamed06/Documents/OPI/model/train.py):
+In [`model/train.py`](../../model/train.py):
 - **Algorithm**: `HistGradientBoostingRegressor` and `HistGradientBoostingClassifier` with `max_depth=4`, `learning_rate=0.03`, `max_iter=300`.
 - **Categorical Handling**: Native histogram categorical splitting on `sector` and `exchange`.
 - **Domain Ratios Engineered**:
