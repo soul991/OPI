@@ -1,0 +1,5 @@
+regime,date_range,total_ipos,mean_gain_pct,median_gain_pct,actual_win_rate_pct,actual_flop_rate_pct,regime_model_test_mae,regime_model_test_acc
+Era 1: Pre-COVID Value (2010-2019),2010-01-01 to 2019-12-31,254,9.87,3.68,33.5,30.7,11.34,89.6
+Era 2: COVID Stimulus & Tech Euphoria (2020-2021),2020-01-01 to 2021-12-31,79,30.9,14.0,53.2,29.1,30.09,79.2
+Era 3: Global Rate Hikes & Reset (2022-2023),2022-01-01 to 2023-12-31,110,17.37,8.33,47.3,22.7,12.11,93.9
+Era 4: Retail Renaissance Wave (2024-2026),2024-01-01 to 2026-12-31,306,16.07,8.29,46.1,23.2,16.86,77.2

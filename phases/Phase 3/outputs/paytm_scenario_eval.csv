@@ -1,0 +1,4 @@
+scenario,predicted_gain_pct,prob_gain_gt_10pct,actual_open_discount_pct,actual_day_close_crash_pct,model_recommendation
+Final Pre-Listing Setup (With GMP -1.4%),-2.12,4.1,-9.07,-27.25,AVOID
+Bidding Day 3 (Zero GMP Knowledge / Naive),-4.66,3.5,-9.07,-27.25,AVOID
+Pre-Issue Announcement (Hype Scenario / Synthetic +10% GMP),-1.55,4.1,-9.07,-27.25,AVOID

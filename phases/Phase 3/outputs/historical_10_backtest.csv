@@ -1,0 +1,11 @@
+company_name,listing_date,train_samples,category,issue_price,listing_price,sub_total,predicted_gain_pct,actual_gain_pct,error_pct,prob_gain_gt_10pct,model_signal,direction_correct,description
+Adlabs Entertainment,2015-04-06,126,Flop / Loss,215.0,162.2,1.09,-8.05,-24.56,16.51,3.9,AVOID (High Risk / Flop),True,"Theme park operator, poor institutional interest and weak demand"
+Avenue Supermarts,2017-03-21,174,Blockbuster / Pop,299.0,600.0,104.48,30.41,100.67,-70.26,99.3,APPLY (High Conviction),True,"Radhakishan Damani's retail chain, massive 104x oversubscription"
+Cl Educate,2017-03-31,175,Flop / Loss,502.0,402.0,1.9,-6.66,-19.92,13.26,0.5,AVOID (High Risk / Flop),True,"Edtech/test-prep firm, poor NII subscription (0.21x) and overpricing"
+Irctc,2019-10-14,247,Blockbuster / Pop,320.0,626.0,111.91,48.07,95.62,-47.55,99.4,APPLY (High Conviction),True,"Railway monopoly, PSU digital moat, massive 112x oversubscription"
+Sbi Cards And Payment Services,2020-03-16,254,Flop / Loss,755.0,661.0,26.54,12.31,-12.45,24.76,89.9,APPLY (Moderate),False,High demand (26x) crushed on listing day by global COVID-19 pandemic crash
+Happiest Minds Technologies,2020-09-17,258,Blockbuster / Pop,166.0,350.0,150.98,65.47,110.84,-45.37,99.7,APPLY (High Conviction),True,"Ashok Soota's digital IT services firm, 151x subscription frenzy"
+Zomato,2021-07-23,296,High Growth / Pop,76.0,115.0,22.58,9.63,51.32,-41.69,38.9,NEUTRAL / CAUTION,True,"India's first major tech consumer unicorn listing, strong tech hype"
+One 97,2021-11-18,318,Flop / Loss,2150.0,1955.0,2.01,-1.54,-9.07,7.53,7.7,AVOID (High Risk / Flop),True,"Mega-size ₹18,916 Cr issue, severe valuation excess, NII snub (0.24x)"
+Life Insurance Of India,2022-05-17,344,Flop / Loss,949.0,867.2,2.05,0.78,-8.62,9.4,4.9,AVOID (High Risk / Flop),True,"Largest Indian IPO ₹21,008 Cr, heavy retail float, weak macro timing"
+Tata Technologies,2023-11-30,428,Blockbuster / Pop,500.0,1200.0,51.18,57.36,140.0,-82.64,99.4,APPLY (High Conviction),True,"First Tata group IPO in 19 years, global ER&D, massive 51x subscription"
