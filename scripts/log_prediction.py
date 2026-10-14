@@ -45,6 +45,7 @@ LOG_COLUMNS = [
     "pred_prob_gt10",
     "gmp_pct_at_scoring",
     "actual_gain_pct",
+    "status",
     "notes",
 ]
 
@@ -113,7 +114,7 @@ def append_prediction_row(record, log_file=LOG_PATH):
         writer.writerow(record)
 
 
-def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH):
+def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH, status="FORWARD"):
     """Score all rows in df and append to log."""
     reg = art.get("reg")
     clf = art.get("clf")
@@ -177,6 +178,7 @@ def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH):
             "pred_prob_gt10": round(pred_prob, 4),
             "gmp_pct_at_scoring": gmp_at_scoring,
             "actual_gain_pct": "",  # Strictly empty at initial scoring
+            "status": str(status or row.get("status") or "FORWARD").strip(),
             "notes": combined_notes,
         }
 
@@ -230,6 +232,7 @@ def main():
     )
     parser.add_argument("--model", type=str, default=None, help="Custom path to model artifact .joblib")
     parser.add_argument("--notes", type=str, default=None, help="Additional qualitative analyst notes")
+    parser.add_argument("--status", type=str, default="FORWARD", help="Prediction status: FORWARD (default), TEST_NOT_FORWARD, etc.")
     parser.add_argument("--log", type=str, default=LOG_PATH, help="Path to prediction log CSV")
 
     args = parser.parse_args()
@@ -245,7 +248,7 @@ def main():
         sys.exit(1)
 
     art, model_path, version = load_model(args.model)
-    score_dataframe(df, art, notes_override=args.notes, log_file=args.log)
+    score_dataframe(df, art, notes_override=args.notes, log_file=args.log, status=args.status)
 
 
 if __name__ == "__main__":

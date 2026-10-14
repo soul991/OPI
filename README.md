@@ -26,8 +26,10 @@ OPI/
 │
 ├── data/
 │   ├── ipo_master.csv              # Full purified dataset (828 records, 2006-2026)
-│   ├── ipo_train.csv               # Training partition (662 records, 2006 to Sep 2024)
-│   ├── ipo_holdout_test.csv        # Out-of-sample holdout test set (166 records, Sep 2024 to May 2026)
+│   ├── ipo_train.csv               # Training partition (< Jun 2025, 556 records)
+│   ├── ipo_val.csv                 # Validation partition (Jun 2025 - May 2026, 118 records)
+│   ├── ipo_phase4_test_used.csv    # Consumed Phase 4 test set (Jun 2026 - Oct 2026, 75 records; used as dev validation only)
+│   ├── ipo_phase5_final_test.csv   # Fresh frozen out-of-sample final test partition (>= Oct 15, 2026, initialized empty)
 │   └── holdout_comparison_report.csv# Detailed model vs actual vs GMP comparison
 │
 ├── model/
@@ -119,7 +121,17 @@ Due to third-party website terms of use (Moneycontrol, Chittorgarh), raw scraped
 python3 scripts/download_all_raw_data.py
 python3 scripts/build_clean_master.py
 ```
-Purified and standardized feature matrices (`data/ipo_master.csv`, `data/ipo_train.csv`, `data/ipo_val.csv`, `data/ipo_final_test.csv`) are provided under the project's educational and non-commercial research license.
+Purified and standardized feature matrices (`data/ipo_master.csv`, `data/ipo_train.csv`, `data/ipo_val.csv`, `data/ipo_phase4_test_used.csv`, `data/ipo_phase5_final_test.csv`) are provided under the project's educational and non-commercial research license.
+
+**Phase 5 Test Set Lifecycle (R8)**:
+The Phase 4 test partition was evaluated and reported in Phase 4; to prevent data snooping and maintain strict out-of-sample discipline, `data/ipo_final_test.csv` has been renamed to `data/ipo_phase4_test_used.csv` and demoted to an extra development validation set. A new frozen out-of-sample forward test partition, `data/ipo_phase5_final_test.csv`, has been initialized empty for all future mainboard listings on or after October 15, 2026. No model tuning or threshold selection may touch this partition.
+
+**Prediction Log Status Protocol (R6)**:
+`predictions/prediction_log.csv` enforces an auditable `status` column:
+- `FORWARD`: Genuine predictions logged prior to the IPO listing date. Evaluated in forward performance reports.
+- `TEST_NOT_FORWARD`: Historical or synthetic testing rows (e.g., Kisshtipo test rows scored post-listing). Excluded from forward evaluation.
+- `INVALID`: Erroneous entries (e.g., placeholder rows with invalid dates). Excluded from forward evaluation.
+Run `python scripts/forward_report.py` to inspect genuine forward performance.
 
 ---
 

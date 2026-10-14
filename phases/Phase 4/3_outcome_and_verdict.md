@@ -1,5 +1,149 @@
 # Phase 4: Outcome & Verdict - Honest Generalization & Calibration
 
+## ERRATA (Phase 5)
+
+> **Date**: 2026-10-14  
+> **Status**: Remediation Gate A corrections applied per `RULES.md` and `phases/Phase 5/1_planning_and_goals.md`. The original Phase 4 report text is preserved below this section.
+
+### 1. R1 Erratum: Final Test Error Distribution & Cherry-Picking Correction
+Section 4 below was previously titled *"Sample of 30 Recent Unseen Listings"*, but it cherry-picked the 29 smallest errors plus the single worst error (Tempsens Instruments). The true distribution across all 75 chronologically frozen out-of-sample IPOs (2026-06-10 to 2026-10-08) is:
+- **Sample Size**: 75 IPOs
+- **Mean Absolute Error (MAE)**: 12.19%
+- **Median Absolute Error**: 8.29%
+- **75th Percentile (p75)**: 14.20%
+- **90th Percentile (p90)**: 27.80%
+- **Maximum Error**: 83.24%
+
+The model experienced several large misses of 35 to 45+ percentage points on unseen IPOs:
+- Tempsens Instruments India: Pred +28.09%, Actual +111.33% (Error: 83.24%)
+- Esds Software Solution: Pred +31.24%, Actual +76.46% (Error: 45.22%)
+- Orient Cables India: Pred +21.21%, Actual +65.44% (Error: 44.23%)
+- Adroit Industries India: Pred +33.34%, Actual +75.37% (Error: 42.03%)
+- Moneyview: Pred +24.37%, Actual +61.76% (Error: 37.39%)
+- Behari Lal Engineering: Pred +26.22%, Actual +63.16% (Error: 36.94%)
+- Skyways Air Services: Pred +25.30%, Actual -10.14% (Error: 35.44%)
+
+The complete 75-row dataset is published in [`phases/Phase 5/phase4_error_distribution.csv`](../Phase%205/phase4_error_distribution.csv).
+
+#### 10 Best and 10 Worst Errors (Full 75-IPO Test Set)
+| Rank | Company | Listing Date | Model Pred (%) | Actual Gain (%) | Model Error (%) |
+|:---:|---|:---:|:---:|:---:|:---:|
+| **Best 1** | Hexagon Nutrition | 2026-06-12 | +7.35% | +7.22% | 0.13% |
+| **Best 2** | CSM Technologies | 2026-07-02 | -0.13% | 0.00% | 0.13% |
+| **Best 3** | Vishal Nirmiti | 2026-10-08 | -2.99% | -2.27% | 0.72% |
+| **Best 4** | Elevate Campuses | 2026-09-30 | -2.65% | -1.91% | 0.74% |
+| **Best 5** | Manipal Payment Solutions | 2026-09-17 | -1.86% | -2.65% | 0.79% |
+| **Best 6** | Knack Packaging | 2026-07-08 | +11.44% | +10.59% | 0.85% |
+| **Best 7** | Jindal Supreme India | 2026-09-23 | +30.05% | +29.03% | 1.02% |
+| **Best 8** | Armee Infotech | 2026-09-30 | -1.51% | 0.00% | 1.51% |
+| **Best 9** | Xtranet Technologies | 2026-07-30 | +5.48% | +7.09% | 1.61% |
+| **Best 10** | Turtlemint Fintech | 2026-06-29 | -9.60% | -11.25% | 1.65% |
+| ... | ... | ... | ... | ... | ... |
+| **Worst 10** | Annu Projects | 2026-09-02 | -3.55% | -27.27% | 23.72% |
+| **Worst 9** | Symbiotec Pharmalab | 2026-09-01 | +25.32% | 0.00% | 25.32% |
+| **Worst 8** | Rays Of Belief | 2026-09-08 | +29.46% | 0.00% | 29.46% |
+| **Worst 7** | Skyways Air Services | 2026-09-01 | +25.30% | -10.14% | 35.44% |
+| **Worst 6** | Behari Lal Engineering | 2026-08-19 | +26.22% | +63.16% | 36.94% |
+| **Worst 5** | Moneyview | 2026-10-01 | +24.37% | +61.76% | 37.39% |
+| **Worst 4** | Adroit Industries India | 2026-09-30 | +33.34% | +75.37% | 42.03% |
+| **Worst 3** | Orient Cables India | 2026-10-05 | +21.21% | +65.44% | 44.23% |
+| **Worst 2** | Esds Software Solution | 2026-09-04 | +31.24% | +76.46% | 45.22% |
+| **Worst 1** | Tempsens Instruments India | 2026-08-28 | +28.09% | +111.33% | 83.24% |
+
+---
+
+### 2. R2 Erratum: Restatement of "Blend WINNER" vs Raw GMP
+The claim in Section 2 that the ensemble blend was a "WINNER" (6.77% vs 6.88% on validation) is restated as **no demonstrated advantage over raw GMP**. The blend weight ($w=0.55$) was tuned on that same validation partition, and a paired bootstrap test demonstrates that the difference is not statistically significant.
+
+**Paired Bootstrap Results (2,000 resamples, seed=42):**
+- **Validation Set (112 IPOs with GMP)**:
+  - Raw GMP MAE: 6.8804%
+  - Model Alone MAE: 7.2449%
+  - Optimal Blend MAE: 6.7726%
+  - **Paired $\Delta(\text{Blend} - \text{Raw GMP})$ 95% Bootstrap CI**: $[-0.5322\%, +0.3540\%]$ (straddles zero $\rightarrow$ **no demonstrated difference**)
+  - **Paired $\Delta(\text{Model} - \text{Raw GMP})$ 95% Bootstrap CI**: $[-0.4544\%, +1.2980\%]$ (straddles zero $\rightarrow$ **no demonstrated difference**)
+- **Frozen Final Test Set (8 IPOs with GMP)**:
+  - Raw GMP MAE: **4.2925%** (lowest error)
+  - Model Alone MAE: 5.3012%
+  - Optimal Blend MAE: 4.4973%
+  - **Paired $\Delta(\text{Blend} - \text{Raw GMP})$ 95% Bootstrap CI**: $[-1.2612\%, +1.8952\%]$ (straddles zero)
+  - **Paired $\Delta(\text{Model} - \text{Raw GMP})$ 95% Bootstrap CI**: $[-2.4863\%, +5.0426\%]$ (straddles zero)
+  - Raw GMP achieved the lowest MAE on the unseen test set; neither the model nor the blend demonstrated any advantage over naive GMP.
+
+---
+
+### 3. R3 Erratum: Probability Calibration Target Missed on Final Test
+Section 1 reported calibration "target met" ($ECE \le 0.10$) based on the validation set upon which Platt scaling was fitted ($ECE = 0.0966$). On the frozen out-of-sample final test set, the calibration target was **MISSED**:
+- **Final Test Equal-Width ECE (10 bins)**: **0.1406** (target $\le 0.10$, **MISSED**)
+- **Final Test Equal-Frequency ECE (10 quantile bins)**: **0.1544** (target $\le 0.10$, **MISSED**)
+- **Final Test Brier Score**: **0.1660** (deteriorated vs validation 0.1257)
+- **Classifier Accuracy (>10% pop)**: Fell from 84.0% to **73.3%**
+
+#### Final Test Calibration Tables (75 Unseen IPOs)
+
+**Equal-Width Bins (10 bins, uniform spacing):**
+| Probability Bin | Count | Avg Predicted | Actual Frequency | Absolute Gap |
+|:---:|:---:|:---:|:---:|:---:|
+| **[0.0, 0.1)** | 7 | 0.0773 | 0.1429 | 0.0656 |
+| **[0.1, 0.2)** | 16 | 0.1303 | 0.1250 | 0.0053 |
+| **[0.2, 0.3)** | 4 | 0.2202 | 0.0000 | 0.2202 |
+| **[0.3, 0.4)** | 3 | 0.3510 | 0.0000 | 0.3510 |
+| **[0.4, 0.5)** | 12 | 0.4627 | 0.8333 | 0.3707 |
+| **[0.5, 0.6)** | 9 | 0.5547 | 0.6667 | 0.1120 |
+| **[0.6, 0.7)** | 7 | 0.6567 | 0.8571 | 0.2004 |
+| **[0.7, 0.8)** | 15 | 0.7292 | 0.8000 | 0.0708 |
+| **[0.8, 0.9)** | 1 | 0.8940 | 1.0000 | 0.1060 |
+| **[0.9, 1.0)** | 1 | 0.9600 | 1.0000 | 0.0400 |
+
+**Equal-Frequency Bins (10 quantile bins, balanced sample counts):**
+| Quantile Bin Interval | Count | Avg Predicted | Actual Frequency | Absolute Gap |
+|:---:|:---:|:---:|:---:|:---:|
+| **(0.030, 0.102]** | 8 | 0.0804 | 0.1250 | 0.0446 |
+| **(0.102, 0.124]** | 7 | 0.1087 | 0.1429 | 0.0341 |
+| **(0.124, 0.193]** | 8 | 0.1528 | 0.1250 | 0.0277 |
+| **(0.193, 0.400]** | 7 | 0.2763 | 0.0000 | 0.2763 |
+| **(0.400, 0.473]** | 8 | 0.4485 | 0.7500 | 0.3015 |
+| **(0.473, 0.547]** | 7 | 0.5041 | 0.8571 | 0.3530 |
+| **(0.547, 0.633]** | 7 | 0.5783 | 0.7143 | 0.1360 |
+| **(0.633, 0.703]** | 9 | 0.6759 | 0.8889 | 0.2130 |
+| **(0.703, 0.734]** | 6 | 0.7175 | 0.8333 | 0.1158 |
+| **(0.734, 0.960]** | 8 | 0.7975 | 0.7500 | 0.0475 |
+
+---
+
+### 4. R4 Erratum: Column Arithmetic Discrepancy in Validation Reliability Table
+The reliability table in Section 3 contained mismatched column values (e.g., bin [0.0, 0.1) displayed Raw Avg 0.015, Actual 0.024, but Pre-Cal Gap 0.116 instead of $|0.015 - 0.024| = 0.009$). 
+
+**Root Cause**: In Phase 4, the raw table (binned on uncalibrated probabilities, where bin [0.0, 0.1) had 69 samples and actual frequency 0.130, giving gap $|0.015 - 0.130| = 0.116$) was merged into a single markdown table alongside calibrated probability columns (which had 42 samples and actual frequency 0.024). This mixed two distinct binning partitions into adjacent columns.
+
+When evaluating both pre-calibrated and calibrated predictions on the **same sample subsets** (binned by calibrated probability, $N=118$), every row strictly satisfies $\text{gap} = |\text{avg\_pred} - \text{actual}|$:
+
+| Calibrated Bin | Count | Raw Avg Pred | Calibrated Avg Pred | Actual Frequency | Pre-Cal Gap | Post-Cal Gap |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **[0.0, 0.1)** | 42 | 0.002 | 0.055 | 0.024 | **0.022** | **0.031** |
+| **[0.1, 0.2)** | 19 | 0.018 | 0.135 | 0.316 | **0.298** | **0.181** |
+| **[0.2, 0.3)** | 12 | 0.086 | 0.244 | 0.250 | **0.164** | **0.006** |
+| **[0.3, 0.4)** | 4 | 0.240 | 0.353 | 0.250 | **0.010** | **0.103** |
+| **[0.4, 0.5)** | 9 | 0.434 | 0.448 | 0.222 | **0.211** | **0.225** |
+| **[0.5, 0.6)** | 5 | 0.611 | 0.527 | 0.600 | **0.011** | **0.073** |
+| **[0.6, 0.7)** | 8 | 0.842 | 0.655 | 0.500 | **0.342** | **0.155** |
+| **[0.7, 0.8)** | 1 | 0.915 | 0.719 | 0.000 | **0.915** | **0.719** |
+| **[0.8, 0.9)** | 9 | 0.986 | 0.858 | 1.000 | **0.014** | **0.142** |
+| **[0.9, 1.0)** | 9 | 0.998 | 0.940 | 1.000 | **0.002** | **0.060** |
+
+---
+
+### 5. R6 Erratum: Prediction Log Integrity & Test Row Invalidation
+`predictions/prediction_log.csv` previously contained non-forward test rows:
+1. **Kisshtipo** (logged twice): Scored on 2026-10-14, but had already listed on 2026-05-08. Both entries have been marked `status=TEST_NOT_FORWARD`.
+2. **Hyundai Motor India**: Logged with listing date 2026-10-22 and described as an upcoming October 2026 IPO. In reality, Hyundai Motor India listed on 2024-10-22 (BSE/NSE statutory record). The 2026 date was an unverified future test placeholder. This row has been marked `status=INVALID`.
+
+A `status` column has been added to `predictions/prediction_log.csv`, and all forward evaluation metrics scripts strictly filter for `status == "FORWARD"`.
+
+---
+
+## Original Phase 4 Report (Unmodified Historical Record)
+
 > Standard sequential phase documentation per `RULES.md`.
 > **Phase 4 Principle**: Evaluation-first. Trustworthy numbers over headline scores. Touched the frozen final test set exactly once.
 
@@ -95,7 +239,7 @@ Platt scaling (sigmoid calibration) eliminated over-confidence:
 
 ## 4. Frozen Final Test Holdout Evaluation Table (Sample of 30 Recent Unseen Listings)
 
-Complete results stored in [`phases/Phase 4/final_test_results.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/final_test_results.csv):
+Complete results stored in [`phases/Phase 4/final_test_results.csv`](final_test_results.csv):
 
 | Company | Listing Date | Actual Gain (%) | Model Pred (%) | Calibrated P(>10%) | Model Error (%) | GMP (%) |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|

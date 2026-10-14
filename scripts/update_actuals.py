@@ -127,6 +127,10 @@ def update_actuals(log_path=DEFAULT_LOG, master_path=DEFAULT_MASTER, as_of=None)
 
     for idx, row in log_df.iterrows():
         company = row["company"]
+        status_val = str(row.get("status", "")).strip().upper()
+        if status_val.startswith("TEST") or status_val.startswith("INVALID"):
+            continue
+
         actual_val = row["actual_gain_pct"].strip()
 
         # Check if actual is already populated

@@ -52,13 +52,13 @@ The Phase 4 architecture enforces strict evaluation hygiene to eliminate data le
 
 | File Path | Purpose | Key Parameters / Logic |
 |---|---|---|
-| [`scripts/phase4_split.py`](file:///Users/istakahamed06/Documents/OPI/scripts/phase4_split.py) | Three-way chronological partitioning | Train (< 2025-06-01; 556 rows), Val (2025-06-01 to 2026-05-31; 118 rows), Final Test (>= 2026-06-01; 75 rows). Scores Phase 2 model on final test for reference baseline. |
-| [`scripts/phase4_fix_sectors.py`](file:///Users/istakahamed06/Documents/OPI/scripts/phase4_fix_sectors.py) | Sector taxonomy refinement & gap analysis | Reclassifies 109 companies out of 247 "Industrial & Manufacturing" catch-all into 8 granular sectors. Audits 2012-2014 exchange records. |
-| [`scripts/phase4_fill_fundamentals.py`](file:///Users/istakahamed06/Documents/OPI/scripts/phase4_fill_fundamentals.py) | Fundamentals coverage & spot-check | Audits 7 fundamental metrics across 479 IPOs (2021–2026). Excludes 4 metrics with 0% coverage. Conducts 30-IPO spot check (`random_state=42`) with 96.67% pass rate. |
-| [`scripts/phase4_train_evaluate.py`](file:///Users/istakahamed06/Documents/OPI/scripts/phase4_train_evaluate.py) | Full Phase 4 training, calibration, and evaluation pipeline | 81-combination grid search on validation; Platt scaling logistic calibrator; 4-way GMP comparison; one-time evaluation on frozen test set. |
-| [`model/train.py`](file:///Users/istakahamed06/Documents/OPI/model/train.py) | Shared feature engineering & model definitions | Added `PlattCalibrator` wrapper class enabling seamless serialization and forward calibrated probability inference. |
-| [`scripts/log_prediction.py`](file:///Users/istakahamed06/Documents/OPI/scripts/log_prediction.py) | Append-only forward prediction scoring | Scores upcoming unlisted IPOs using `model/ipo_model_phase4.joblib`, serializes feature snapshots in JSON, and appends to `predictions/prediction_log.csv` with `actual_gain_pct=""`. |
-| [`scripts/update_actuals.py`](file:///Users/istakahamed06/Documents/OPI/scripts/update_actuals.py) | Post-listing return reconciliation | Matches passed listing dates against `data/ipo_master.csv` and updates `actual_gain_pct` without mutating historical prediction records. |
+| [`scripts/phase4_split.py`](../../scripts/phase4_split.py) | Three-way chronological partitioning | Train (< 2025-06-01; 556 rows), Val (2025-06-01 to 2026-05-31; 118 rows), Final Test (>= 2026-06-01; 75 rows). Scores Phase 2 model on final test for reference baseline. |
+| [`scripts/phase4_fix_sectors.py`](../../scripts/phase4_fix_sectors.py) | Sector taxonomy refinement & gap analysis | Reclassifies 109 companies out of 247 "Industrial & Manufacturing" catch-all into 8 granular sectors. Audits 2012-2014 exchange records. |
+| [`scripts/phase4_fill_fundamentals.py`](../../scripts/phase4_fill_fundamentals.py) | Fundamentals coverage & spot-check | Audits 7 fundamental metrics across 479 IPOs (2021–2026). Excludes 4 metrics with 0% coverage. Conducts 30-IPO spot check (`random_state=42`) with 96.67% pass rate. |
+| [`scripts/phase4_train_evaluate.py`](../../scripts/phase4_train_evaluate.py) | Full Phase 4 training, calibration, and evaluation pipeline | 81-combination grid search on validation; Platt scaling logistic calibrator; 4-way GMP comparison; one-time evaluation on frozen test set. |
+| [`model/train.py`](../../model/train.py) | Shared feature engineering & model definitions | Added `PlattCalibrator` wrapper class enabling seamless serialization and forward calibrated probability inference. |
+| [`scripts/log_prediction.py`](../../scripts/log_prediction.py) | Append-only forward prediction scoring | Scores upcoming unlisted IPOs using `model/ipo_model_phase4.joblib`, serializes feature snapshots in JSON, and appends to `predictions/prediction_log.csv` with `actual_gain_pct=""`. |
+| [`scripts/update_actuals.py`](../../scripts/update_actuals.py) | Post-listing return reconciliation | Matches passed listing dates against `data/ipo_master.csv` and updates `actual_gain_pct` without mutating historical prediction records. |
 
 ---
 
@@ -149,13 +149,13 @@ python3 scripts/update_actuals.py
 
 | Artifact File | Description | Location |
 |---|---|---|
-| `model/ipo_model_phase4.joblib` | Production model bundle containing regressor, classifier, Platt calibrator, categories, and blend weights | [`model/ipo_model_phase4.joblib`](file:///Users/istakahamed06/Documents/OPI/model/ipo_model_phase4.joblib) |
-| `data/ipo_train.csv` | Train split (< 2025-06-01, 556 rows) | [`data/ipo_train.csv`](file:///Users/istakahamed06/Documents/OPI/data/ipo_train.csv) |
-| `data/ipo_val.csv` | Validation split (2025-06-01 to 2026-05-31, 118 rows) | [`data/ipo_val.csv`](file:///Users/istakahamed06/Documents/OPI/data/ipo_val.csv) |
-| `data/ipo_final_test.csv` | Frozen final test split (>= 2026-06-01, 75 rows) | [`data/ipo_final_test.csv`](file:///Users/istakahamed06/Documents/OPI/data/ipo_final_test.csv) |
-| `phases/Phase 4/final_test_results.csv` | Complete company-by-company test set predictions, actuals, and errors | [`phases/Phase 4/final_test_results.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/final_test_results.csv) |
-| `phases/Phase 4/fundamentals_coverage.csv` | Column-by-column coverage report for 2021–2026 listings | [`phases/Phase 4/fundamentals_coverage.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/fundamentals_coverage.csv) |
-| `phases/Phase 4/data_corrections.csv` | Log of data corrections and outlier flags | [`phases/Phase 4/data_corrections.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/data_corrections.csv) |
-| `phases/Phase 4/gap_analysis_2012_2014.md` | Verification report for 2012–2014 low-volume era | [`phases/Phase 4/gap_analysis_2012_2014.md`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/gap_analysis_2012_2014.md) |
-| `phases/Phase 4/phase4_summary.json` | Machine-readable metrics summary | [`phases/Phase 4/phase4_summary.json`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%204/phase4_summary.json) |
-| `predictions/prediction_log.csv` | Append-only forward prediction log | [`predictions/prediction_log.csv`](file:///Users/istakahamed06/Documents/OPI/predictions/prediction_log.csv) |
+| `model/ipo_model_phase4.joblib` | Production model bundle containing regressor, classifier, Platt calibrator, categories, and blend weights | [`model/ipo_model_phase4.joblib`](../../model/ipo_model_phase4.joblib) |
+| `data/ipo_train.csv` | Train split (< 2025-06-01, 556 rows) | [`data/ipo_train.csv`](../../data/ipo_train.csv) |
+| `data/ipo_val.csv` | Validation split (2025-06-01 to 2026-05-31, 118 rows) | [`data/ipo_val.csv`](../../data/ipo_val.csv) |
+| `data/ipo_final_test.csv` | Frozen final test split (>= 2026-06-01, 75 rows) | [`data/ipo_phase4_test_used.csv`](../../data/ipo_phase4_test_used.csv) |
+| `phases/Phase 4/final_test_results.csv` | Complete company-by-company test set predictions, actuals, and errors | [`phases/Phase 4/final_test_results.csv`](final_test_results.csv) |
+| `phases/Phase 4/fundamentals_coverage.csv` | Column-by-column coverage report for 2021–2026 listings | [`phases/Phase 4/fundamentals_coverage.csv`](fundamentals_coverage.csv) |
+| `phases/Phase 4/data_corrections.csv` | Log of data corrections and outlier flags | [`phases/Phase 4/data_corrections.csv`](data_corrections.csv) |
+| `phases/Phase 4/gap_analysis_2012_2014.md` | Verification report for 2012–2014 low-volume era | [`phases/Phase 4/gap_analysis_2012_2014.md`](gap_analysis_2012_2014.md) |
+| `phases/Phase 4/phase4_summary.json` | Machine-readable metrics summary | [`phases/Phase 4/phase4_summary.json`](phase4_summary.json) |
+| `predictions/prediction_log.csv` | Append-only forward prediction log | [`predictions/prediction_log.csv`](../../predictions/prediction_log.csv) |

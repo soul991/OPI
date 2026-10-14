@@ -56,10 +56,10 @@ Automated script running the 10 landmark out-of-sample evaluations, calculating 
 Dedicated standalone backtester for Paytm's November 2021 listing, isolating pre-listing data and testing multiple pre-IPO feature hypotheses.
 
 ### 4. Output Artifacts in `phases/Phase 3/outputs/`:
-- [`historical_10_backtest.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%203/outputs/historical_10_backtest.csv): Full table of predicted gains, probabilities, actual gains, errors, and signals for the 10 landmark IPOs.
-- [`paytm_scenario_eval.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%203/outputs/paytm_scenario_eval.csv): Comparison of Paytm predictions across pre-listing data states.
-- [`regime_partition_metrics.csv`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%203/outputs/regime_partition_metrics.csv): Cross-era benchmark statistics and within-regime model validation metrics.
-- [`historical_10_backtest_chart.html`](file:///Users/istakahamed06/Documents/OPI/phases/Phase%203/outputs/historical_10_backtest_chart.html): Standalone Generative UI comparative visualization widget.
+- [`historical_10_backtest.csv`](outputs/historical_10_backtest.csv): Full table of predicted gains, probabilities, actual gains, errors, and signals for the 10 landmark IPOs.
+- [`paytm_scenario_eval.csv`](outputs/paytm_scenario_eval.csv): Comparison of Paytm predictions across pre-listing data states.
+- [`regime_partition_metrics.csv`](outputs/regime_partition_metrics.csv): Cross-era benchmark statistics and within-regime model validation metrics.
+- [`historical_10_backtest_chart.html`](outputs/historical_10_backtest_chart.html): Standalone Generative UI comparative visualization widget.
 
 ---
 
