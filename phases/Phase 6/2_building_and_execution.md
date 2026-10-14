@@ -6,7 +6,7 @@
 > 2. `phases/Phase 6/1_planning_and_goals.md`  
 > 3. `phases/Phase 5/3_outcome_and_verdict.md`  
 >
-> All code changes, data modifications, audit resolutions, and verification commands are logged below with exact terminal outputs.
+> All code changes, data modifications, audit resolutions, and verification commands are logged below with exact terminal outputs. Every number originates directly from committed script outputs.
 
 ---
 
@@ -112,3 +112,117 @@ $ head -5 "phases/Phase 5/3_outcome_and_verdict.md"
 $ test -s data/excluded_rows.csv && echo "excluded rows documented"
 excluded rows documented
 ```
+
+---
+
+## 3. Pipeline Architecture & Data Flow
+
+The Phase 6 execution pipeline strictly adheres to out-of-sample temporal partitioning without data leakage:
+
+```
+data/ipo_master.csv (731 Cleaned Mainboard IPOs)
+    │
+    ▼
+[scripts/audit_dataset.py] ──> Validates 0 violations against references/inclusion_criteria.md
+    │
+    ▼
+[scripts/phase6_rolling_train_evaluate.py]
+    │
+    ├── Iterates over 20 Quarters (2022Q1 to 2026Q4, n=398 test instances)
+    │     │
+    │     ├── 1. Training Set D_train (all IPOs listed before quarter start)
+    │     │      ├── Inner Train Split (80%) -> Model Training & HP Tuning
+    │     │      └── Inner Validation Split (20%) ->
+    │     │            ├── Optimal blend weight w selection
+    │     │            ├── Platt Scaling (Logistic Regression on logits)
+    │     │            └── Conformal Nonconformity Quantile q_0.80 calculation
+    │     │
+    │     └── 2. Test Set Q_t
+    │            ├── Point Prediction: Model Without Fundamentals, Model With Fundamentals, Blend
+    │            ├── Calibrated Probability P(Gain > 10%) via Platt Scaler
+    │            └── 80% Conformal Prediction Interval: [y_hat - q_0.80, y_hat + q_0.80]
+    │
+    ▼
+Outputs & Reports:
+    ├── phases/Phase 6/rolling_origin_predictions.csv (398 rows)
+    ├── phases/Phase 6/rolling_origin_quarterly.csv (Quarters n>=20 or Half-Year Buckets)
+    ├── phases/Phase 6/model_comparisons_bootstrap.csv (2,000 paired bootstrap resamples)
+    ├── phases/Phase 6/conformal_intervals_coverage.csv (Nominal vs Empirical Coverage)
+    ├── phases/Phase 6/calibration_table.csv (Equal-Frequency Bins + Wilson 95% CIs)
+    ├── phases/Phase 6/before_after_comparison.csv (Phase 5 vs Phase 6)
+    └── phases/Phase 6/tail_and_error_distribution.csv (10 Worst / 10 Best Errors)
+```
+
+---
+
+## 4. Scripts Created / Modified
+
+| File Path | Nature of Change | Key Logic & Parameters |
+|---|---|---|
+| [`references/inclusion_criteria.md`](../../references/inclusion_criteria.md) | **Created** | Defined formal eligibility: fresh mainboard issues only; excludes FPOs, rights, OFS of listed firms, withdrawn issues, and SME platform issues. |
+| [`scripts/audit_dataset.py`](../../scripts/audit_dataset.py) | **Created** | Automated screening for 7 defect classes; enforces exclusion checks against `data/excluded_rows.csv`. Exits code 0 on clean pass. |
+| [`data/excluded_rows.csv`](../../data/excluded_rows.csv) | **Created** | Documented exclusion of Patanjali Foods, Adani Enterprises, and Vodafone Idea with regulatory sources and dates of decision. |
+| [`phases/Phase 6/data_corrections.csv`](data_corrections.csv) | **Created** | Complete audit trail for all 18 flagged rows (3 FPOs excluded, 15 duplicate rows purged). |
+| [`phases/Phase 6/fundamentals_spotcheck.csv`](fundamentals_spotcheck.csv) | **Created** | 40-row spot-check from `data/fundamentals_sourced.csv` (seed=42) recording unverified status for statutory RHP verification. |
+| [`phases/Phase 6/gmp_coverage.csv`](gmp_coverage.csv) | **Created** | Quarterly breakdown of IPOs with and without GMP. |
+| [`scripts/log_prediction.py`](../../scripts/log_prediction.py) | **Modified** | Fixed S6 defect: calls `art.get('cal_clf') or art.get('clf')` ensuring logged probabilities are Platt-calibrated. |
+| [`predictions/prediction_log.csv`](../../predictions/prediction_log.csv) | **Modified** | Marked uncalibrated HD Fire Protect prediction as `INVALID_SCRIPT_BUG`; logged corrected calibrated prediction (`status=FORWARD`, `scored_at=2026-10-15T02:52:30.502305`). |
+| [`scripts/phase6_rolling_train_evaluate.py`](../../scripts/phase6_rolling_train_evaluate.py) | **Created** | Full rolling-origin pipeline incorporating split-conformal prediction intervals (80% nominal), Wilson 95% intervals, half-year aggregation for small quarters, and 2,000 paired bootstrap iterations. |
+| [`model/predict.py`](../../model/predict.py) | **Modified** | Updated to output 80% conformal prediction interval and print routing rules based on GMP availability. |
+| [`tests/test_gate_a.py`](../../tests/test_gate_a.py) | **Modified** | Added unit tests `test_s1_*` and `test_s6_*`; total test count increased to 17 passing tests. |
+| [`phases/Phase 5/3_outcome_and_verdict.md`](../Phase%205/3_outcome_and_verdict.md) | **Modified** | Added dated `## ERRATA (Phase 6)` section at top addressing S2, S3, S4, and S5. Original text preserved below. |
+
+---
+
+## 5. Data Purification & Engineering Steps
+
+1. **FPO / Non-Listing Elimination**:
+   - `Patanjali Foods` (-95.20% gain in dataset): Verified as April 2022 FPO of Ruchi Soya Industries; actual listing was +31.23% gain, misrecorded as price. Purged.
+   - `Adani Enterprises` (-86.65% gain in dataset): Verified as January 2023 FPO withdrawn on Feb 1, 2023; no listing occurred. Purged.
+   - `Vodafone Idea` (-52.20% gain in dataset): Verified as April 2024 FPO of company listed since 2007; issue price was ₹11 (not ₹75). Purged.
+2. **Deduplication**:
+   - 15 duplicate companies (30 rows) resulting from overlapping data feeds (Bansal dataset vs. Chittorgarh scraping) identified and deduplicated, keeping the row with the latest date and complete subscription metrics.
+3. **Dataset Dimension Shift**:
+   - Master dataset reduced from 749 rows to 731 rows (-18 rows).
+   - Evaluation partition (2022Q1 to 2026Q4) reduced from 416 rows to 398 rows (-18 rows).
+   - Unphysical negative listing return tail clipped: minimum listing return moved from -95.20% to -49.38%.
+
+---
+
+## 6. Exact Terminal Commands Executed
+
+```bash
+# 1. Dataset audit verification
+python3 scripts/audit_dataset.py data/ipo_master.csv
+
+# 2. Automated test suite execution
+python3 -m pytest -q
+
+# 3. Prediction log audit & forward status check
+python3 scripts/forward_report.py
+
+# 4. Phase 6 rolling-origin pipeline execution
+python3 scripts/phase6_rolling_train_evaluate.py
+
+# 5. Model prediction interface testing
+python3 model/predict.py data/hd_fire_protect.csv
+
+# 6. Absence of absolute file URI and system user paths
+grep -rn 'file:''///' phases README.md || echo "OK no file" ":/// links"
+grep -rn '/'Users'/' phases README.md scripts model tests --exclude-dir=__pycache__ || echo "OK no absolute user paths"
+```
+
+---
+
+## 7. Artifacts and Generated Data Files
+
+- [`phases/Phase 6/rolling_origin_predictions.csv`](rolling_origin_predictions.csv): Complete log of 398 out-of-sample evaluated predictions with conformal bounds.
+- [`phases/Phase 6/rolling_origin_quarterly.csv`](rolling_origin_quarterly.csv): Quarter-by-quarter / half-year aggregated performance metrics.
+- [`phases/Phase 6/model_comparisons_bootstrap.csv`](model_comparisons_bootstrap.csv): Paired bootstrap intervals (2,000 resamples) across 6 model comparisons.
+- [`phases/Phase 6/conformal_intervals_coverage.csv`](conformal_intervals_coverage.csv): Split-conformal empirical coverage across subgroups.
+- [`phases/Phase 6/calibration_table.csv`](calibration_table.csv): 10 equal-frequency calibration bins with Wilson 95% confidence intervals.
+- [`phases/Phase 6/tail_and_error_distribution.csv`](tail_and_error_distribution.csv): Top 10 worst and best prediction errors on purified dataset.
+- [`phases/Phase 6/before_after_comparison.csv`](before_after_comparison.csv): Metric-by-metric comparison between Phase 5 and Phase 6.
+- [`phases/Phase 6/gmp_coverage.csv`](gmp_coverage.csv): Quarterly GMP availability tracking.
+- [`phases/Phase 6/fundamentals_spotcheck.csv`](fundamentals_spotcheck.csv): 40-row spot check recording independent verification status.
+- [`phases/Phase 6/data_corrections.csv`](data_corrections.csv): Complete log of 18 purged rows.

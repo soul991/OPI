@@ -1,0 +1,5 @@
+subset,n,nominal_coverage_pct,empirical_coverage_pct,mean_interval_width
+Pooled Out-of-Sample,398,80.0,87.4,46.39
+IPOs With GMP,321,80.0,94.1,46.39
+IPOs Without GMP,77,80.0,59.7,46.39
+Top 10% Largest Gains (>=50.8%),40,80.0,60.0,46.39

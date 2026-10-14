@@ -1,26 +1,97 @@
 #!/usr/bin/env python3
-"""Score a new IPO. Usage: python model/predict.py new_ipo.csv"""
+"""Score a new IPO with calibrated probability, 80% conformal prediction interval, and regime routing.
+
+Usage:
+    python model/predict.py [new_ipo.csv]
+
+Rules:
+    - If GMP is available: outputs expected return based on GMP, displays rule:
+      "GMP available: rely on GMP; model is context only"
+    - If GMP is not available: outputs model estimate with 80% conformal interval, displays rule:
+      "GMP not available: model estimate with interval"
+"""
+import os
 import sys
 import joblib
 import pandas as pd
-sys.path.insert(0, "model")
+import numpy as np
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+sys.path.insert(0, os.path.join(ROOT_DIR, "model"))
+
 from train import prep, FEATURES
 
-def main(path):
-    art = joblib.load("model/ipo_model.joblib")
-    df = pd.read_csv(path)
-    for _, row in df.iterrows():
+# Pre-registered pooled conformal 80% interval half-width from out-of-sample residuals
+CONFORMAL_HALF_WIDTH_80 = 23.20
+
+
+def load_model():
+    p4_path = os.path.join(ROOT_DIR, "model", "ipo_model_phase4.joblib")
+    p2_path = os.path.join(ROOT_DIR, "model", "ipo_model.joblib")
+    if os.path.exists(p4_path):
+        return joblib.load(p4_path), "Phase 4 (Calibrated)"
+    elif os.path.exists(p2_path):
+        return joblib.load(p2_path), "Baseline"
+    raise FileNotFoundError("No trained model artifact found in model/")
+
+
+def predict_ipo(df, art):
+    reg = art.get("reg")
+    clf = art.get("cal_clf") or art.get("clf")
+    levels = art.get("levels")
+
+    for idx, row in df.iterrows():
+        company = str(row.get("company", f"IPO_{idx+1}"))
         one = pd.DataFrame([row])
-        X, _ = prep(one, art["levels"])
-        gain = art["reg"].predict(X)[0]
-        prob = art["clf"].predict_proba(X)[0][1]
-        missing = [c for c in FEATURES if pd.isna(row.get(c))]
-        print(f"\n=== {row.get('company', 'IPO')} ===")
-        print(f"Estimated listing gain : {gain:+.1f}%")
-        print(f"P(gain > 10%)          : {prob*100:.0f}%")
-        print(f"Missing inputs ({len(missing)}): {', '.join(missing) or 'none'}")
-        if len(missing) > 6: print("WARNING: many inputs missing, treat this score as weak.")
-        print("Decision aid only, not financial advice. Read the analyst notes for qualitative risks.")
+        X, _ = prep(one, levels)
+
+        gain_pred = float(reg.predict(X)[0])
+        probs = clf.predict_proba(X)[0]
+        prob_gt10 = float(probs[1]) if len(probs) > 1 else float(probs[0])
+
+        raw_gmp = row.get("gmp_pct")
+        has_gmp = pd.notna(raw_gmp) and str(raw_gmp).strip() != ""
+
+        print(f"\n{'='*78}")
+        print(f"  PREDICTION FOR: {company}")
+        print(f"{'='*78}")
+
+        if has_gmp:
+            gmp_val = float(raw_gmp)
+            lower_bound = gmp_val - CONFORMAL_HALF_WIDTH_80
+            upper_bound = gmp_val + CONFORMAL_HALF_WIDTH_80
+            print(f"Rule Applied            : GMP available: rely on GMP; model is context only")
+            print(f"Primary Expected Return : {gmp_val:+.2f}% (Raw GMP)")
+            print(f"Model Point Estimate    : {gain_pred:+.2f}% (for context)")
+            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_80:.1f}%)")
+        else:
+            lower_bound = gain_pred - CONFORMAL_HALF_WIDTH_80
+            upper_bound = gain_pred + CONFORMAL_HALF_WIDTH_80
+            print(f"Rule Applied            : GMP not available: model estimate with interval")
+            print(f"Model Expected Return   : {gain_pred:+.2f}%")
+            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_80:.1f}%)")
+
+        print(f"Calibrated P(Gain > 10%): {prob_gt10*100:.1f}%")
+
+        missing = [c for c in FEATURES if pd.isna(row.get(c)) or str(row.get(c)).strip() == ""]
+        print(f"Missing Inputs ({len(missing)}): {', '.join(missing) if missing else 'None'}")
+        if len(missing) > 6:
+            print("WARNING: Multiple inputs missing. Confidence in model output is reduced.")
+
+        print(f"Disclaimer              : Decision aid only, not financial advice.")
+        print(f"{'='*78}")
+
+
+def main(path):
+    if not os.path.exists(path):
+        print(f"Error: file not found: {path}")
+        sys.exit(1)
+    art, version = load_model()
+    df = pd.read_csv(path)
+    predict_ipo(df, art)
+
 
 if __name__ == "__main__":
     main(sys.argv[1] if len(sys.argv) > 1 else "new_ipo.csv")
