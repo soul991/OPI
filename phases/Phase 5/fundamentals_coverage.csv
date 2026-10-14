@@ -1,0 +1,8 @@
+year,total_ipos,roe_filled,roe_pct,roce_filled,roce_pct,revenue_growth_pct_filled,revenue_growth_pct_pct,pat_margin_pct_filled,pat_margin_pct_pct,debt_equity_filled,debt_equity_pct,pe_ratio_filled,pe_ratio_pct,peer_median_pe_filled,peer_median_pe_pct
+2021,63,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0,0,0.0
+2022,42,0,0.0,0,0.0,0,0.0,0,0.0,37,88.1,34,81.0,34,81.0
+2023,68,0,0.0,0,0.0,0,0.0,0,0.0,51,75.0,56,82.4,60,88.2
+2024,97,0,0.0,0,0.0,0,0.0,0,0.0,90,92.8,90,92.8,90,92.8
+2025,110,0,0.0,0,0.0,0,0.0,0,0.0,100,90.9,94,85.5,95,86.4
+2026,99,36,36.4,0,0.0,0,0.0,38,38.4,36,36.4,20,20.2,20,20.2
+TOTAL,479,36,7.5,0,0.0,0,0.0,38,7.9,314,65.6,294,61.4,299,62.4
