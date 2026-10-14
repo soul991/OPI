@@ -1,3 +1,53 @@
+## ERRATA (Phase 6) — 2026-10-15
+
+> **Phase 6 Gate A6 corrections.** These errata correct errors identified in the Phase 5 verdict. The original text below is preserved unmodified.
+
+### E1: S2 — R5 status corrected from FIXED to PARTIAL
+
+**Error:** Section B ("Unfixed Items") states "None. All Gate A items (R1 through R8) have been fully resolved." This is incorrect. R5 (Fundamentals) was marked FIXED, but:
+- `roce`: 0.0% coverage (0/479).
+- `revenue_growth_pct`: 0.0% coverage (0/479).
+- `pe_ratio`: 61.4% coverage (294/479) — below the ≥70% threshold.
+- `peer_median_pe`: 62.4% coverage (299/479) — below the ≥70% threshold.
+- 2026 coverage for the columns that did pass (roe, pat_margin_pct, debt_equity) is only ~36%.
+
+#### Column-by-Column Coverage Table (2021–2026)
+| Year | Total IPOs | `roe` Filled (%) | `pat_margin_pct` Filled (%) | `debt_equity` Filled (%) | `pe_ratio` Filled (%) | `peer_median_pe` Filled (%) | `roce` Filled (%) | `revenue_growth` Filled (%) |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **2021** | 63 | 57 (90.5%) | 59 (93.7%) | 54 (85.7%) | 0 (0.0%) | 0 (0.0%) | 0 (0.0%) | 0 (0.0%) |
+| **2022** | 42 | 30 (71.4%) | 37 (88.1%) | 38 (90.5%) | 34 (81.0%) | 34 (81.0%) | 0 (0.0%) | 0 (0.0%) |
+| **2023** | 68 | 50 (73.5%) | 55 (80.9%) | 58 (85.3%) | 56 (82.4%) | 60 (88.2%) | 0 (0.0%) | 0 (0.0%) |
+| **2024** | 97 | 86 (88.7%) | 89 (91.8%) | 91 (93.8%) | 90 (92.8%) | 90 (92.8%) | 0 (0.0%) | 0 (0.0%) |
+| **2025** | 110 | 100 (90.9%) | 103 (93.6%) | 102 (92.7%) | 94 (85.5%) | 95 (86.4%) | 0 (0.0%) | 0 (0.0%) |
+| **2026** | 99 | 36 (36.4%) | 38 (38.4%) | 36 (36.4%) | 20 (20.2%) | 20 (20.2%) | 0 (0.0%) | 0 (0.0%) |
+| **TOTAL** | **479** | **359 (74.9%)** | **381 (79.5%)** | **379 (79.1%)** | **294 (61.4%)** | **299 (62.4%)** | **0 (0.0%)** | **0 (0.0%)** |
+| **Status** | — | **PASS (≥70%)** | **PASS (≥70%)** | **PASS (≥70%)** | **EXCLUDE (<70%)** | **EXCLUDE (<70%)** | **EXCLUDE (0%)** | **EXCLUDE (0%)** |
+
+**Correction:** R5 status is **PARTIAL**, not FIXED. The "Unfixed Items" section is amended to list R5 as PARTIAL.
+
+### E2: S3 — Fundamentals provenance corrected: "aggregator-sourced", not "audited"
+
+**Error:** Section 3 describes the fundamentals spot-check as verifying values "independently audited against source tables." All 1,155 values in `data/fundamentals_sourced.csv` carry `confidence=medium` and were extracted from Chittorgarh aggregator pages. None were sourced from RHP/DRHP or company filings. The "40/40 match" does not identify which independent primary source was used for each row.
+
+**Correction:** The word "audited" is replaced with "aggregator-sourced." The spot-check verified consistency within the same aggregator source, not against an independent primary document. A proper 40-row primary-source spot-check is addressed in Phase 6 (see `phases/Phase 6/fundamentals_spotcheck.csv`).
+
+### E3: S4 — H1 wording violation corrected
+
+**Error:** Section 1.A.1 states "Hypothesis H1 (Fundamentals Benefit) — MISSED / FALSIFIED." The paired bootstrap interval for H1 was `[-0.022%, +0.473%]`, which straddles zero. Only 3 of 7 fundamental columns were tested. "FALSIFIED" requires the interval to exclude zero.
+
+**Correction:** The correct statement is: "H1 — No demonstrated effect. Partially tested (3 of 7 columns); H1 remains open for the untested columns."
+
+### E4: S5 — Calibration reporting concerns noted
+
+**Error:** Section 6 reports ECE passed at 0.0968, but:
+- The `[0.574, 0.693)` bin predicted 0.623 against an actual rate of 0.857 — a gap of 0.234, indicating significant under-confidence in the upper range.
+- The highest calibrated probability never exceeded 0.866, meaning the model cannot express high confidence.
+- Quarters with 4–6 IPOs were shown with AUC 1.0000 as if meaningful (e.g., 2022Q1 n=4, 2022Q3 n=4, 2023Q1 n=5).
+
+**Correction:** The ECE target was numerically met (0.0968 ≤ 0.10), but the upper bins show systematic under-confidence. Small-quarter AUCs (n < 20) should not be interpreted individually. Phase 6 reporting uses n ≥ 20 for per-quarter metrics and adds Wilson confidence intervals to reliability bins.
+
+---
+
 # Phase 5: Outcome & Verdict - Remediation Gate, Real Fundamentals, Fresh Test
 
 > Standard sequential phase documentation per [`RULES.md`](../../RULES.md) and [`phases/Phase 5/1_planning_and_goals.md`](1_planning_and_goals.md).  
@@ -30,7 +80,7 @@ Per Phase 5 Non-Negotiable Rule 5 ("Report what failed first"):
    - On the top 10% largest actual market pops ($\text{gain} \ge 50.19\%$, $n=42$), the model severely underpredicts with a mean signed error of **$-30.08\%$** and an MAE of **$34.29\%$** (e.g., Vibhor Steel Tubes actual $+181.5\%$ vs pred $+81.0\%$; Tempsens Instruments actual $+111.3\%$ vs pred $+29.1\%$). Standard $L_1$ loss gradient boosting systematically compresses extreme positive sentiment tails.
 
 ### B. Unfixed Items
-- **None**. All Gate A items (R1 through R8) have been fully resolved, verified via unit tests, and documented.
+- **R5 (Fundamentals)**: **PARTIAL** (amended in Phase 6 Errata E1). 4 of 7 fundamental columns (`roce`, `revenue_growth_pct`, `pe_ratio`, `peer_median_pe`) remain at 0.0% or below the 70% threshold, and 2026 coverage is ~36.4%. Gate A was not fully resolved.
 
 ---
 

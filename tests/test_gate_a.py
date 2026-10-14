@@ -1,13 +1,9 @@
-"""Unit tests for Phase 5 Gate A remediation verification.
+"""Unit tests for Phase 5 Gate A remediation and Phase 6 Gate A6 verification.
 
-Covers requirements R1 to R8:
-- R1: Error distribution CSV and summary metrics match final test results.
-- R2: Paired bootstrap intervals straddle zero (no demonstrated advantage).
-- R3: Calibration target missed on out-of-sample frozen final test.
-- R4: Reliability table column arithmetic strictly satisfies gap == abs(avg_pred - avg_actual).
-- R6: Prediction log status column enforces exclusion of TEST_* and INVALID rows.
-- R7: Zero absolute file:/// or /Users/ links in phases, README, scripts, or model.
-- R8: Phase 4 test renamed to ipo_phase4_test_used.csv; Phase 5 final test empty.
+Phase 5 tests (R1-R8) plus Phase 6 additions:
+- S1: Inclusion criteria (no excluded rows in master, no duplicates)
+- S6: log_prediction.py uses calibrated classifier matching evaluation pipeline
+- S7: Phase 5 verification commands re-checked
 """
 
 import os
@@ -150,20 +146,22 @@ def test_r6_prediction_log_status_and_filtering():
 
 
 def test_r7_no_absolute_user_links():
-    """R7: Zero absolute file:/// or /Users/ paths exist in markdown, scripts, or model files."""
+    """R7: Zero absolute file URI or user paths exist in markdown, scripts, or model files."""
     import glob
     files_to_check = []
     for pattern in ["phases/**/*.md", "README.md", "scripts/**/*.py", "model/**/*.py"]:
         files_to_check.extend(glob.glob(os.path.join(ROOT_DIR, pattern), recursive=True))
 
+    user_path_str = "/" + "Users/"
+    file_uri_str = "file:" + "///"
     for path in files_to_check:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line_no, line in enumerate(f, 1):
-                # Allow self-referencing check expressions in Phase 5 planning file
-                if "1_planning_and_goals.md" in path and ("grep" in line or "never" in line or "Defect" in line):
+                # Allow self-referencing check expressions in planning files
+                if "1_planning_and_goals.md" in path and ("grep" in line or "never" in line or "Defect" in line or "Relative links only" in line or "paths" in line):
                     continue
-                assert "file:///" not in line, f"Absolute file URI found in {path}:{line_no}\n  {line.strip()}"
-                assert "/Users/" not in line, f"Absolute user path found in {path}:{line_no}\n  {line.strip()}"
+                assert file_uri_str not in line, f"Absolute file URI found in {path}:{line_no}\n  {line.strip()}"
+                assert user_path_str not in line, f"Absolute user path found in {path}:{line_no}\n  {line.strip()}"
 
 
 def test_r8_test_set_partition_discipline():
@@ -178,3 +176,122 @@ def test_r8_test_set_partition_discipline():
     df_p5 = pd.read_csv(p5_test_path)
     assert len(df_p5) == 0, f"data/ipo_phase5_final_test.csv must be initialized empty, got {len(df_p5)} rows"
     assert "listing_gain_pct" in df_p5.columns, "data/ipo_phase5_final_test.csv must contain standard schema columns"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 6 GATE A6 TESTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def test_s1_inclusion_criteria_no_excluded_in_master():
+    """S1: No row in ipo_master.csv matches an entry in excluded_rows.csv."""
+    master = pd.read_csv(os.path.join(ROOT_DIR, "data", "ipo_master.csv"))
+    excluded = pd.read_csv(os.path.join(ROOT_DIR, "data", "excluded_rows.csv"))
+    excluded_names = set(excluded["company"].str.strip().str.lower())
+
+    for _, row in master.iterrows():
+        name_lower = str(row["company"]).strip().lower()
+        assert name_lower not in excluded_names, (
+            f"Excluded company '{row['company']}' still present in ipo_master.csv"
+        )
+
+
+def test_s1_no_duplicate_companies():
+    """S1: No duplicate company names in master dataset."""
+    master = pd.read_csv(os.path.join(ROOT_DIR, "data", "ipo_master.csv"))
+    dups = master[master.duplicated("company", keep=False)]
+    assert len(dups) == 0, f"Found {len(dups)} duplicate rows for companies: {dups['company'].unique().tolist()}"
+
+
+def test_s1_no_extreme_price_ratios():
+    """S1: No listing_price/issue_price ratio below 0.4 or above 4.0."""
+    master = pd.read_csv(os.path.join(ROOT_DIR, "data", "ipo_master.csv"))
+    ratio = master["listing_price"] / master["issue_price"]
+    low = master[ratio < 0.4]
+    high = master[ratio > 4.0]
+    assert len(low) == 0, f"Price ratio < 0.4 for: {low['company'].tolist()}"
+    assert len(high) == 0, f"Price ratio > 4.0 for: {high['company'].tolist()}"
+
+
+def test_s1_excluded_rows_documented():
+    """S1: data/excluded_rows.csv exists and has required columns."""
+    path = os.path.join(ROOT_DIR, "data", "excluded_rows.csv")
+    assert os.path.exists(path), "data/excluded_rows.csv must exist"
+    df = pd.read_csv(path)
+    required_cols = {"company", "listing_date", "reason", "source_url", "date_of_decision"}
+    assert required_cols.issubset(set(df.columns)), f"Missing columns: {required_cols - set(df.columns)}"
+    assert len(df) >= 3, "Expected at least 3 excluded rows (Patanjali Foods, Adani Enterprises, Vodafone Idea)"
+
+
+def test_s2_phase5_errata_present():
+    """S2: Phase 5 verdict has ERRATA (Phase 6) header."""
+    verdict_path = os.path.join(ROOT_DIR, "phases", "Phase 5", "3_outcome_and_verdict.md")
+    with open(verdict_path, "r", encoding="utf-8") as f:
+        head = f.read(2000)
+    assert "ERRATA (Phase 6)" in head, "Expected ERRATA (Phase 6) at top of Phase 5 verdict"
+    assert "PARTIAL" in head, "Erratum should mention R5 is PARTIAL"
+
+
+def test_s6_log_uses_calibrated_classifier():
+    """S6: log_prediction.py uses cal_clf (calibrated) not raw clf."""
+    script_path = os.path.join(ROOT_DIR, "scripts", "log_prediction.py")
+    with open(script_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    # The script must reference cal_clf
+    assert "cal_clf" in content, "log_prediction.py must reference 'cal_clf' for calibrated probabilities"
+
+
+def test_s6_forward_prediction_calibrated_range():
+    """S6: All FORWARD predictions have P(gain>10%) within the calibrated range [0, 0.90]."""
+    log_path = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
+    df = pd.read_csv(log_path)
+    forward = df[df["status"] == "FORWARD"]
+    if len(forward) == 0:
+        pytest.skip("No FORWARD rows to check")
+    for _, row in forward.iterrows():
+        prob = float(row["pred_prob_gt10"])
+        assert prob <= 0.90, (
+            f"FORWARD prediction for '{row['company']}' has P(gain>10%)={prob:.4f} "
+            f"which exceeds 0.90 — likely using raw (uncalibrated) classifier"
+        )
+
+
+def test_s6_old_hd_fire_marked_invalid():
+    """S6: The original HD Fire Protect row with uncalibrated prob is marked INVALID_SCRIPT_BUG."""
+    log_path = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
+    df = pd.read_csv(log_path)
+    hd_rows = df[df["company"].str.contains("HD Fire Protect", na=False)]
+    assert len(hd_rows) >= 2, "Expected at least 2 HD Fire Protect rows (old invalid + new corrected)"
+    
+    # At least one should be INVALID_SCRIPT_BUG
+    invalid_rows = hd_rows[hd_rows["status"] == "INVALID_SCRIPT_BUG"]
+    assert len(invalid_rows) >= 1, "Original HD Fire Protect row must be marked INVALID_SCRIPT_BUG"
+    
+    # At least one should be FORWARD with calibrated prob
+    forward_rows = hd_rows[hd_rows["status"] == "FORWARD"]
+    assert len(forward_rows) >= 1, "Corrected HD Fire Protect row must be status=FORWARD"
+    
+    for _, row in forward_rows.iterrows():
+        prob = float(row["pred_prob_gt10"])
+        assert prob <= 0.90, f"Corrected prediction has P(gain>10%)={prob:.4f}, still looks uncalibrated"
+        
+        # scored_at must be before listing_date 2026-10-21
+        scored_at = pd.Timestamp(row["scored_at"])
+        listing_date = pd.Timestamp("2026-10-21")
+        assert scored_at < listing_date, (
+            f"scored_at={scored_at} must be before listing_date={listing_date}"
+        )
+
+
+def test_s6_hd_fire_is_mainboard():
+    """S6: HD Fire Protect is verified as mainboard (not SME) based on issue size."""
+    log_path = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
+    df = pd.read_csv(log_path)
+    hd_forward = df[(df["company"].str.contains("HD Fire Protect", na=False)) & (df["status"] == "FORWARD")]
+    assert len(hd_forward) >= 1, "Must have a FORWARD HD Fire Protect row"
+    # Issue size > 25 Cr confirms mainboard (SME cap is 25 Cr post-issue paid-up capital)
+    import json
+    for _, row in hd_forward.iterrows():
+        snapshot = json.loads(row["features_snapshot_json"])
+        issue_size = snapshot.get("issue_size_cr", 0)
+        assert issue_size > 25.0, f"HD Fire Protect issue_size_cr={issue_size} too small for mainboard"

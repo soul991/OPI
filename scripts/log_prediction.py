@@ -117,11 +117,14 @@ def append_prediction_row(record, log_file=LOG_PATH):
 def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH, status="FORWARD"):
     """Score all rows in df and append to log."""
     reg = art.get("reg")
-    clf = art.get("clf")
+    # Use calibrated classifier (cal_clf) when available, matching the
+    # evaluation pipeline.  Fall back to raw clf only if cal_clf is absent
+    # (e.g. Phase-2 baseline model).
+    clf = art.get("cal_clf") or art.get("clf")
     levels = art.get("levels")
 
     if reg is None or clf is None:
-        raise ValueError("Loaded model artifact missing 'reg' or 'clf' estimator.")
+        raise ValueError("Loaded model artifact missing 'reg' or 'clf'/'cal_clf' estimator.")
 
     scored_records = []
 

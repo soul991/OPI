@@ -1,0 +1,19 @@
+company,listing_date,field,old_value,new_value,resolution,rationale,source
+Patanjali Foods,2022-04-08,all,"issue: 650, listing: 31.23, gain: -95.2%",REMOVED,EXCLUDED,"FPO by previously listed Ruchi Soya Industries. Scraping error conflated 31.23% gain with price. Not a fresh IPO.",BSE India / Chittorgarh FPO Notice
+Adani Enterprises,2023-02-08,all,"issue: 3276, listing: 437.20, gain: -86.65%",REMOVED,EXCLUDED,"FPO withdrawn Feb 1 2023 following Hindenburg report. No shares listed. Not a fresh IPO.",BSE India Regulatory Filing / Bloomberg
+Vodafone Idea,2024-04-25,all,"issue: 75, listing: 35.85, gain: -52.20%",REMOVED,EXCLUDED,"FPO of listed entity since 2007. Conflated 2007 IPO price (75) and Govt stake (35.85%). Not a fresh IPO.",BSE India / Chittorgarh Listing Notice
+Aeroflex Industries,2023-08-31,row,duplicate entry,REMOVED,EXCLUDED,"Duplicate scraper feed entry; kept 2023-09-01 row with complete allotment data.",Chittorgarh / NSE Listing
+Ags Transact Technologies,2022-01-31,row,duplicate entry,REMOVED,EXCLUDED,"Duplicate scraper feed entry; kept 2022-02-01 row with verified listing date.",NSE Listing Circular
+Anthem Biosciences,2025-07-15,row,duplicate entry,REMOVED,EXCLUDED,"Inconsistent sub figures from early bidding; kept final allotment row 2025-07-21.",NSE Listing Circular
+Arisinfra Solutions,2025-02-10,row,duplicate entry,REMOVED,EXCLUDED,"Pre-revision date entry; kept finalized listing row 2025-06-25.",NSE Listing Circular
+Gopal Snacks,2024-03-13,row,duplicate entry,REMOVED,EXCLUDED,"Day-2 bidding log; kept final closing demand row 2024-03-14.",BSE Allotment Notice
+Innovision,2026-03-20,row,duplicate entry,REMOVED,EXCLUDED,"Day-2 bidding log; kept final closing demand row 2026-03-23.",BSE Allotment Notice
+Irm Energy,2023-10-26,row,duplicate entry,REMOVED,EXCLUDED,"Duplicate feed; kept 2023-10-31 row with complete financials.",NSE Listing Circular
+Mankind Pharma,2023-05-08,row,duplicate entry,REMOVED,EXCLUDED,"Day-2 demand log; kept final closed subscription 2023-05-09.",NSE Listing Circular
+Mukka Proteins,2024-03-04,row,duplicate entry,REMOVED,EXCLUDED,"Day-2 bidding log; kept final closing 136.99x demand row 2024-03-07.",NSE Listing Circular
+Plaza Wires,2023-10-12,row,duplicate entry,REMOVED,EXCLUDED,"Duplicate listing notice; kept final closing row 2023-10-13.",NSE Listing Circular
+Pyramid Technoplast,2023-08-29,row,duplicate entry,REMOVED,EXCLUDED,"Date adjustment duplicate; kept finalized row 2023-08-30.",NSE Listing Circular
+Travel Food Services,2025-07-10,row,duplicate entry,REMOVED,EXCLUDED,"Pre-allotment demand log; kept final allotment row 2025-07-14.",NSE Listing Circular
+Utkarsh Small Finance Bank,2023-07-21,row,duplicate entry,REMOVED,EXCLUDED,"Duplicate feed entry; kept finalized allotment row 2023-07-24.",NSE Listing Circular
+Veranda Learning Solutions,2022-04-07,row,duplicate entry,REMOVED,EXCLUDED,"Early bidding vs final closed subscription; kept final allotment row 2022-04-11.",NSE Listing Circular
+Western Carriers India,2024-09-23,row,duplicate entry,REMOVED,EXCLUDED,"Day-2 sub update; kept final row 2024-09-24.",NSE Listing Circular
