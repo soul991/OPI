@@ -1,0 +1,3 @@
+date,company,column,old_value,new_value,reason
+2026-10-14,Amagi Media Labs,pe_ratio,603.43,NaN,"Spot-check failure: pe_ratio 603.43 exceeds plausible range (0, 500)"
+2026-10-14,Amagi Media Labs,debt_equity,200.0,NaN,"Spot-check failure: debt_equity 200.0 exceeds plausible range [0, 50)"

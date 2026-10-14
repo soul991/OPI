@@ -1,0 +1,33 @@
+{
+  "best_reg_params": {
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "max_iter": 400,
+    "min_samples_leaf": 10
+  },
+  "best_clf_params": {
+    "max_depth": 4,
+    "learning_rate": 0.03,
+    "max_iter": 500,
+    "min_samples_leaf": 20
+  },
+  "blend_weight_gmp": 0.55,
+  "val_mae": 7.16,
+  "val_auc": 0.873,
+  "test_mae": 12.19,
+  "test_auc": 0.828,
+  "test_acc": 73.3,
+  "brier_before": 0.1424,
+  "brier_after": 0.1257,
+  "ece_before": 0.1393,
+  "ece_after": 0.0966,
+  "brier_test": 0.166,
+  "ece_test": 0.1406,
+  "mae_mean_baseline_test": 17.62,
+  "gmp_comparison_val": {
+    "Raw GMP": 6.88,
+    "Model (no GMP)": 12.02,
+    "Model (with GMP)": 7.24,
+    "Blend": 6.77
+  }
+}

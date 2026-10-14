@@ -1,0 +1,8 @@
+column_name,total_2021_2026,filled_2021_2026,pct_filled,meets_70pct_threshold,decision
+roe,479,0,0.0,False,Exclude from model (<70% threshold; 0.0% coverage)
+roce,479,0,0.0,False,Exclude from model (<70% threshold; 0.0% coverage)
+revenue_growth_pct,479,0,0.0,False,Exclude from model (<70% threshold; 0.0% coverage)
+pat_margin_pct,479,0,0.0,False,Exclude from model (<70% threshold; 0.0% coverage)
+pe_ratio,479,294,61.38,False,Keep in model with native NaN handling (documented coverage gap)
+peer_median_pe,479,299,62.42,False,Keep in model with native NaN handling (documented coverage gap)
+debt_equity,479,298,62.21,False,Keep in model with native NaN handling (documented coverage gap)

@@ -1,0 +1,12 @@
+date,company,listing_date,column,value,reason
+2026-10-14,Bikaji Foods International,2022-11-16,pe_ratio,1340.16,1340.16 >= upper bound 500.0
+2026-10-14,Inox Green Energy Services,2022-11-23,peer_median_pe,950.31,950.31 >= upper bound 500.0
+2026-10-14,Brainbees Solutions,2024-08-13,debt_equity,-0.07,-0.07 < lower bound 0.0
+2026-10-14,Kalpataru,2025-07-01,pe_ratio,1340.16,1340.16 >= upper bound 500.0
+2026-10-14,Travel Food Services,2025-07-14,peer_median_pe,950.31,950.31 >= upper bound 500.0
+2026-10-14,Meesho,2025-12-10,peer_median_pe,599.57,599.57 >= upper bound 500.0
+2026-10-14,Bharat Coking Coal,2026-01-19,debt_equity,200.0,200.0 >= upper bound 50.0
+2026-10-14,Amagi Media Labs,2026-01-21,pe_ratio,603.43,603.43 >= upper bound 500.0
+2026-10-14,Amagi Media Labs,2026-01-21,debt_equity,200.0,200.0 >= upper bound 50.0
+2026-10-14,Clean Max Enviro Energy Solutions,2026-03-02,pe_ratio,542.78,542.78 >= upper bound 500.0
+2026-10-14,Central Mine Planning & Design Institute,2026-03-30,debt_equity,200.0,200.0 >= upper bound 50.0

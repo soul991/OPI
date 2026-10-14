@@ -59,6 +59,26 @@ def prep(df, cat_levels=None):
     X["gmp_x_sub"] = X["gmp_pct"] * np.log1p(X["sub_total"].clip(lower=0))
     return X, levels
 
+class PlattCalibrator:
+    """Wraps a base classifier + Platt sigmoid (LogisticRegression) for calibrated probabilities."""
+    def __init__(self, base_clf, platt_model):
+        self.base_clf = base_clf
+        self.platt = platt_model
+        if hasattr(base_clf, "classes_"):
+            self.classes_ = base_clf.classes_
+        else:
+            self.classes_ = np.array([0, 1])
+
+    def predict_proba(self, X):
+        raw_p = self.base_clf.predict_proba(X)[:, 1]
+        raw_p_clipped = np.clip(raw_p, 1e-8, 1 - 1e-8)
+        logits = np.log(raw_p_clipped / (1 - raw_p_clipped))
+        cal_p = self.platt.predict_proba(logits.reshape(-1, 1))[:, 1]
+        return np.column_stack([1 - cal_p, cal_p])
+
+    def predict(self, X):
+        return (self.predict_proba(X)[:, 1] > 0.5).astype(int)
+
 def main(path="data/ipo_master.csv"):
     if not os.path.exists(path):
         print(f"Error: dataset file '{path}' not found.")

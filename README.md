@@ -82,6 +82,45 @@ python3 model/evaluate_holdout.py data/ipo_holdout_test.csv
 python3 model/predict.py new_ipo.csv
 ```
 
+### 6. Phase 4: Honest Testing, Calibration & Forward Prediction Pipeline
+```bash
+# 1. Chronological 3-way split (Train < Jun 2025, Val Jun 2025 - May 2026, Frozen Test >= Jun 2026)
+python3 scripts/phase4_split.py
+
+# 2. Sector taxonomy refinement (splits Industrial & Manufacturing catch-all into 8 specific categories)
+python3 scripts/phase4_fix_sectors.py
+
+# 3. Fundamentals coverage audit and 30-row spot-check
+python3 scripts/phase4_fill_fundamentals.py
+
+# 4. Phase 4 full training, Platt calibration, GMP comparison & frozen test evaluation
+python3 scripts/phase4_train_evaluate.py
+
+# 5. Log forward predictions for upcoming IPOs (append-only)
+python3 scripts/log_prediction.py new_ipo.csv
+
+# 6. Reconcile actual listing day returns post-listing
+python3 scripts/update_actuals.py
+```
+
+---
+
+## Data Sources and Licensing
+
+This project utilizes historical IPO data, grey market premium (GMP) records, and index data sourced from:
+- **National Stock Exchange of India (NSE) & Bombay Stock Exchange (BSE)**: Historical listing open prices, issue prices, and category-wise subscription bids.
+- **Moneycontrol & Chittorgarh**: Mainline IPO prospectus details, anchor book details, and daily dealer GMP tracking.
+- **Samip BSE/NSE Archive**: Historical 2010–2020 Mainboard public issue dataset.
+- **Yahoo Finance (`yfinance`)**: Historical Nifty 50 and India VIX daily closing series.
+
+**Licensing & Redistribution Note**:
+Due to third-party website terms of use (Moneycontrol, Chittorgarh), raw scraped files residing in `data/raw/` are excluded from version control (`.gitignore`). Anyone cloning this repository can reconstitute the full master dataset deterministically by running:
+```bash
+python3 scripts/download_all_raw_data.py
+python3 scripts/build_clean_master.py
+```
+Purified and standardized feature matrices (`data/ipo_master.csv`, `data/ipo_train.csv`, `data/ipo_val.csv`, `data/ipo_final_test.csv`) are provided under the project's educational and non-commercial research license.
+
 ---
 
 ## AI Agent Rules & Phase Reporting
