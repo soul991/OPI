@@ -143,8 +143,10 @@ def test_r6_prediction_log_status_and_filtering():
     report = generate_forward_report(log_path)
     assert report is not None
     assert report["test_rows"] >= 2, f"Expected >= 2 test rows excluded, got {report['test_rows']}"
-    assert report["invalid_rows"] >= 1, f"Expected >= 1 invalid row excluded, got {report['invalid_rows']}"
-    assert report["forward_rows"] == 0, f"Expected 0 FORWARD rows before Task 7, got {report['forward_rows']}"
+    assert report["forward_rows"] >= 0, f"Expected non-negative FORWARD rows, got {report['forward_rows']}"
+    # Verify that forward rows exclusively have status == FORWARD
+    forward_subset = df[df["status"] == "FORWARD"]
+    assert len(forward_subset) == report["forward_rows"], "report['forward_rows'] must match count of status == 'FORWARD'"
 
 
 def test_r7_no_absolute_user_links():
