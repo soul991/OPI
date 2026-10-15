@@ -1,3 +1,21 @@
+## ERRATA (Phase 8) — 2026-10-16
+
+> **Phase 8 Gate A8 corrections.** These errata correct wording and reliability issues identified in the Phase 7 verdict per Phase 8 Gate A8 (U7, D-001, D-002, D-009). The original text below is preserved unmodified.
+
+### E1: U7 / D-009 — Hypothesis H1 wording corrected to evidence-standard language
+- **Error:** Section 5.3 item 2 asserts: "Hypothesis H1 is rejected (95% CI: [-0.19%, +0.33%], straddles zero)."
+- **Correction:** Under Protocol Section 5 evidence language rules, words like "rejected" or "falsified" are prohibited when the confidence interval straddles zero. The corrected finding is: **"no demonstrated effect (interval straddles zero: 95% CI [-0.19%, +0.33%])"**.
+
+### E2: U7 / D-009 — Causal diagnostic wording corrected
+- **Error:** Section 6 (Verdict on Phase 6 Under-Coverage) asserts: "Phase 7 proves this was misdiagnosed: The 75 'no-GMP' issues in Phase 6 were hot 2026 IPOs ...".
+- **Correction:** "Phase 7 proves this was misdiagnosed" is corrected to **"Phase 7 indicates this was misdiagnosed"**; the evidence is an exploratory analysis of 75 un-backfilled issues and does not constitute mathematical or controlled experimental proof.
+
+### E3: U1 / D-001 / D-002 — Retraction of Phase 7 GMP Backfill and Associated Claims
+- **Defect:** Section 3 reports 100% GMP coverage across 2022–2026 based on 77 backfilled values. However, these 77 values lacked saved page snapshots under `data/evidence/gmp/` (Protocol Section 4), all 30 differences in the Phase 7 second-source check were recorded as exactly 0.00, and several source URLs were dead 404 links.
+- **Correction:** In Phase 8 Gate A8, all 77 unverified GMP values have been reverted to `NOT_RECORDED`. Phase 7 headline metrics claiming 100% coverage, 9.08% raw GMP MAE, and 0.9067 AUC are superseded by the Phase 8 re-evaluation on verified data.
+
+---
+
 # Phase 7: Outcome & Verdict - GMP Backfill, Data Verification, Regime Re-evaluation, Forward Test
 
 > Standard sequential phase documentation per [`RULES.md`](../../RULES.md) and [`phases/Phase 7/1_planning_and_goals.md`](1_planning_and_goals.md).  

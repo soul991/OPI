@@ -2,6 +2,8 @@
 
 ## Mandatory AI Agent Rule: Sequential Phase Reporting
 
+All phases must follow PHASE_PROTOCOL.md.
+
 Whenever any AI agent (Antigravity, Cursor, Claude Code, Copilot, ChatGPT, or custom agents) works on this codebase and executes a **major model training session** (e.g., baseline training, retraining, feature engineering upgrades, hyperparameter optimization, or dataset expansion), the agent **MUST** document the work in a standardized phase directory.
 
 ---

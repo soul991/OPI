@@ -4,19 +4,19 @@ A machine learning framework to evaluate listing-day returns and success probabi
 
 ---
 
-## What the Evidence Shows (Phase 7 Walk-Forward Re-evaluation)
+## What the Evidence Shows (Post-Clean Walk-Forward Re-evaluation)
 
 The model was evaluated using a strict expanding walk-forward protocol across 20 quarters (2022Q1 to 2026Q4) on 398 matched, out-of-sample Mainboard IPOs. All statistical comparisons use paired bootstrap 95% confidence intervals (2,000 resamples, fixed seed = 42).
 
 ### 1. Where the Model Helps
-- **Versus Historical Mean Baseline**: When evaluating purely pre-market public issue features (subscription, issue size, valuation, market momentum) without GMP, the Model achieves an MAE of 15.63%, beating the expanding mean baseline (19.88%) by **-4.25% MAE (95% CI: [-5.98%, -2.57%], excludes zero)**.
-- **Classification / Directional Screening**: The calibrated classifier achieves a ROC-AUC of **0.9067** and Brier score loss of **0.1218** for predicting listing gains > 10%.
-- **Fundamentals (ROE, PAT Margin, Debt/Equity)**: Incorporating pre-IPO accounting fundamentals showed **no demonstrated effect** over issue structure and subscription alone (MAE difference: +0.07%, 95% CI: [-0.19%, +0.33%], straddles zero).
+- **Versus Historical Mean Baseline**: When evaluating purely pre-market public issue features (subscription, issue size, valuation, market momentum) without GMP, the Model achieves an MAE of 15.41%, beating the expanding mean baseline (19.88%) by **-4.47% MAE (95% CI: [-6.16%, -2.78%], excludes zero)**. Incorporating all features without fundamentals, the model achieves an MAE of 11.58% across all 398 out-of-sample issues, beating baseline by **-8.30% MAE (95% CI: [-9.78%, -6.85%])**.
+- **Classification / Directional Screening**: The calibrated classifier achieves a ROC-AUC of **0.8884**, Brier score loss of **0.1357**, and Equal-Frequency ECE of **0.0789** for predicting listing gains > 10%.
+- **Fundamentals (ROE, PAT Margin, Debt/Equity)**: Incorporating pre-IPO accounting fundamentals showed **no demonstrated effect** over issue structure and subscription alone (MAE difference: +0.08%, 95% CI: [-0.16%, +0.33%], straddles zero).
 
 ### 2. Where Raw GMP is the Better Signal
-- **Grey Market Dominance**: For all 398 evaluated IPOs with observed pre-listing grey market quotes, **Raw GMP is the superior point estimator**, achieving an MAE of **9.08%**.
-- **Model vs. Raw GMP**: The standalone ML model incorporating GMP has higher error than Raw GMP alone (+1.83% MAE, 95% CI: [+0.22%, +3.11%]), showing **no demonstrated advantage over Raw GMP**.
-- **Blend vs. Raw GMP**: An adaptive blend of Model + GMP achieves an MAE of 9.15%, demonstrating **no statistically significant difference over Raw GMP** (difference: +0.07% MAE, 95% CI: [-0.06%, +0.19%], straddles zero).
+- **Grey Market Dominance**: Across the 321 evaluated IPOs with verified observed pre-listing grey market quotes, **Raw GMP is the superior point estimator**, achieving an MAE of **8.86%**.
+- **Model vs. Raw GMP**: The standalone ML model incorporating GMP has higher error than Raw GMP alone (+2.62% MAE, 95% CI: [+1.47%, +3.76%]), showing **no demonstrated advantage over Raw GMP** (in fact, hurting point accuracy).
+- **Blend vs. Raw GMP**: An adaptive blend of Model + GMP achieves an MAE of 8.90%, demonstrating **no statistically significant difference over Raw GMP** (difference: +0.04% MAE, 95% CI: [-0.06%, +0.15%], straddles zero).
 - **Practical Rule**: Whenever a dated pre-listing GMP quote is observed, **Raw GMP is the primary signal; the ML model provides contextual bounding only**.
 
 ### 3. Known Weaknesses & Failure Modes
@@ -25,9 +25,15 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - **Probability Reliability Warning**: Do not treat predicted probabilities above approximately **0.85** or below approximately **0.10** as certainty. Empirical binomial Wilson intervals show wide dispersion in extreme bins.
 
 ### 4. Forward Test Status
-- Genuine FORWARD predictions logged: **1** (`HD Fire Protect Limited`, listing scheduled for 2026-10-21).
+- Genuine FORWARD predictions logged: **1** (`HD Fire Protect Limited`, scored post-close with final features, listing scheduled for 2026-10-21).
 - Genuine FORWARD listings completed: **0**.
 - Status: **Provisional, no performance claims permitted below n = 30** (per pre-registered rules).
+
+### 5. Known Limitations
+- **D-006 (Accounting Fundamentals Completeness)**: Fundamentals columns `roce` and `revenue_growth_pct` are 0% filled; `pe_ratio`/`peer_median_pe` are ~61-62% filled. All fundamental ratios are aggregator-sourced (medium confidence). Pre-IPO accounting fundamentals showed no demonstrated effect in Phase 6/7 evaluations ($\Delta\text{MAE} = +0.08\%$, 95% CI: [-0.16%, +0.33%]); line closed as `ACCEPTED`.
+- **D-010 (Historical GMP Availability)**: GMP quotes are unrecorded for 304 of 333 pre-2022 issues (2010–2021). The model is historically trained largely without GMP and evaluated with verified GMP quotes primarily from 2022 onward; line closed as `ACCEPTED`.
+- **D-011 (Sector Distribution)**: The broad classification "Industrial & Manufacturing" represents 137 of 731 issues (18.74%). While the largest category, it does not dominate the dataset; line closed as `ACCEPTED`.
+- **D-012 (Capital Markets Dry Spell 2012–2014)**: Years 2012–2014 contain very few mainboard IPOs (2012: 11, 2013: 3, 2014: 5). Verified against NSE/BSE official listing notices and Chittorgarh archives as reflecting historical market stagnation; line closed as `ACCEPTED`.
 
 *Disclaimer: This system is a quantitative decision aid and research benchmark only. It does not constitute financial, investment, or trading advice.*
 
@@ -36,8 +42,8 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 ## Dataset & Structure
 
 - **Cleaned Dataset**: 731 Mainboard IPO records (2010 to 2026) in `data/ipo_master.csv`, 100% compliant with audit rules (0 FPOs, 0 unverified duplicates, 0 date-order violations).
-- **GMP Coverage**: 100% verified dated pre-listing GMP coverage for 2026Q3 (62/62) and 2026Q4 (10/10) with source URLs and last bidding day timestamps in `data/gmp_sourced.csv`.
-- **Registry of Excluded Rows**: Full provenance in `data/excluded_rows.csv` and corrections log in `phases/Phase 7/data_corrections.csv`.
+- **GMP Evidence Standard**: 321 verified historical GMP quotes in `data/ipo_master.csv`. All 77 unverified Phase 7 backfill rows lacking evidence snapshots were reverted to `NOT_RECORDED` per Protocol Section 4 and D-001/D-002.
+- **Registry of Excluded Rows**: Full provenance in `data/excluded_rows.csv` and corrections log in `phases/Phase 8/data_corrections.csv`.
 
 ```
 OPI/
