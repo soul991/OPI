@@ -52,6 +52,7 @@ def audit(master_path):
         "GAIN_INCONSISTENT": 0,
         "MISSING_ISSUE_PRICE": 0,
         "EXCLUDED_ROW_PRESENT": 0,
+        "GMP_STATUS_INVALID": 0,
     }
 
     # Check: excluded rows should NOT be in the master
@@ -109,6 +110,21 @@ def audit(master_path):
     for _, r in missing_ip.iterrows():
         violations.append(f"MISSING_ISSUE_PRICE: '{r['company']}' issue_price={r.get('issue_price', 'NaN')}")
         flags_summary["MISSING_ISSUE_PRICE"] += 1
+
+    # Check: gmp_status validity
+    if "gmp_status" in df.columns:
+        valid_statuses = {"OBSERVED", "NOT_RECORDED", "CONFIRMED_UNAVAILABLE"}
+        for _, r in df.iterrows():
+            st = str(r["gmp_status"]).strip().upper()
+            if st not in valid_statuses:
+                violations.append(f"GMP_STATUS_INVALID: '{r['company']}' has unknown gmp_status '{r['gmp_status']}'")
+                flags_summary["GMP_STATUS_INVALID"] += 1
+            elif st == "OBSERVED" and (pd.isna(r["gmp_pct"]) or str(r["gmp_pct"]).strip() == ""):
+                violations.append(f"GMP_STATUS_INVALID: '{r['company']}' status is OBSERVED but gmp_pct is missing")
+                flags_summary["GMP_STATUS_INVALID"] += 1
+            elif st == "CONFIRMED_UNAVAILABLE" and (pd.notna(r["gmp_pct"]) and str(r["gmp_pct"]).strip() != ""):
+                violations.append(f"GMP_STATUS_INVALID: '{r['company']}' status is CONFIRMED_UNAVAILABLE but gmp_pct is populated")
+                flags_summary["GMP_STATUS_INVALID"] += 1
 
     # Print report
     print("=" * 78)

@@ -1,3 +1,33 @@
+## ERRATA (Phase 7) — 2026-10-15
+
+> **Phase 7 Gate A7 corrections.** These errata correct errors identified in the Phase 6 verdict per Phase 7 Gate A7 (T1 and T3). The original text below is preserved unmodified.
+
+### E1: T1 — Phase 6 Workstream D status corrected to NOT DONE
+- **Error:** Section 7 presents a GMP coverage table as if Workstream D had been performed, while 2026Q3 has GMP for only 5 of 62 IPOs (8.1%) and 2026Q4 for 0 of 10. The text in Section 7 claims this collapse was "due to dealer aggregation delays".
+- **Correction:** Workstream D in Phase 6 is marked **NOT DONE** (reporting a gap does not constitute collecting data). The causal claim "due to dealer aggregation delays" is labeled **"Hypothesis (untested)"** as no empirical evidence supports it. The actual data backfill is executed in Phase 7 Workstream A.
+
+### E2: T3 — Overclaim "Raw GMP is unbeatable" corrected
+- **Error:** Section 10.2 claims "Raw GMP is Unbeatable When Available".
+- **Correction:** Corrected wording: **"No demonstrated advantage over raw GMP"**. The paired bootstrap 95% confidence intervals for Model (With GMP) vs Raw GMP (`[-0.1321%, +3.5142%]`) and Blend vs Raw GMP (`[-0.0416%, +0.1611%]`) both straddle zero.
+
+### E3: T3 — Conformal calibration overclaim corrected
+- **Error:** Section 10.4 claims "Conformal Intervals Provide Calibrated Uncertainty".
+- **Correction:** Split-conformal intervals failed the nominal 80% ± 5% coverage target on two key sub-cohorts: empirical coverage was only **59.7%** on unquoted issues without GMP ($n=77$) and **60.0%** on the top 10% largest pops ($n=40$). Aggregate 87.4% pooled coverage masked severe under-coverage in cold and extreme tail regimes.
+
+### E4: T3 — Non-GMP operational utility claim confounded
+- **Error:** Section 10.3 claims "OPI Adds Statistically Significant Value in Non-GMP Regimes ... This is the true operational utility of the system."
+- **Correction:** The "no-GMP" subset ($n=77$) was heavily confounded: 67 of the 77 issues were from recent 2026 quarters (62 in 2026Q3 and 10 in 2026H2/Q4) where GMP was simply missing / unrecorded due to lack of collection, not confirmed unavailable in the market. Conclusions about true operational utility in genuine non-GMP regimes cannot be made until unrecorded data is backfilled and separated from confirmed unavailable issues.
+
+### E5: T3 — Untested causal explanations labeled
+- **Error:** Section 10.1 asserts as fact: "Pre-IPO accounting ratios are already priced into the issue band by book-running lead managers; day-1 listing pops are driven by retail/HNI liquidity and float constraints."
+- **Correction:** This statement is labeled **"Hypothesis (untested)"**. Phase 6 proved only that fundamentals had no demonstrated effect ($\Delta\text{MAE} = +0.1799\%$, CI straddling zero), but did not test lead-manager pricing mechanisms or retail liquidity dynamics.
+
+### E6: T3 — Mukka Proteins demand vs gain conflation corrected
+- **Error:** Section 10 Failure Mode 1 states: "Mukka Proteins +50.9% vs +321.4% demand squeeze".
+- **Correction:** Corrected wording: Mukka Proteins had an issue price of ₹28, listed at ₹42.25 (+50.89% gain); the figure 321.4% was an unverified demand/GMP metric conflated with actual listing return.
+
+---
+
 # Phase 6: Outcome & Verdict - Data Integrity, Calibration Audit, Conformal Intervals, Forward Logging
 
 > Standard sequential phase documentation per [`RULES.md`](../../RULES.md) and [`phases/Phase 6/1_planning_and_goals.md`](1_planning_and_goals.md).  

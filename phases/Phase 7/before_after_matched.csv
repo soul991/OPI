@@ -1,0 +1,11 @@
+metric,phase_5_matched,phase_6_matched,delta
+Evaluated Sample Size (n),398.0,398.0,0.0
+Evaluated Sample Size With GMP (n),321.0,321.0,0.0
+MAE: Historical Mean Baseline (%),19.78,19.88,0.11
+MAE: Model Without Fundamentals (%),11.5,11.39,-0.11
+MAE: Model With Fundamentals (%),11.71,11.57,-0.14
+MAE: Raw GMP (on GMP subset) (%),9.48,9.48,0.0
+MAE: Blend (on GMP subset) (%),9.48,9.53,0.05
+ROC AUC (Classification),0.8947,0.887,-0.0077
+Equal-Frequency ECE,0.0977,0.0901,-0.0076
+Brier Score Loss,0.1282,0.1369,0.0087

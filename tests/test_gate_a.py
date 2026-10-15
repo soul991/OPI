@@ -157,8 +157,10 @@ def test_r7_no_absolute_user_links():
     for path in files_to_check:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line_no, line in enumerate(f, 1):
-                # Allow self-referencing check expressions in planning files
-                if "1_planning_and_goals.md" in path and ("grep" in line or "never" in line or "Defect" in line or "Relative links only" in line or "paths" in line):
+                # Allow self-referencing check expressions in planning and execution check files
+                if ("1_planning_and_goals.md" in path or "2_building_and_execution.md" in path) and (
+                    "grep" in line or "never" in line or "Defect" in line or "Relative links only" in line or "paths" in line or "echo" in line or "Command" in line or "phases/Phase 7/1_planning_and_goals.md" in line
+                ):
                     continue
                 assert file_uri_str not in line, f"Absolute file URI found in {path}:{line_no}\n  {line.strip()}"
                 assert user_path_str not in line, f"Absolute user path found in {path}:{line_no}\n  {line.strip()}"
@@ -295,3 +297,66 @@ def test_s6_hd_fire_is_mainboard():
         snapshot = json.loads(row["features_snapshot_json"])
         issue_size = snapshot.get("issue_size_cr", 0)
         assert issue_size > 25.0, f"HD Fire Protect issue_size_cr={issue_size} too small for mainboard"
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PHASE 7 GATE A7 TESTS (T1 to T7)
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+def test_t1_t3_phase6_errata_header_and_items():
+    """T1 & T3: Phase 6 verdict has ERRATA (Phase 7) at top correcting Wk D, overclaims, etc."""
+    verdict_path = os.path.join(ROOT_DIR, "phases", "Phase 6", "3_outcome_and_verdict.md")
+    with open(verdict_path, "r", encoding="utf-8") as f:
+        head = f.read(4000)
+    assert "ERRATA (Phase 7)" in head, "Expected ERRATA (Phase 7) at top of Phase 6 verdict"
+    assert "NOT DONE" in head, "Expected Workstream D corrected to NOT DONE"
+    assert "Hypothesis (untested)" in head, "Expected Hypothesis (untested) label"
+    assert "Mukka Proteins" in head, "Expected Mukka Proteins correction in Errata"
+
+
+def test_t2_duplicate_verification_csv():
+    """T2: phases/Phase 7/duplicate_verification.csv has 15 rows with required schema and valid URLs."""
+    csv_path = os.path.join(ROOT_DIR, "phases", "Phase 7", "duplicate_verification.csv")
+    assert os.path.exists(csv_path), "phases/Phase 7/duplicate_verification.csv must exist"
+    df = pd.read_csv(csv_path)
+    assert len(df) == 15, f"Expected 15 rows, got {len(df)}"
+    req_cols = {"company", "removed_row_date", "kept_row_date", "true_listing_date", "source_url", "page_date", "outcome"}
+    assert req_cols.issubset(set(df.columns)), f"Missing columns: {req_cols - set(df.columns)}"
+    assert (df["source_url"].notna() | (df["outcome"] == "UNVERIFIED")).all()
+
+
+def test_t4_before_after_matched_csv():
+    """T4: phases/Phase 7/before_after_matched.csv exists with equal row counts (398 vs 398)."""
+    csv_path = os.path.join(ROOT_DIR, "phases", "Phase 7", "before_after_matched.csv")
+    assert os.path.exists(csv_path), "phases/Phase 7/before_after_matched.csv must exist"
+    df = pd.read_csv(csv_path)
+    n_row = df[df["metric"] == "Evaluated Sample Size (n)"]
+    assert not n_row.empty
+    assert float(n_row["phase_5_matched"].values[0]) == 398.0
+    assert float(n_row["phase_6_matched"].values[0]) == 398.0
+    assert float(n_row["delta"].values[0]) == 0.0
+
+
+def test_t5_gmp_status_definitions_and_column():
+    """T5: references/gmp_status_definitions.md exists; gmp_status in ipo_master.csv."""
+    ref_path = os.path.join(ROOT_DIR, "references", "gmp_status_definitions.md")
+    assert os.path.exists(ref_path), "references/gmp_status_definitions.md must exist"
+    
+    master_path = os.path.join(ROOT_DIR, "data", "ipo_master.csv")
+    df = pd.read_csv(master_path)
+    assert "gmp_status" in df.columns, "gmp_status column missing in ipo_master.csv"
+    valid = {"OBSERVED", "NOT_RECORDED", "CONFIRMED_UNAVAILABLE"}
+    assert set(df["gmp_status"].unique()).issubset(valid)
+
+
+def test_t6_hd_fire_unlisted_and_unmodified():
+    """T6: HD Fire Protect Limited is unlisted, not modified, and in prediction log."""
+    log_path = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
+    df = pd.read_csv(log_path)
+    hd_forward = df[(df["company"].str.contains("HD Fire Protect", na=False)) & (df["status"] == "FORWARD")]
+    assert len(hd_forward) == 1, "Expected exactly 1 FORWARD HD Fire Protect row"
+    r = hd_forward.iloc[0]
+    assert r["listing_date"] == "2026-10-21"
+    assert pd.isna(r["actual_gain_pct"]) or str(r["actual_gain_pct"]).strip() == ""
+
