@@ -5,10 +5,10 @@ Usage:
     python model/predict.py [new_ipo.csv]
 
 Rules:
-    - If GMP is available: outputs expected return based on GMP, displays rule:
-      "GMP available: rely on GMP; model is context only"
-    - If GMP is not available: outputs model estimate with 80% conformal interval, displays rule:
-      "GMP not available: model estimate with interval"
+    - If GMP is observed: outputs expected return based on GMP, displays rule:
+      "GMP observed: GMP is the primary signal, model is context"
+    - If GMP is not available: outputs model estimate with regime-specific interval, displays rule:
+      "no GMP: model estimate with the regime-specific interval"
 """
 import os
 import sys
@@ -23,8 +23,9 @@ sys.path.insert(0, os.path.join(ROOT_DIR, "model"))
 
 from train import prep, FEATURES
 
-# Pre-registered pooled conformal 80% interval half-width from out-of-sample residuals
-CONFORMAL_HALF_WIDTH_80 = 23.20
+# Pre-registered regime conformal 80% interval half-width from out-of-sample residuals (Phase 7)
+CONFORMAL_HALF_WIDTH_OBS_80 = 23.13
+CONFORMAL_HALF_WIDTH_UNAVAIL_80 = 23.13  # Fallback when unavailable n < 40
 
 
 def load_model():
@@ -60,20 +61,22 @@ def predict_ipo(df, art):
 
         if has_gmp:
             gmp_val = float(raw_gmp)
-            lower_bound = gmp_val - CONFORMAL_HALF_WIDTH_80
-            upper_bound = gmp_val + CONFORMAL_HALF_WIDTH_80
-            print(f"Rule Applied            : GMP available: rely on GMP; model is context only")
+            lower_bound = gmp_val - CONFORMAL_HALF_WIDTH_OBS_80
+            upper_bound = gmp_val + CONFORMAL_HALF_WIDTH_OBS_80
+            print(f"Rule Applied            : GMP observed: GMP is the primary signal, model is context")
             print(f"Primary Expected Return : {gmp_val:+.2f}% (Raw GMP)")
             print(f"Model Point Estimate    : {gain_pred:+.2f}% (for context)")
-            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_80:.1f}%)")
+            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_OBS_80:.1f}%)")
         else:
-            lower_bound = gain_pred - CONFORMAL_HALF_WIDTH_80
-            upper_bound = gain_pred + CONFORMAL_HALF_WIDTH_80
-            print(f"Rule Applied            : GMP not available: model estimate with interval")
+            lower_bound = gain_pred - CONFORMAL_HALF_WIDTH_UNAVAIL_80
+            upper_bound = gain_pred + CONFORMAL_HALF_WIDTH_UNAVAIL_80
+            print(f"Rule Applied            : no GMP: model estimate with the regime-specific interval")
             print(f"Model Expected Return   : {gain_pred:+.2f}%")
-            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_80:.1f}%)")
+            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_UNAVAIL_80:.1f}%)")
+            print(f"Regime Note             : Insufficient historical unquoted issues (n < 40); interval uses pooled calibration.")
 
         print(f"Calibrated P(Gain > 10%): {prob_gt10*100:.1f}%")
+        print(f"Reliability Guidance    : Do not rely on probabilities above ~0.85 or below ~0.10 as certainty.")
 
         missing = [c for c in FEATURES if pd.isna(row.get(c)) or str(row.get(c)).strip() == ""]
         print(f"Missing Inputs ({len(missing)}): {', '.join(missing) if missing else 'None'}")
