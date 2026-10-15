@@ -1,0 +1,41 @@
+company,dataset_listing_date,dataset_issue_price,dataset_listing_price,dataset_sub_total,verified_listing_date,verified_issue_price,verified_listing_price,verified_sub_total,source_url,source_date,match_status,notes
+Wonderla Holidays,2014-09-05,125.0,160.0,38.06,2014-05-09,125.0,160.0,38.06,https://www.bseindia.com/markets/MarketInfo/DispNewNoticesCirculars.aspx?noticeid=20140508-20,2014-05-08,DISCREPANCY,Listing date in dataset had month/day transposed (09-05 vs 05-09); corrected to 2014-05-09
+Supriya Lifesci,2021-12-28,274.0,390.34,71.51,2021-12-28,274.0,390.34,71.51,https://www.chittorgarh.com/ipo/supriya-lifescience-ipo/1188/,2021-12-28,MATCH,All 4 fields verified
+Gujarat Pipavav Port,2010-09-09,48.0,56.1,19.94,2010-09-09,48.0,56.1,19.94,https://www.chittorgarh.com/ipo/gujarat-pipavav-port-ipo/373/,2010-09-09,MATCH,All 4 fields verified
+Aeroplane Basmati Rice,2026-04-02,212.0,200.0,3.23,2026-04-02,212.0,200.0,3.23,https://www.investorgain.com/ipo/aeroplane-basmati-rice-ipo/,2026-04-02,MATCH,All 4 fields verified
+Unimech Aerospace Manufacturing,2024-12-31,785.0,1491.0,128.02,2024-12-31,785.0,1491.0,128.02,https://www.investorgain.com/ipo/unimech-aerospace-manufacturing-ipo/,2024-12-31,MATCH,All 4 fields verified
+Prostarm Info Systems,2025-06-03,105.0,120.0,67.65,2025-06-03,105.0,120.0,67.65,https://www.investorgain.com/ipo/prostarm-info-systems-ipo/,2025-06-03,MATCH,All 4 fields verified
+Ravi Kumar Distilleries,2010-12-27,64.0,72.0,2.22,2010-12-27,64.0,72.0,2.22,https://www.chittorgarh.com/ipo/ravi-kumar-distilleries-ipo/395/,2010-12-27,MATCH,All 4 fields verified
+Suraksha Diagnostic,2024-12-06,441.0,438.0,1.17,2024-12-06,441.0,438.0,1.17,https://www.investorgain.com/ipo/suraksha-diagnostic-ipo/,2024-12-06,MATCH,All 4 fields verified
+Paramount Printpackaging,2011-05-09,35.0,36.5,3.92,2011-05-09,35.0,36.5,3.92,https://www.chittorgarh.com/ipo/paramount-printpackaging-ipo/409/,2011-05-09,MATCH,All 4 fields verified
+Lohia,2026-07-30,425.0,461.0,7.25,2026-07-30,425.0,461.0,7.25,https://www.investorgain.com/ipo/lohia-corp-ipo/,2026-07-30,MATCH,All 4 fields verified
+Hyundai Motor India,2024-10-22,1960.0,1934.0,1.93,2024-10-22,1960.0,1934.0,2.37,https://www.chittorgarh.com/ipo/hyundai-motor-india-ipo/1844/,2024-10-22,DISCREPANCY,Final consolidated subscription on NSE/BSE was 2.37x; dataset recorded pre-reconciliation 1.93x; corrected to 2.37
+Pg Electroplast,2011-09-26,210.0,215.0,1.34,2011-09-26,210.0,215.0,1.34,https://www.chittorgarh.com/ipo/pg-electroplast-ipo/431/,2011-09-26,MATCH,All 4 fields verified
+Manika Plastech,2026-09-21,43.0,43.0,28.14,2026-09-21,43.0,43.0,28.14,https://www.investorgain.com/ipo/manika-plastech-ipo/,2026-09-21,MATCH,All 4 fields verified
+Vms Industries,2011-06-14,40.0,43.95,1.36,2011-06-14,40.0,43.95,1.36,https://www.chittorgarh.com/ipo/vms-industries-ipo/417/,2011-06-14,MATCH,All 4 fields verified
+Future Supply Chain Solutions,2017-12-18,664.0,664.0,7.56,2017-12-18,664.0,664.0,7.56,https://www.chittorgarh.com/ipo/future-supply-chain-solutions-ipo/651/,2017-12-18,MATCH,All 4 fields verified
+Rbz Jewellers,2023-12-27,100.0,100.0,13.58,2023-12-27,100.0,100.0,13.58,https://www.chittorgarh.com/ipo/rbz-jewellers-ipo/1608/,2023-12-27,MATCH,All 4 fields verified
+Metropolis Healthcare,2019-04-15,880.0,958.0,5.83,2019-04-15,880.0,958.0,5.83,https://www.chittorgarh.com/ipo/metropolis-healthcare-ipo/721/,2019-04-15,MATCH,All 4 fields verified
+Likhitha Infrastructure,2020-10-15,120.0,130.0,9.51,2020-10-15,120.0,130.0,9.51,https://www.chittorgarh.com/ipo/likhitha-infrastructure-ipo/941/,2020-10-15,MATCH,All 4 fields verified
+Shah Investors Home,2026-10-06,167.0,171.0,38.12,2026-10-06,167.0,171.0,38.12,https://www.investorgain.com/ipo/shah-investors-home-ipo/,2026-10-06,MATCH,All 4 fields verified
+Gem Aromatics,2025-08-26,325.0,333.1,21.55,2025-08-26,325.0,333.1,21.55,https://www.investorgain.com/ipo/gem-aromatics-ipo/,2025-08-26,MATCH,All 4 fields verified
+Commercial Engineers Body Builders,2010-10-18,127.0,119.0,2.07,2010-10-18,127.0,119.0,2.07,https://www.chittorgarh.com/ipo/commercial-engineers-body-builders-ipo/383/,2010-10-18,MATCH,All 4 fields verified
+Astron Paper Board Mill,2017-12-29,50.0,115.0,241.75,2017-12-29,50.0,115.0,241.75,https://www.chittorgarh.com/ipo/astron-paper-and-board-mill-ipo/655/,2017-12-29,MATCH,All 4 fields verified
+Esds Software Solution,2026-09-04,429.0,757.0,135.88,2026-09-04,429.0,757.0,135.88,https://ipowatch.in/esds-software-solution-ipo-gmp-listing-date/,2026-09-04,MATCH,All 4 fields verified
+Advance Agrolife,2025-10-08,100.0,114.0,39.68,2025-10-08,100.0,114.0,39.68,https://www.investorgain.com/ipo/advance-agrolife-ipo/,2025-10-08,MATCH,All 4 fields verified
+Indigrid Invit Fund,2017-06-06,100.0,99.7,1.35,2017-06-06,100.0,99.7,1.35,https://www.chittorgarh.com/ipo/india-grid-trust-invit-ipo/617/,2017-06-06,MATCH,All 4 fields verified
+Pnc Infratech,2015-05-26,378.0,387.0,1.56,2015-05-26,378.0,387.0,1.56,https://www.chittorgarh.com/ipo/pnc-infratech-ipo/527/,2015-05-26,MATCH,All 4 fields verified
+Varroc Engineering,2018-07-06,967.0,1015.0,3.54,2018-07-06,967.0,1015.0,3.54,https://www.chittorgarh.com/ipo/varroc-engineering-ipo/685/,2018-07-06,MATCH,All 4 fields verified
+Fineotex Chemical,2011-03-11,72.0,80.0,1.57,2011-03-11,72.0,80.0,1.57,https://www.chittorgarh.com/ipo/fineotex-chemical-ipo/406/,2011-03-11,MATCH,All 4 fields verified
+Rushil Decor,2011-07-07,72.0,74.5,2.62,2011-07-07,72.0,74.5,2.62,https://www.chittorgarh.com/ipo/rushil-decor-ipo/420/,2011-07-07,MATCH,All 4 fields verified
+Ikio Lighting,2023-06-16,285.0,392.5,47.28,2023-06-16,285.0,392.5,47.28,https://www.chittorgarh.com/ipo/ikio-lighting-ipo/1442/,2023-06-16,MATCH,All 4 fields verified
+Tamilnad Mercantile Bank,2022-09-15,525.0,495.0,1.98,2022-09-15,525.0,495.0,1.98,https://www.chittorgarh.com/ipo/tamilnad-mercantile-bank-ipo/1301/,2022-09-15,MATCH,All 4 fields verified
+Repco Home Finance,2013-04-01,172.0,159.95,1.65,2013-04-01,172.0,159.95,1.65,https://www.chittorgarh.com/ipo/repco-home-finance-ipo/481/,2013-04-01,MATCH,All 4 fields verified
+Dharmaj Crop Guard,2022-12-08,237.0,266.05,26.69,2022-12-08,237.0,266.05,26.69,https://www.chittorgarh.com/ipo/dharmaj-crop-guard-ipo/1360/,2022-12-08,MATCH,All 4 fields verified
+Saraswati Saree Depot,2024-08-20,160.0,194.0,108.44,2024-08-20,160.0,194.0,108.44,https://www.chittorgarh.com/ipo/saraswati-saree-depot-ipo/1805/,2024-08-20,MATCH,All 4 fields verified
+Innoventive Industries,2011-05-13,120.0,111.95,1.24,2011-05-13,120.0,111.95,1.24,https://www.chittorgarh.com/ipo/innoventive-industries-ipo/410/,2011-05-13,MATCH,All 4 fields verified
+Abans Holdings,2022-12-23,270.0,270.0,1.08,2022-12-23,270.0,270.0,1.08,https://www.chittorgarh.com/ipo/abans-holdings-ipo/1368/,2022-12-23,MATCH,All 4 fields verified
+Muthoot Finance,2011-05-06,175.0,196.6,24.55,2011-05-06,175.0,196.6,24.55,https://www.chittorgarh.com/ipo/muthoot-finance-ipo/408/,2011-05-06,MATCH,All 4 fields verified
+Senores Pharmaceuticals,2024-12-30,391.0,600.0,54.02,2024-12-30,391.0,600.0,54.02,https://www.investorgain.com/ipo/senores-pharmaceuticals-ipo/,2024-12-30,MATCH,All 4 fields verified
+Pennar Engineered Building Systems,2015-09-10,178.0,177.95,1.15,2015-09-10,178.0,177.95,1.15,https://www.chittorgarh.com/ipo/pennar-engineered-building-systems-ipo/545/,2015-09-10,MATCH,All 4 fields verified
+Ivalue Infosolutions,2025-09-25,299.0,284.95,1.59,2025-09-25,299.0,284.95,1.59,https://www.investorgain.com/ipo/ivalue-infosolutions-ipo/,2025-09-25,MATCH,All 4 fields verified
