@@ -38,44 +38,32 @@ def load_model():
     raise FileNotFoundError("No trained model artifact found in model/")
 
 
-def predict_ipo(df, art):
-    reg = art.get("reg")
-    clf = art.get("cal_clf") or art.get("clf")
-    levels = art.get("levels")
+from opi.score import score_ipo, load_champion_model
 
+
+def predict_ipo(df, art=None):
     for idx, row in df.iterrows():
-        company = str(row.get("company", f"IPO_{idx+1}"))
-        one = pd.DataFrame([row])
-        X, _ = prep(one, levels)
-
-        gain_pred = float(reg.predict(X)[0])
-        probs = clf.predict_proba(X)[0]
-        prob_gt10 = float(probs[1]) if len(probs) > 1 else float(probs[0])
-
-        raw_gmp = row.get("gmp_pct")
-        has_gmp = pd.notna(raw_gmp) and str(raw_gmp).strip() != ""
+        scored = score_ipo(row, custom_artifact=art)
+        company = scored["company"]
+        has_gmp = scored["gmp_pct"] is not None
 
         print(f"\n{'='*78}")
         print(f"  PREDICTION FOR: {company}")
         print(f"{'='*78}")
 
         if has_gmp:
-            gmp_val = float(raw_gmp)
-            lower_bound = gmp_val - CONFORMAL_HALF_WIDTH_OBS_80
-            upper_bound = gmp_val + CONFORMAL_HALF_WIDTH_OBS_80
-            print(f"Rule Applied            : GMP observed: GMP is the primary signal, model is context")
+            gmp_val = scored["gmp_pct"]
+            print(f"Rule Applied            : {scored['rule_applied']}")
             print(f"Primary Expected Return : {gmp_val:+.2f}% (Raw GMP)")
-            print(f"Model Point Estimate    : {gain_pred:+.2f}% (for context)")
-            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_OBS_80:.1f}%)")
+            print(f"Model Point Estimate    : {scored['predicted_gain_pct']:+.2f}% (for context)")
+            print(f"80% Conformal Interval  : [{scored['conformal_interval_80'][0]:+.2f}%, {scored['conformal_interval_80'][1]:+.2f}%] (width: {2*scored['conformal_half_width_80']:.1f}%)")
         else:
-            lower_bound = gain_pred - CONFORMAL_HALF_WIDTH_UNAVAIL_80
-            upper_bound = gain_pred + CONFORMAL_HALF_WIDTH_UNAVAIL_80
-            print(f"Rule Applied            : no GMP: model estimate with the regime-specific interval")
-            print(f"Model Expected Return   : {gain_pred:+.2f}%")
-            print(f"80% Conformal Interval  : [{lower_bound:+.2f}%, {upper_bound:+.2f}%] (width: {2*CONFORMAL_HALF_WIDTH_UNAVAIL_80:.1f}%)")
+            print(f"Rule Applied            : {scored['rule_applied']}")
+            print(f"Model Expected Return   : {scored['predicted_gain_pct']:+.2f}%")
+            print(f"80% Conformal Interval  : [{scored['conformal_interval_80'][0]:+.2f}%, {scored['conformal_interval_80'][1]:+.2f}%] (width: {2*scored['conformal_half_width_80']:.1f}%)")
             print(f"Regime Note             : Insufficient historical unquoted issues (n < 40); interval uses pooled calibration.")
 
-        print(f"Calibrated P(Gain > 10%): {prob_gt10*100:.1f}%")
+        print(f"Calibrated P(Gain > 10%): {scored['prob_gt10']*100:.1f}%")
         print(f"Reliability Guidance    : Do not rely on probabilities above ~0.85 or below ~0.10 as certainty.")
 
         missing = [c for c in FEATURES if pd.isna(row.get(c)) or str(row.get(c)).strip() == ""]

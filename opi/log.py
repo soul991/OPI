@@ -1,0 +1,142 @@
+"""Append-only forward prediction log and outcome recording module."""
+
+import csv
+import json
+import os
+from datetime import datetime, date
+from pathlib import Path
+from typing import Dict, Any, Optional, Tuple
+import numpy as np
+import pandas as pd
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
+RUN_LOG_PATH = ROOT_DIR / "predictions" / "run_log.csv"
+
+LOG_COLUMNS = [
+    "scored_at",
+    "company",
+    "open_date",
+    "close_date",
+    "listing_date",
+    "features_snapshot_json",
+    "pred_gain_pct",
+    "pred_prob_gt10",
+    "gmp_pct_at_scoring",
+    "actual_gain_pct",
+    "status",
+    "notes"
+]
+
+EXCLUDE_FROM_SNAPSHOT = {"listing_price", "listing_gain_pct", "label_good"}
+
+
+def serialize_features_snapshot(features: Dict[str, Any], model_version: Optional[str] = None) -> str:
+    """Serialize feature inputs into auditable JSON, excluding outcome labels."""
+    clean = {}
+    if model_version:
+        clean["_model_version"] = model_version
+    for k, v in features.items():
+        if k in EXCLUDE_FROM_SNAPSHOT:
+            continue
+        if pd.isna(v) or v is None:
+            clean[k] = None
+        elif isinstance(v, (int, np.integer)):
+            clean[k] = int(v)
+        elif isinstance(v, (float, np.floating)):
+            clean[k] = round(float(v), 4)
+        else:
+            clean[k] = str(v)
+    return json.dumps(clean, ensure_ascii=False, sort_keys=True)
+
+
+def append_run_log(run_id: str, action: str, company: str, status: str, details: str = ""):
+    """Record operational execution status to predictions/run_log.csv."""
+    RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = RUN_LOG_PATH.exists()
+    with open(RUN_LOG_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["timestamp", "run_id", "action", "company", "status", "details"])
+        writer.writerow([datetime.now().isoformat(), run_id, action, company, status, details])
+
+
+def append_prediction_log(
+    company: str,
+    open_date: str,
+    close_date: str,
+    listing_date: str,
+    features: Dict[str, Any],
+    pred_gain_pct: float,
+    pred_prob_gt10: float,
+    gmp_pct_at_scoring: Optional[float],
+    status: str = "FORWARD",
+    notes: str = "",
+    model_version: Optional[str] = None,
+    scored_at: Optional[str] = None
+) -> Dict[str, Any]:
+    """Append a verified forward prediction row to predictions/prediction_log.csv (append-only)."""
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = LOG_PATH.exists()
+    
+    timestamp = scored_at or datetime.now().isoformat()
+    snapshot_json = serialize_features_snapshot(features, model_version)
+    
+    row_dict = {
+        "scored_at": timestamp,
+        "company": company,
+        "open_date": open_date,
+        "close_date": close_date,
+        "listing_date": listing_date,
+        "features_snapshot_json": snapshot_json,
+        "pred_gain_pct": round(float(pred_gain_pct), 2),
+        "pred_prob_gt10": round(float(pred_prob_gt10), 4),
+        "gmp_pct_at_scoring": round(float(gmp_pct_at_scoring), 2) if gmp_pct_at_scoring is not None else None,
+        "actual_gain_pct": None,
+        "status": status,
+        "notes": notes
+    }
+    
+    # Check for existing forward duplicate
+    if file_exists:
+        existing = pd.read_csv(LOG_PATH)
+        f_dup = existing[(existing["company"] == company) & (existing["listing_date"] == listing_date) & (existing["status"] == "FORWARD")]
+        if len(f_dup) > 0 and status == "FORWARD":
+            raise ValueError(f"Duplicate active FORWARD prediction already logged for {company} listing on {listing_date}")
+            
+    with open(LOG_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(LOG_COLUMNS)
+        writer.writerow([row_dict[col] for col in LOG_COLUMNS])
+        
+    return row_dict
+
+
+def update_actual_outcome(
+    company: str,
+    listing_date: str,
+    actual_listing_price: float,
+    issue_price: float,
+    source_url: str,
+    source_snapshot_path: Optional[str] = None
+) -> Tuple[bool, str]:
+    """Record actual listing outcome for a listed FORWARD row."""
+    if not LOG_PATH.exists():
+        return False, "prediction_log.csv does not exist"
+        
+    df = pd.read_csv(LOG_PATH)
+    mask = (df["company"] == company) & (df["listing_date"] == listing_date) & (df["status"] == "FORWARD")
+    
+    if mask.sum() == 0:
+        return False, f"No active FORWARD row found for {company} ({listing_date})"
+        
+    actual_gain = round(((actual_listing_price - issue_price) / issue_price) * 100.0, 2)
+    df.loc[mask, "actual_gain_pct"] = actual_gain
+    
+    old_notes = str(df.loc[mask, "notes"].iloc[0]) if pd.notna(df.loc[mask, "notes"].iloc[0]) else ""
+    evidence_note = f"Actual listing price Rs {actual_listing_price} verified via {source_url}"
+    df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")
+    
+    df.to_csv(LOG_PATH, index=False)
+    return True, f"Updated {company} actual gain to {actual_gain}%"

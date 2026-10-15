@@ -1,0 +1,24 @@
+{
+  "active_champion": "v4.0.0-champion",
+  "models": {
+    "v4.0.0-champion": {
+      "model_version": "v4.0.0-champion",
+      "artifact_path": "model/ipo_model_phase4.joblib",
+      "training_window": "2010-01-01 to 2021-12-31",
+      "created_at": "2026-10-15T00:00:00Z",
+      "champion": true,
+      "features": [
+        "issue_size_cr", "fresh_issue_pct", "ofs_pct", "lot_size",
+        "sub_qib", "sub_nii", "sub_retail", "sub_total",
+        "nifty_30d_return", "india_vix", "recent_ipo_avg_gain",
+        "sector", "exchange",
+        "sub_retail_vs_qib", "sub_hni_vs_retail", "log_issue_size", "is_high_vix",
+        "log_sub_total", "log_sub_qib", "log_sub_nii", "log_sub_retail", "qib_demand_share",
+        "gmp_pct", "gmp_vs_recent_avg", "gmp_x_sub"
+      ],
+      "calibration": "platt_logistic",
+      "conformal_half_width_80": 23.13,
+      "description": "Production HistGradientBoostingRegressor + calibrated HistGradientBoostingClassifier trained on pre-2022 issues with Platt scaling"
+    }
+  }
+}
