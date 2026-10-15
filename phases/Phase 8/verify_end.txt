@@ -32,7 +32,7 @@
 [PASS] Phase 6: three required files                                              
 [PASS] Phase 7: three required files                                              
 [PASS] Phase 8: three required files                                              
-[PASS] defect register parsed                                                     14 defects, 1 open/partial
+[PASS] defect register parsed                                                     14 defects, 2 open/partial
 [PASS] every FIXED defect has an existing regression test                         
 [PASS] Phase 8 verdict 'None unfixed' consistent with defect register             
 [PASS] Phase 6: gate + preregistration committed before other work                
@@ -41,3 +41,4 @@
 [PASS] Phase 7 headline metrics recompute from raw predictions                    
 
 SUMMARY: 41 pass, 0 warn, 0 fail
+

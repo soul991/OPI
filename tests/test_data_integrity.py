@@ -65,3 +65,10 @@ def test_audit_samples_have_snapshots():
     
     df = pd.read_csv(recheck_path)
     assert len(df) >= 30, f"Expected at least 30 recheck rows, got {len(df)}"
+    
+    # Audit samples must accurately record MISMATCH rather than fabricated MATCH
+    samples = df[df["category"].str.contains("Sample", na=False)]
+    assert (samples["result"].str.contains("MISMATCH")).all(), (
+        "Phase 7 sample URLs must be accurately flagged as MISMATCH (wrong entity or 404)"
+    )
+

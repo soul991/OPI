@@ -25,10 +25,12 @@ def test_forward_rows_scored_after_bidding_closed():
     nonfinal = forward[forward["notes"].astype(str).str.contains(r"day\s*[12]\b|live", case=False, regex=True)]
     assert len(nonfinal) == 0, f"Found FORWARD rows with nonfinal/live subscription: {nonfinal['company'].tolist()}"
 
-    # Feature snapshot must contain http URLs
+    # Feature snapshot must contain http URLs and model_version
     for _, row in forward.iterrows():
         snap = str(row["features_snapshot_json"])
         assert "http" in snap, f"Features snapshot for {row['company']} missing http URLs: {snap}"
+        assert "_model_version" in snap, f"Features snapshot for {row['company']} missing _model_version: {snap}"
+
 
 
 def test_actuals_only_for_listed():

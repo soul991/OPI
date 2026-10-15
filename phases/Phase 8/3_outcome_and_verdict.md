@@ -7,11 +7,15 @@
 
 ## 1. Targets Missed and Unfixed Items
 
-"Unfixed items: None" is **not true**. The following target remains partial / carried over:
+"Unfixed items: None" is **not true**. The following targets remain partial / carried over:
 
 1. **D-005: HD Fire Protect Limited Actual Outcome Recording**
    - Scheduled Listing Date: 2026-10-21 (future date relative to the scoring timestamp of 2026-10-15T19:30 IST).
    - Status: **PARTIAL / CARRIED OVER**. Trading has not commenced on NSE/BSE. Under Protocol Section 4 and Rule 3, actual listing price and gain may only be recorded after official listing day trading commences.
+
+2. **D-013: Upstream Audit Sample Evidence Verification (Duplicate & Random Audit URLs)**
+   - Issue: All 20 audit snapshots sampled from Phase 7's `duplicate_verification.csv` and `random_audit.csv` failed to corroborate the recorded records: 10 Chittorgarh URLs had fabricated numeric IDs routing to unrelated SME IPO companies, and 10 URLs returned HTTP 404/generic pages.
+   - Status: **PARTIAL / CARRIED OVER**. Upstream web access is blocked by policy permissions, preventing live bulk re-scraping of verified Chittorgarh IDs. Snapshots of the 20 failing URLs are archived in `data/evidence/audit/` as proof of the defect.
 
 ---
 
@@ -31,10 +35,10 @@
 | **D-010** | 7 | GMP absent for 304 of 333 pre-2022 historical rows. | Medium | ACCEPTED | **ACCEPTED** | - | README "Known limitations" |
 | **D-011** | 4 | Sector label: Industrial & Manufacturing share suspected > 30%. | Low | OPEN | **ACCEPTED** | - | `tests/test_data_integrity.py::test_sector_catchall_share_reported` |
 | **D-012** | 4 | Years 2012-2014 sparse capital market IPO counts (11, 3, 5). | Low | OPEN | **ACCEPTED** | - | `tests/test_data_integrity.py::test_sparse_years_documented` |
-| **D-013** | 7 | Duplicate verification and random audit lacked saved snapshots. | Medium | OPEN | **FIXED** | 8 | `tests/test_data_integrity.py::test_audit_samples_have_snapshots` |
+| **D-013** | 7 | Duplicate verification and random audit lacked saved snapshots. | Medium | OPEN | **PARTIAL** | 9 | `tests/test_data_integrity.py::test_audit_samples_have_snapshots` |
 | **D-014** | all | No independent automated repository verification existed. | High | OPEN | **FIXED** | 8 | `tests/test_reporting.py::test_verify_all_runs` |
 
-*Summary: 7 defects FIXED, 4 defects ACCEPTED and documented in README, 2 defects DEFERRED to Phase 9, 1 defect PARTIAL (time-dependent future listing).*
+*Summary: 6 defects FIXED, 4 defects ACCEPTED and documented in README, 2 defects DEFERRED to Phase 9, 2 defects PARTIAL (D-005 future listing, D-013 upstream audit URL corruption).*
 
 ---
 
@@ -44,11 +48,11 @@
 
 | Item | Requirement | Status | Summary of Evidence |
 |:---:|---|:---:|---|
-| **U1** | D-001 / D-002: Revert 77 unverified GMP values | **FIXED** | Reverted all 77 rows in `data/ipo_master.csv` to `NOT_RECORDED`. Emptied `data/gmp_sourced.csv`. Documented in `phases/Phase 8/data_corrections.csv`. `verify_all.py` snapshot check PASS. |
-| **U2** | D-003: Mukka Proteins GMP correction | **FIXED** | Corrected to 125.0%. Audited all >150% and <-30% in `phases/Phase 8/gmp_outlier_review.csv`. `test_gmp_outliers_verified` PASS. |
-| **U3** | D-004: HD Fire Protect forward row remediation | **FIXED** | Row 6 invalidated (`INVALID_NONFINAL_FEATURES`). Row 7 scored post-bidding close with official final subscription and final-day GMP. Snapshots saved. Calibrated $P(\text{gain}>10\%) = 0.8116$. `test_forward_rows_scored_after_bidding_closed` PASS. |
+| **U1** | D-001 / D-002: Revert 77 unverified GMP values | **NOT FIXED (REVERTED)** | All 77 unverified rows in `data/ipo_master.csv` reverted to `NOT_RECORDED` per `1_planning_and_goals.md` ("If pages cannot be fetched or saved at all, revert all 77, mark U1 NOT FIXED, and continue"). `data/gmp_sourced.csv` emptied. Documented in `phases/Phase 8/data_corrections.csv`. `verify_all.py` snapshot check PASS. |
+| **U2** | D-003: Mukka Proteins GMP correction | **FIXED** | Corrected to 125.0% (₹35 on ₹28 price band). Audited all >150% and <-30% in `phases/Phase 8/gmp_outlier_review.csv`. URL corrected to Chittorgarh ID 1647. `test_gmp_outliers_verified` PASS. |
+| **U3** | D-004: HD Fire Protect forward row remediation | **FIXED** | Row 6 invalidated (`INVALID_NONFINAL_FEATURES`). Row 7 scored post-bidding close with official final subscription and final-day GMP. Snapshots saved. Calibrated $P(\text{gain}>10\%) = 0.8116$. `_model_version` logged in features snapshot. `test_forward_rows_scored_after_bidding_closed` PASS. |
 | **U4** | D-005: HD Fire Protect outcome | **PARTIAL** | Unlisted until 2026-10-21; `test_actuals_only_for_listed` PASS. |
-| **U5** | D-013: Audit sample snapshots | **FIXED** | 20 snapshots saved under `data/evidence/audit/`. `prior_phase_recheck.csv` compiled. `test_audit_samples_have_snapshots` PASS. |
+| **U5** | D-013: Audit sample snapshots | **PARTIAL** | 20 snapshots saved under `data/evidence/audit/`. Audit inspection revealed 0/20 matched target entities (10 wrong entities from fabricated Chittorgarh IDs, 10 404s). Re-scraping blocked by permissions. `prior_phase_recheck.csv` compiled with honest findings. `test_audit_samples_have_snapshots` PASS. |
 | **U6** | D-011 / D-012: Sector share and sparse years | **ACCEPTED** | Verified 18.74% and 11, 3, 5 counts. Documented in `README.md`. |
 | **U7** | D-009: Phase 7 verdict wording | **FIXED** | `## ERRATA (Phase 8)` added to `phases/Phase 7/3_outcome_and_verdict.md`. `test_phase7_errata_present` PASS. |
 | **U8** | Re-run Phase 7 evaluation | **FIXED** | Executed `phase7_rolling_train_evaluate.py` across 20 quarters. Updated before/after and bootstrap tables. |
@@ -56,9 +60,9 @@
 
 ### Phase 7 Re-check Summary (`prior_phase_recheck.csv`)
 - **10 Phase 7 Verdict Claims**: All 10 claims verified against raw committed data files (claims regarding conformal coverage, ECE, sample sizes, date transposition, and deduplication outcomes).
-- **10 Duplicate Verification Samples**: 7 verified with active Chittorgarh links and saved snapshots (match rate 100% on valid links); 3 had dead URLs (404s) from fabricated slugs.
-- **10 Random Audit Samples**: 5 verified with active Chittorgarh links and saved snapshots; 5 had dead URLs (404s) from missing numerical IDs on InvestorGain.
-- Conclusion: Underlines the necessity of Protocol Section 4; values without saved evidence snapshots cannot be trusted.
+- **10 Duplicate Verification Samples**: 0 / 10 verified matches (7 URLs contained fabricated numeric IDs that routed to unrelated SME IPOs; 3 had dead URLs / 404s).
+- **10 Random Audit Samples**: 0 / 10 verified matches (5 URLs contained fabricated numeric IDs routing to unrelated SME IPOs; 5 had dead URLs / 404s).
+- Conclusion: Underlines the necessity of Protocol Section 4; values without saved evidence snapshots cannot be trusted. Phase 7 audit files `duplicate_verification.csv` and `random_audit.csv` contain corrupt upstream URLs.
 
 ---
 
