@@ -18,6 +18,11 @@ import pandas as pd
 import numpy as np
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+from opi.report import parse_defects_summary
+
 LOG_PATH = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
 
 
@@ -61,6 +66,8 @@ def generate_forward_report(log_path=LOG_PATH):
     if other_count > 0:
         print(f"Excluded Other Rows        : {other_count} (status unverified/unknown)")
     print(f"Genuine FORWARD Rows       : {n_forward} (status == 'FORWARD')")
+    defects = parse_defects_summary()
+    print(f"Tracked Defects Health     : {defects['TOTAL']} total ({defects['FIXED']} fixed, {defects['ACCEPTED']} accepted, {defects['DEFERRED']} deferred, {defects['OPEN'] + defects['PARTIAL']} open/partial)")
     print("-" * 78)
 
     if n_forward == 0:

@@ -27,7 +27,10 @@ def run_daily_forward_test(dry_run: bool = False):
     print(f"  OPI DAILY AUTOMATED FORWARD TEST [{run_id}] {'(DRY RUN)' if dry_run else ''}")
     print(f"{'='*78}")
 
-    append_run_log(run_id, "START", "ALL", "STARTED", f"dry_run={dry_run}")
+    if not dry_run:
+        append_run_log(run_id, "START", "ALL", "STARTED", f"dry_run={dry_run}")
+    else:
+        print(f"[DRY RUN] Operation started with run_id={run_id}")
 
     # 1. Candidate discovery
     # Check if new_ipo.csv exists and has a candidate
@@ -43,7 +46,8 @@ def run_daily_forward_test(dry_run: bool = False):
 
     if not candidate:
         print("No new IPO candidates found in new_ipo.csv.")
-        append_run_log(run_id, "DISCOVERY", "NONE", "SKIPPED_NO_CANDIDATES", "No rows in new_ipo.csv")
+        if not dry_run:
+            append_run_log(run_id, "DISCOVERY", "NONE", "SKIPPED_NO_CANDIDATES", "No rows in new_ipo.csv")
     else:
         company = str(candidate.get("company", "UNKNOWN"))
         close_date = str(candidate.get("close_date", ""))
@@ -65,14 +69,16 @@ def run_daily_forward_test(dry_run: bool = False):
             print(f"Validation FAILED for {company}:")
             for iss in timing_issues:
                 print(f"  - {iss}")
-            append_run_log(run_id, "VALIDATE", company, "SKIPPED_TIMING_RULE", "; ".join(timing_issues))
+            if not dry_run:
+                append_run_log(run_id, "VALIDATE", company, "SKIPPED_TIMING_RULE", "; ".join(timing_issues))
         else:
             feat_valid, feat_issues = validate_ipo_features(candidate)
             if not feat_valid:
                 print(f"Feature Validation FAILED for {company}:")
                 for iss in feat_issues:
                     print(f"  - {iss}")
-                append_run_log(run_id, "VALIDATE", company, "SKIPPED_FEATURE_RULE", "; ".join(feat_issues))
+                if not dry_run:
+                    append_run_log(run_id, "VALIDATE", company, "SKIPPED_FEATURE_RULE", "; ".join(feat_issues))
             else:
                 # Score candidate
                 scored = score_ipo(candidate)
@@ -106,7 +112,6 @@ def run_daily_forward_test(dry_run: bool = False):
                         append_run_log(run_id, "SCORE_AND_LOG", company, "ALREADY_LOGGED", str(dup_err))
                 else:
                     print("[DRY RUN] Prediction was computed but NOT logged to prediction_log.csv.")
-                    append_run_log(run_id, "SCORE_AND_LOG", company, "DRY_RUN_SUCCESS")
 
     # 2. Check for pending forward IPOs needing actuals
     log_path = ROOT_DIR / "predictions" / "prediction_log.csv"
@@ -123,10 +128,13 @@ def run_daily_forward_test(dry_run: bool = False):
             else:
                 print(f"{comp_name} scheduled to list on {l_date} > today ({today_date}) - unlisted, carried over.")
 
-    # 3. Regenerate dashboard
-    dashboard_path = render_dashboard_html()
-    print(f"\nDashboard updated at: {dashboard_path}")
-    append_run_log(run_id, "FINISH", "ALL", "SUCCESS")
+    # 3. Regenerate dashboard only if not in dry-run
+    if not dry_run:
+        dashboard_path = render_dashboard_html()
+        print(f"\nDashboard updated at: {dashboard_path}")
+        append_run_log(run_id, "FINISH", "ALL", "SUCCESS")
+    else:
+        print("[DRY RUN] Dashboard update skipped in dry-run mode.")
     print(f"{'='*78}\n")
 
 

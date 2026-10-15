@@ -1,5 +1,5 @@
 [PASS] no absolute/local paths in docs or code                                    
-[PASS] pytest suite passes                                                        39 passed in 3.83s
+[PASS] pytest suite passes                                                        42 passed in 12.98s
 [PASS] no duplicate (company, listing_date)                                       0 duplicates
 [PASS] listing_gain_pct matches prices                                            0 mismatches
 [PASS] label_good matches gain                                                    0 mismatches
@@ -41,4 +41,3 @@
 [PASS] Phase 7 headline metrics recompute from raw predictions                    
 
 SUMMARY: 41 pass, 0 warn, 0 fail
-

@@ -31,7 +31,9 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 sys.path.insert(0, os.path.join(ROOT_DIR, "model"))
 
-from train import prep, FEATURES, ALL_NUM, CAT
+from opi.score import score_ipo, load_champion_model
+from opi.log import append_prediction_log, serialize_features_snapshot
+from train import FEATURES, ALL_NUM, CAT
 
 LOG_PATH = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
 LOG_COLUMNS = [
@@ -115,48 +117,19 @@ def append_prediction_row(record, log_file=LOG_PATH):
 
 
 def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH, status="FORWARD"):
-    """Score all rows in df and append to log."""
-    reg = art.get("reg")
-    # Use calibrated classifier (cal_clf) when available, matching the
-    # evaluation pipeline.  Fall back to raw clf only if cal_clf is absent
-    # (e.g. Phase-2 baseline model).
-    clf = art.get("cal_clf") or art.get("clf")
-    levels = art.get("levels")
-
-    if reg is None or clf is None:
-        raise ValueError("Loaded model artifact missing 'reg' or 'clf'/'cal_clf' estimator.")
-
+    """Score all rows in df and append to log via opi package."""
+    # Ensure calibrated classifier (cal_clf) is utilized for probabilities
+    cal_clf = art.get("cal_clf") if art else None
     scored_records = []
 
     for idx, row in df.iterrows():
         company_name = str(row.get("company", f"IPO_{idx+1}"))
-        one = pd.DataFrame([row])
         
-        # Feature transformation via standard prep()
-        X, _ = prep(one, cat_levels=levels)
-
-        # Regressor prediction (listing gain %)
-        pred_gain = float(reg.predict(X)[0])
-
-        # Classifier prediction (probability gain > 10%)
-        probs = clf.predict_proba(X)[0]
-        if hasattr(clf, "classes_") and 1 in clf.classes_:
-            class_idx = list(clf.classes_).index(1)
-            pred_prob = float(probs[class_idx])
-        elif len(probs) > 1:
-            pred_prob = float(probs[1])
-        else:
-            pred_prob = float(probs[0])
-
-        # GMP at scoring
-        raw_gmp = row.get("gmp_pct")
-        if pd.notna(raw_gmp) and str(raw_gmp).strip() != "":
-            try:
-                gmp_at_scoring = round(float(raw_gmp), 2)
-            except (ValueError, TypeError):
-                gmp_at_scoring = ""
-        else:
-            gmp_at_scoring = ""
+        # Authoritative scoring via opi.score
+        scored = score_ipo(row, custom_artifact=art)
+        pred_gain = scored["predicted_gain_pct"]
+        pred_prob = scored["prob_gt10"]
+        gmp_at_scoring = scored["gmp_pct"] if scored["gmp_pct"] is not None else ""
 
         # Notes resolution
         row_notes = str(row.get("notes", "")).strip() if pd.notna(row.get("notes")) else ""
@@ -167,26 +140,47 @@ def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH, status="FOR
         else:
             combined_notes = row_notes
 
-        snapshot_json = create_feature_snapshot(row)
-        now_iso = datetime.now().isoformat()
+        open_d = str(row.get("open_date", "")).strip() if pd.notna(row.get("open_date")) else ""
+        close_d = str(row.get("close_date", "")).strip() if pd.notna(row.get("close_date")) else ""
+        list_d = str(row.get("listing_date", "")).strip() if pd.notna(row.get("listing_date")) else ""
 
-        record = {
-            "scored_at": now_iso,
-            "company": company_name,
-            "open_date": str(row.get("open_date", "")).strip() if pd.notna(row.get("open_date")) else "",
-            "close_date": str(row.get("close_date", "")).strip() if pd.notna(row.get("close_date")) else "",
-            "listing_date": str(row.get("listing_date", "")).strip() if pd.notna(row.get("listing_date")) else "",
-            "features_snapshot_json": snapshot_json,
-            "pred_gain_pct": round(pred_gain, 2),
-            "pred_prob_gt10": round(pred_prob, 4),
-            "gmp_pct_at_scoring": gmp_at_scoring,
-            "actual_gain_pct": "",  # Strictly empty at initial scoring
-            "status": str(status or row.get("status") or "FORWARD").strip(),
-            "notes": combined_notes,
-        }
+        if os.path.abspath(log_file) == os.path.abspath(LOG_PATH):
+            try:
+                record = append_prediction_log(
+                    company=company_name,
+                    open_date=open_d,
+                    close_date=close_d,
+                    listing_date=list_d,
+                    features=row.to_dict(),
+                    pred_gain_pct=pred_gain,
+                    pred_prob_gt10=pred_prob,
+                    gmp_pct_at_scoring=scored["gmp_pct"],
+                    status=str(status or row.get("status") or "FORWARD").strip(),
+                    notes=combined_notes,
+                    model_version=scored["model_version"]
+                )
+            except ValueError as dup_err:
+                print(f"Notice: {dup_err}")
+                continue
+        else:
+            snapshot_json = create_feature_snapshot(row)
+            now_iso = datetime.now().isoformat()
+            record = {
+                "scored_at": now_iso,
+                "company": company_name,
+                "open_date": open_d,
+                "close_date": close_d,
+                "listing_date": list_d,
+                "features_snapshot_json": snapshot_json,
+                "pred_gain_pct": round(pred_gain, 2),
+                "pred_prob_gt10": round(pred_prob, 4),
+                "gmp_pct_at_scoring": gmp_at_scoring,
+                "actual_gain_pct": "",  # Strictly empty at initial scoring
+                "status": str(status or row.get("status") or "FORWARD").strip(),
+                "notes": combined_notes,
+            }
+            append_prediction_row(record, log_file=log_file)
 
-        # Append to prediction log
-        append_prediction_row(record, log_file=log_file)
         scored_records.append(record)
 
         # Missing input check

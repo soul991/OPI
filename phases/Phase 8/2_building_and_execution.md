@@ -145,7 +145,7 @@ Commit: `phase8-workstream-d (retraining policy and challenger script)` (hash `5
 [PASS] Phase 6: three required files                                              
 [PASS] Phase 7: three required files                                              
 [PASS] Phase 8: three required files                                              
-[PASS] defect register parsed                                                     14 defects, 1 open/partial
+[PASS] defect register parsed                                                     14 defects, 2 open/partial
 [PASS] every FIXED defect has an existing regression test                         
 [PASS] Phase 8 verdict 'None unfixed' consistent with defect register             
 [PASS] Phase 6: gate + preregistration committed before other work                

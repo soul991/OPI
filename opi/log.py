@@ -113,30 +113,43 @@ def append_prediction_log(
     return row_dict
 
 
+from typing import Dict, Any, Optional, Tuple, Union
+
 def update_actual_outcome(
     company: str,
     listing_date: str,
-    actual_listing_price: float,
-    issue_price: float,
-    source_url: str,
-    source_snapshot_path: Optional[str] = None
+    actual_listing_price: Optional[float] = None,
+    issue_price: Optional[float] = None,
+    actual_gain_pct: Optional[float] = None,
+    source_url: str = "",
+    source_snapshot_path: Optional[str] = None,
+    log_path: Optional[Union[str, Path]] = None
 ) -> Tuple[bool, str]:
     """Record actual listing outcome for a listed FORWARD row."""
-    if not LOG_PATH.exists():
-        return False, "prediction_log.csv does not exist"
+    target_log = Path(log_path) if log_path else LOG_PATH
+    if not target_log.exists():
+        return False, f"{target_log} does not exist"
         
-    df = pd.read_csv(LOG_PATH)
+    df = pd.read_csv(target_log)
     mask = (df["company"] == company) & (df["listing_date"] == listing_date) & (df["status"] == "FORWARD")
     
     if mask.sum() == 0:
         return False, f"No active FORWARD row found for {company} ({listing_date})"
         
-    actual_gain = round(((actual_listing_price - issue_price) / issue_price) * 100.0, 2)
+    if actual_gain_pct is not None:
+        actual_gain = round(float(actual_gain_pct), 2)
+    elif actual_listing_price is not None and issue_price is not None and issue_price > 0:
+        actual_gain = round(((actual_listing_price - issue_price) / issue_price) * 100.0, 2)
+    else:
+        return False, "Must provide either actual_gain_pct or (actual_listing_price and issue_price)"
+
     df.loc[mask, "actual_gain_pct"] = actual_gain
     
     old_notes = str(df.loc[mask, "notes"].iloc[0]) if pd.notna(df.loc[mask, "notes"].iloc[0]) else ""
-    evidence_note = f"Actual listing price Rs {actual_listing_price} verified via {source_url}"
-    df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")
+    if source_url:
+        evidence_note = f"Actual listing verified via {source_url}"
+        df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")
     
-    df.to_csv(LOG_PATH, index=False)
+    df.to_csv(target_log, index=False)
     return True, f"Updated {company} actual gain to {actual_gain}%"
+

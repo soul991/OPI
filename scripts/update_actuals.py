@@ -25,6 +25,8 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+from opi.log import update_actual_outcome
+
 DEFAULT_LOG = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
 DEFAULT_MASTER = os.path.join(ROOT_DIR, "data", "ipo_master.csv")
 
@@ -160,14 +162,21 @@ def update_actuals(log_path=DEFAULT_LOG, master_path=DEFAULT_MASTER, as_of=None)
             print(f"  [Pending] Matched '{company}' -> '{matched_row['company']}', but master has no listing_gain_pct yet.")
             continue
 
-        # Format and update actual listing gain
+        # Format and update actual listing gain via opi.log
         gain_float = float(master_gain)
-        actual_str = f"{gain_float:.2f}"
-        log_df.at[idx, "actual_gain_pct"] = actual_str
+        eff_date = list_date_str if list_date_str else str(matched_row.get("listing_date"))[:10]
+        source_url = str(matched_row.get("source_url", "ipo_master.csv"))
 
-        # If listing_date in log was missing, populate from master
-        if not list_date_str and pd.notna(matched_row.get("listing_date")):
-            log_df.at[idx, "listing_date"] = str(matched_row["listing_date"])[:10]
+        ok, msg = update_actual_outcome(
+            company=company,
+            listing_date=eff_date,
+            actual_gain_pct=gain_float,
+            source_url=source_url,
+            log_path=log_path
+        )
+        if not ok:
+            print(f"  Notice: {msg}")
+            continue
 
         pred_gain_val = float(row["pred_gain_pct"]) if row["pred_gain_pct"] else np.nan
         pred_prob_val = float(row["pred_prob_gt10"]) if row["pred_prob_gt10"] else np.nan
@@ -176,7 +185,7 @@ def update_actuals(log_path=DEFAULT_LOG, master_path=DEFAULT_MASTER, as_of=None)
         updated_records.append({
             "company": company,
             "master_company": matched_row["company"],
-            "listing_date": log_df.at[idx, "listing_date"],
+            "listing_date": eff_date,
             "pred_gain": pred_gain_val,
             "pred_prob": pred_prob_val,
             "actual_gain": gain_float,
@@ -184,9 +193,7 @@ def update_actuals(log_path=DEFAULT_LOG, master_path=DEFAULT_MASTER, as_of=None)
         })
         updated_count += 1
 
-    # Save changes if any updates were made
     if updated_count > 0:
-        log_df.to_csv(log_path, index=False)
         print(f"\nSuccessfully updated {updated_count} row(s) in '{log_path}'.")
     else:
         print("\nNo rows required updating.")

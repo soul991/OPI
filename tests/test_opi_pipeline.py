@@ -181,14 +181,26 @@ def test_leakage_in_features_snapshot():
 
 
 def test_dry_run_does_not_mutate_log():
-    """Verify that run_daily with dry_run=True does not write rows to prediction_log.csv."""
+    """Verify that run_daily with dry_run=True does not write rows to any log or update dashboard."""
     assert LOG_PATH.exists()
     df_before = pd.read_csv(LOG_PATH)
     rows_before = len(df_before)
+
+    run_log_path = ROOT_DIR / "predictions" / "run_log.csv"
+    run_log_before = run_log_path.read_text(encoding="utf-8") if run_log_path.exists() else ""
+    dashboard_path = ROOT_DIR / "dashboard" / "index.html"
+    dashboard_before = dashboard_path.read_text(encoding="utf-8") if dashboard_path.exists() else ""
 
     # Run daily forward test in dry-run mode
     run_daily_forward_test(dry_run=True)
 
     df_after = pd.read_csv(LOG_PATH)
     rows_after = len(df_after)
-    assert rows_before == rows_after, f"Dry run mutated log! Before: {rows_before}, After: {rows_after}"
+    assert rows_before == rows_after, f"Dry run mutated prediction_log! Before: {rows_before}, After: {rows_after}"
+
+    run_log_after = run_log_path.read_text(encoding="utf-8") if run_log_path.exists() else ""
+    assert run_log_before == run_log_after, "Dry run mutated run_log.csv!"
+
+    dashboard_after = dashboard_path.read_text(encoding="utf-8") if dashboard_path.exists() else ""
+    assert dashboard_before == dashboard_after, "Dry run mutated dashboard/index.html!"
+

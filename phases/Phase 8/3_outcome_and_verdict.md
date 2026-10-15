@@ -130,7 +130,7 @@ Re-evaluation executed across 20 quarters (2022Q1 to 2026Q4) on 398 matched rows
   1. Prominent warning banner: `"PROVISIONAL STATUS (Listed n = 0): Decision aid only, not financial advice. No empirical performance claims permitted until n >= 30."`
   2. Registered active model version: `v4.0.0-champion`.
   3. Prediction audit log table displaying all forward, test, and invalidated predictions.
-  4. Repository defect health summary (14 total defects: 7 fixed, 4 accepted, 2 deferred, 1 partial).
+  4. Repository defect health summary (14 total defects: 6 fixed, 4 accepted, 2 deferred, 2 partial).
 
 ---
 
