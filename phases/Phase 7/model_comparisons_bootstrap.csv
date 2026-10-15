@@ -1,0 +1,9 @@
+comparison,subset,n,point_estimate_diff,ci_95_lower,ci_95_upper,excludes_zero,verdict
+H1: Model With Fundamentals vs Model Without Fundamentals,All Out-of-Sample,398,0.0693,-0.186,0.3294,False,no demonstrated effect
+Model Without Fundamentals vs Mean Baseline,All Out-of-Sample,398,-9.0414,-10.6881,-7.588,True,Beats Baseline
+Model (No GMP) vs Mean Baseline,All Out-of-Sample,398,-4.2538,-5.9763,-2.5701,True,Beats Mean
+Model With GMP vs Raw GMP,IPOs With GMP,398,1.8313,0.2184,3.1102,True,no demonstrated advantage over raw GMP
+Blend vs Raw GMP,IPOs With GMP,398,0.0698,-0.0571,0.1941,False,no demonstrated advantage over raw GMP
+Model (No GMP) vs Raw GMP,IPOs With GMP,398,6.5497,4.5797,8.3269,True,no demonstrated advantage over raw GMP
+Raw GMP vs Mean Baseline,IPOs With GMP,398,-10.8035,-12.8439,-8.8832,True,Beats Baseline
+Blend vs Mean Baseline,IPOs With GMP,398,-10.7337,-12.7435,-8.8117,True,Beats Baseline

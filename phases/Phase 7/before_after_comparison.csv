@@ -1,0 +1,11 @@
+metric,phase_6,phase_7,delta,notes
+Evaluated Sample Size (n),398.0,398.0,0.0,Identical matched rows
+IPOs with Observed GMP (n),321.0,398.0,77.0,+75 IPOs backfilled
+MAE: Historical Mean Baseline,19.88,19.88,0.0,Mean baseline
+MAE: Model Without Fundamentals,11.39,10.84,-0.55,Model no fund
+MAE: Model With Fundamentals,11.57,10.91,-0.66,Model with fund
+MAE: Raw GMP,9.48,9.08,-0.4,Raw GMP on available subset
+MAE: Blend,9.53,9.15,-0.38,Blend on available subset
+ROC AUC (Classification),0.887,0.9067,0.0197,Discrimination
+Equal-Frequency ECE,0.0901,0.0983,0.0082,Calibration error
+Brier Score Loss,0.1369,0.1218,-0.0151,Probability score
