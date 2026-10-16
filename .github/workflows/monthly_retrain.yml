@@ -1,0 +1,56 @@
+name: Monthly Challenger Model Evaluation
+
+on:
+  schedule:
+    # Run at 00:00 UTC on the 1st day of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  evaluate-challenger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Governed Row Promotion Audit
+        run: |
+          python scripts/promote_forward_rows.py
+
+      - name: Execute Governed Challenger Evaluation
+        run: |
+          python scripts/retrain_challenger.py --no-rolling
+
+      - name: Verify Zero Automatic Model Promotion
+        run: |
+          # Governance check: ensure champion model artifact in model/ was NOT modified
+          if [ -n "$(git status --porcelain model/)" ]; then
+            echo "ERROR: Challenger script modified model/ directory! Automatic promotion is strictly prohibited."
+            exit 1
+          fi
+          echo "Governance verified: Champion model was preserved untouched."
+
+      - name: Archive Challenger Evaluation Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenger-evaluation-report
+          path: |
+            docs/
