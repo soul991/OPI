@@ -95,3 +95,105 @@ def validate_ipo_features(features: Dict[str, Any]) -> Tuple[bool, List[str]]:
             issues.append(f"Invalid GMP value: {gmp_val}")
 
     return len(issues) == 0, issues
+
+
+def validate_mainboard_eligibility(features: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """Validate that the candidate issue is an Indian Mainboard IPO (not SME, FPO, or rights issue)."""
+    issues = []
+    company = str(features.get("company", "")).lower()
+    notes = str(features.get("notes", "")).lower()
+    exchange = str(features.get("exchange", "")).upper()
+    
+    # 1. Reject explicit SME / FPO keywords
+    for keyword in ["sme", "fpo", "rights issue", "invit", "reit"]:
+        if keyword in company.split() or f"({keyword})" in company:
+            issues.append(f"Company name contains '{keyword}', indicating non-mainboard issue")
+        if keyword in notes:
+            issues.append(f"Notes indicate non-mainboard issue category: '{keyword}'")
+
+    if "sme" in exchange.lower():
+        issues.append(f"Exchange '{exchange}' indicates SME segment")
+
+    # 2. Mainboard minimum capital / issue size check
+    issue_size = features.get("issue_size_cr")
+    if issue_size is not None and pd.notna(issue_size):
+        try:
+            size_num = float(issue_size)
+            if size_num < 25.0:
+                issues.append(f"Issue size (INR {size_num} Cr) is below standard Mainboard threshold (INR 25 Cr)")
+        except (ValueError, TypeError):
+            pass
+
+    return len(issues) == 0, issues
+
+
+def determine_prediction_mode(
+    close_date_str: str,
+    listing_date_str: str,
+    scored_at_str: Optional[str] = None,
+    notes: Optional[str] = ""
+) -> Tuple[str, List[str]]:
+    """Determine whether scoring is PREVIEW (bidding ongoing) or FORWARD_ELIGIBLE (post-close).
+    
+    Returns:
+        mode: "PREVIEW", "FORWARD_ELIGIBLE", or "INVALID"
+        reasons: list of explanatory reasons
+    """
+    reasons = []
+    try:
+        close_dt = pd.to_datetime(close_date_str).date()
+        listing_dt = pd.to_datetime(listing_date_str).date()
+        scored_dt = pd.to_datetime(scored_at_str) if scored_at_str else datetime.now()
+    except Exception as e:
+        return "INVALID", [f"Date parsing error: {e}"]
+
+    # Check if listing date passed
+    if scored_dt.date() >= listing_dt:
+        return "INVALID", [f"Scored date ({scored_dt.date()}) is on or after listing date ({listing_dt})"]
+
+    # Check bidding close cutoff (18:00 IST on close date)
+    bidding_close_cutoff = datetime.combine(close_dt, time(18, 0))
+    if scored_dt < bidding_close_cutoff or (notes and re.search(r"\bday\s*[12]\b|live", str(notes), re.I)):
+        reasons.append("Bidding is ongoing (scored before 18:00 IST on close date or live data). PREVIEW mode only — cannot be logged as FORWARD.")
+        return "PREVIEW", reasons
+
+    reasons.append("Bidding closed and listing date is in future. Eligible for FORWARD prediction logging.")
+    return "FORWARD_ELIGIBLE", reasons
+
+
+def validate_candidate_for_forward_logging(features: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """Comprehensive gate checking before writing a FORWARD row to prediction_log.csv."""
+    all_issues = []
+    
+    # 1. Mainboard check
+    mb_ok, mb_issues = validate_mainboard_eligibility(features)
+    if not mb_ok:
+        all_issues.extend(mb_issues)
+
+    # 2. Timing and leakage check
+    t_ok, t_issues = validate_timing_and_leakage(
+        close_date_str=str(features.get("close_date", "")),
+        listing_date_str=str(features.get("listing_date", "")),
+        scored_at_str=datetime.now().isoformat(),
+        notes=str(features.get("notes", "")),
+        gmp_as_of_date_str=str(features.get("gmp_as_of_date", "")) if features.get("gmp_as_of_date") else None
+    )
+    if not t_ok:
+        all_issues.extend(t_issues)
+
+    # 3. Feature bounds
+    f_ok, f_issues = validate_ipo_features(features)
+    if not f_ok:
+        all_issues.extend(f_issues)
+
+    # 4. Mode must be FORWARD_ELIGIBLE
+    mode, mode_reasons = determine_prediction_mode(
+        close_date_str=str(features.get("close_date", "")),
+        listing_date_str=str(features.get("listing_date", "")),
+        notes=str(features.get("notes", ""))
+    )
+    if mode != "FORWARD_ELIGIBLE":
+        all_issues.append(f"Candidate mode is '{mode}', not 'FORWARD_ELIGIBLE': {'; '.join(mode_reasons)}")
+
+    return len(all_issues) == 0, all_issues
+
