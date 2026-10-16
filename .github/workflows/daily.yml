@@ -43,7 +43,7 @@ jobs:
 
       - name: Run Test Suite
         run: |
-          pytest -q
+          python -m pytest -q
 
       - name: Run Independent Repository Verification
         run: |

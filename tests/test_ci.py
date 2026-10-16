@@ -3,10 +3,16 @@
 import hashlib
 import json
 import os
+import sys
 import subprocess
+from pathlib import Path
 import pytest
 
-from opi.score import load_champion_model, ROOT_DIR
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from opi.score import load_champion_model
 
 
 def test_model_available_on_fresh_clone():
