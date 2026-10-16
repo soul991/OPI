@@ -1,0 +1,19 @@
+company,listing_date,actual_gain,actual_class,gmp_pct,pred_no_fundamentals,category
+Ags Transact Technologies,2022-02-01,0.57,0,-3.43,6.2182770152262625,Duplicate Row Purged
+Veranda Learning Solutions,2022-04-07,-8.76,0,10.95,3.0240157726483283,Duplicate Row Purged
+Patanjali Foods,2022-04-08,-95.2,0,,1.5017029844757397,FPO / Non-Listing
+Adani Enterprises,2023-02-08,-86.65,0,,-0.4760527321272573,FPO / Non-Listing
+Mankind Pharma,2023-05-08,20.37,1,11.2,14.791299195073162,Duplicate Row Purged
+Utkarsh Small Finance Bank,2023-07-24,60.0,1,64.0,16.280375366811946,Duplicate Row Purged
+Pyramid Technoplast,2023-08-30,12.65,1,13.25,10.307250319082955,Duplicate Row Purged
+Aeroflex Industries,2023-09-01,75.93,1,65.74,27.54030819493945,Duplicate Row Purged
+Plaza Wires,2023-10-13,40.74,1,42.59,59.14873100381867,Duplicate Row Purged
+Irm Energy,2023-10-31,-5.5,0,3.56,6.604721704654267,Duplicate Row Purged
+Mukka Proteins,2024-03-04,42.86,1,125.0,64.37750170467773,Duplicate Row Purged
+Gopal Snacks,2024-03-13,-12.47,0,-6.23,0.8457626621860652,Duplicate Row Purged
+Vodafone Idea,2024-04-25,-52.2,0,,2.1243087128809894,FPO / Non-Listing
+Western Carriers India,2024-09-23,-0.58,0,9.3,9.318141562364657,Duplicate Row Purged
+Arisinfra Solutions,2025-02-10,-7.66,0,,-3.181981260531086,Duplicate Row Purged
+Travel Food Services,2025-07-10,2.27,0,2.27,-3.0325795377937848,Duplicate Row Purged
+Anthem Biosciences,2025-07-15,26.85,1,,29.296613984940844,Duplicate Row Purged
+Innovision,2026-03-20,-9.88,0,-17.73,-4.543873135359307,Duplicate Row Purged

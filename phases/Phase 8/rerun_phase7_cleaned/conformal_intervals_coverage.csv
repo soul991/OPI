@@ -1,0 +1,5 @@
+subset,regime,n,nominal_coverage_pct,empirical_coverage_pct,mean_interval_width,target_met,status
+Pooled Out-of-Sample,ALL,398,80.0,87.9,46.0,False,FAIL
+Observed GMP Regime,OBSERVED,321,80.0,94.1,46.0,False,FAIL
+Confirmed Unavailable Regime,CONFIRMED_UNAVAILABLE,0,80.0,,,False,insufficient n for a coverage claim (n=0)
+Top 10% Largest Gains (>=50.1%),TAIL_POPS,40,80.0,60.0,46.0,False,FAIL

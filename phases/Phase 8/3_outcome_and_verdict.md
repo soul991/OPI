@@ -1,3 +1,13 @@
+## ERRATA (Phase 9) — 2026-10-16
+
+> **Phase 9 Gate A9 corrections.** These errata address defect D-019 (status consistency between DEFECTS.md and the Phase 8 verdict) and clarify D-001/U1 resolution per [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md) and [`phases/Phase 9/1_planning_and_goals.md`](../Phase%209/1_planning_and_goals.md). The original text below is preserved unmodified.
+
+### E1: D-019 / U1 / D-001 — Status Consistency and Revert Scope
+- **Finding:** In Phase 8, defect D-001 was marked `FIXED` in `DEFECTS.md` while Gate Item U1 was labeled `NOT FIXED (REVERTED)` in the Phase 8 verdict table.
+- **Clarification & Alignment:** Defect D-001 was closed by **reverting** all 77 unverified Phase 7 GMP values to `NOT_RECORDED` because no verified replacement values with dated snapshots were obtained. Consequently, 350 of 731 historical rows keep older, unverified-by-snapshot GMP. The status in `DEFECTS.md` reflects remediation of the immediate data defect (unverified rows purged from active evaluations), aligning with U1's outcome of revert without backfill.
+
+---
+
 # Phase 8: Outcome & Verdict - Verification Gate, Evidence Standard, Pipeline Refactor, Automated Forward Test & Dashboard
 
 > Standard sequential phase documentation per [`RULES.md`](../../RULES.md), [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md), and [`phases/Phase 8/1_planning_and_goals.md`](1_planning_and_goals.md).  
