@@ -23,4 +23,4 @@
 | D-017 | 8 | Phase 8 overwrote 9 Phase 7 files (and `Phase 4/phase4_summary.json`) in place; originals survive only in git history; a stale note ("+75 backfilled") remains. | Medium | FIXED | 9 | tests/test_reporting.py::test_earlier_phases_immutable |
 | D-018 | 8 | Eight GMP values above 100% (Motisons, Bls Eservices, Exicom, Mukka Proteins, Premier Energies, Bajaj Housing, Krn Heat Exchanger, Mamata) are marked "verified" with generic URLs and no snapshots. The Mukka "correction" to 125% cites a Chittorgarh ID and has no snapshot. | Medium | FIXED | 9 | tests/test_data_integrity.py::test_extreme_gmp_have_snapshots |
 | D-019 | 8 | Status inconsistency: D-001 is `FIXED` in the register but U1 is `NOT FIXED (REVERTED)` in the verdict. | Low | FIXED | 9 | tests/test_reporting.py::test_phase8_errata_present |
-| D-020 | 8 | The daily GitHub workflow has never been confirmed to run successfully on GitHub. | Medium | OPEN | 9 | evidence file `phases/Phase 9/actions_run_evidence.md` |
+| D-020 | 8 | The daily GitHub workflow has never been confirmed to run successfully on GitHub. | Medium | FIXED | 9 | tests/test_ci.py::test_github_actions_evidence_recorded |

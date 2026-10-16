@@ -60,3 +60,13 @@ def test_model_not_ignored_by_git():
     )
     # Return code 1 means NOT ignored (which is what we want)
     assert r.returncode == 1, f"Model file {model_file} is still ignored by git!"
+
+
+def test_github_actions_evidence_recorded():
+    """D-020: The daily GitHub workflow execution must be recorded with run URL and success status."""
+    evidence_path = ROOT_DIR / "phases" / "Phase 9" / "actions_run_evidence.md"
+    assert evidence_path.exists(), "actions_run_evidence.md must exist"
+    content = evidence_path.read_text(encoding="utf-8")
+    assert "https://github.com/soul991/OPI/actions/runs/" in content
+    assert "SUCCESS" in content
+

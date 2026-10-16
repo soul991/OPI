@@ -83,24 +83,116 @@ OPI/
         ├── random_audit.csv
         ├── before_after_comparison.csv
         └── model_comparisons_bootstrap.csv
+    └── Phase 9/                    # Phase 9 OPI Console, Grounded Agent & Governed Learning Loop
+        ├── 1_planning_and_goals.md
+        ├── 2_building_and_execution.md
+        ├── 3_outcome_and_verdict.md
+        ├── preregistration.md
+        ├── actions_run_evidence.md
+        ├── verify_start.txt
+        └── verify_end.txt
+├── opi/                            # Core Phase 9 application package
+│   ├── schema.py                   # Pydantic typed schemas for verified IPO data
+│   ├── collect.py                  # Snapshot-backed deterministic field verification
+│   ├── research_agent.py           # Grounded agent with prompt injection defense
+│   ├── validate.py                 # Input validation & gating rules (mainboard, close date)
+│   ├── score.py                    # Production model scoring & conformal prediction
+│   └── log.py                      # Immutable forward prediction logger
+└── app/
+    └── main.py                     # Streamlit analysis console
+```
+
+---
+
+## System Architecture
+
+```
+                      [ Public Sources / Exchanges / Aggregators ]
+                                           │
+                                           ▼
+                 ┌──────────────────────────────────────────────────┐
+                 │             Code Fetch & Snapshotting            │
+                 │           (data/evidence/research/...)           │
+                 └─────────────────────────┬────────────────────────┘
+                                           │
+                                           ▼
+                 ┌──────────────────────────────────────────────────┐
+                 │        Research Agent & Grounding Verifier       │
+                 │   (Untrusted HTML -> Typed Schema / Null Check)  │
+                 └─────────────────────────┬────────────────────────┘
+                                           │
+                                           ▼
+                 ┌──────────────────────────────────────────────────┐
+                 │          Input Validation & Gating Engine        │
+                 │  (Mainboard Check, Bidding Close, As-Of Date)    │
+                 └─────────────────────────┬────────────────────────┘
+                                           │
+                          ┌────────────────┴────────────────┐
+                          ▼                                 ▼
+                [ PREVIEW Gating ]                 [ FORWARD Gating ]
+                (Pre-close / Unlogged)             (Post-close Final Log)
+                          │                                 │
+                          └────────────────┬────────────────┘
+                                           ▼
+                 ┌──────────────────────────────────────────────────┐
+                 │          Calibrated Scoring & Conformal          │
+                 │         (Raw GMP vs Model Regime Routing)        │
+                 └─────────────────────────┬────────────────────────┘
+                                           │
+                          ┌────────────────┴────────────────┐
+                          ▼                                 ▼
+                 ┌──────────────────┐             ┌──────────────────┐
+                 │ Streamlit Console│             │ Governed Loop    │
+                 │ (app/main.py)    │             │ (Monthly PR,     │
+                 │                  │             │ Zero Auto-Promote│
+                 └──────────────────┘             └──────────────────┘
 ```
 
 ---
 
 ## Quickstart & Commands
 
-### 1. Verification & Test Suite
+### 1. Environment Configuration
+Copy `.env.example` to `.env` (gitignored) and configure your LLM provider:
 ```bash
-python3 scripts/audit_dataset.py data/ipo_master.csv   # Must show 0 violations
-python3 -m pytest -q                                   # Run unit test suite
-python3 scripts/forward_report.py                      # Print genuine forward test status
+OPI_LLM_PROVIDER=gemini       # Options: gemini, mock (for offline hermetic runs)
+GEMINI_API_KEY=your_key_here
 ```
 
-### 2. Score an Upcoming IPO
+### 2. Run the Streamlit Analysis Console
+Launch the interactive decision-aid console:
 ```bash
-python3 model/predict.py new_ipo.csv
+streamlit run app/main.py
+```
+
+### 3. Run the Grounded IPO Research Agent
+Propose and verify fields for an upcoming or recent IPO:
+```bash
+# Live grounded run (saves HTML snapshots and verifies every field)
+python -m opi.research_agent --company "HD Fire Protect Limited"
+
+# Hermetic mock run (offline, 0 tokens)
+python -m opi.research_agent --company "HD Fire Protect Limited" --mock
+```
+
+### 4. Governed Learning Loop & Promotion Audit
+Audit unlisted vs listed candidate rows for promotion into master:
+```bash
+python scripts/promote_forward_rows.py --audit
+```
+
+### 5. Full Test Suite & Independent Verification
+```bash
+python -m pytest -q            # Runs 64 unit, schema, app, and governance tests
+python scripts/verify_all.py   # Independent repository verification (48 checks, 0 fail)
 ```
 
 Output applies the pre-registered regime routing rules:
 - **GMP observed**: Uses Raw GMP as the primary expected return; model provides context and calibrated interval.
 - **No GMP observed**: Uses model point estimate with regime-specific interval.
+
+---
+
+## Regulatory & Non-Advisory Notice
+**Decision aid, not financial advice.** Initial Public Offerings carry significant capital risk. Model estimates and grey market quotes are probabilistic quantitative research aids and do not guarantee future listing performance. No output from this software constitutes a recommendation to apply, buy, sell, or avoid any security.
+
