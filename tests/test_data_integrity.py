@@ -6,7 +6,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 
 def test_gmp_outliers_verified():
-    """D-003: Mukka Proteins corrected and all extreme GMP values verified."""
+    """D-003/D-018: Mukka Proteins and extreme GMP values verified or reverted to NOT_RECORDED."""
     master_path = ROOT / "data" / "ipo_master.csv"
     review_path = ROOT / "phases" / "Phase 8" / "gmp_outlier_review.csv"
     
@@ -16,15 +16,34 @@ def test_gmp_outliers_verified():
     m = pd.read_csv(master_path)
     mukka = m[m.company == "Mukka Proteins"]
     assert len(mukka) == 1, "Mukka Proteins must exist in ipo_master.csv"
-    assert mukka.gmp_pct.iloc[0] == 125.0, f"Mukka Proteins gmp_pct must be 125.0%, got {mukka.gmp_pct.iloc[0]}"
+    # In Phase 9 Gate A9 V4 (D-018), Mukka was reverted to NOT_RECORDED due to lack of snapshot and invalid ID
+    assert mukka.gmp_status.iloc[0] == "NOT_RECORDED" or mukka.gmp_pct.iloc[0] == 125.0
     
-    # Check that any extreme values (>150% or <-30%) in master are audited in review file
+    # Check that any extreme values (>150% or <-30%) in master are resolved
     outliers = m[(m.gmp_pct > 150) | (m.gmp_pct < -30)]
     assert len(outliers) == 0, f"Unresolved outliers found in ipo_master.csv: {outliers.company.tolist()}"
     
     rev = pd.read_csv(review_path)
     assert len(rev) >= 9, f"Expected at least 9 reviewed outliers, got {len(rev)}"
     assert "Mukka Proteins" in rev.company.values
+
+
+def test_extreme_gmp_have_snapshots():
+    """D-018: Extreme GMP values (>100% or <-30%) must have a code-saved snapshot or be NOT_RECORDED."""
+    import re
+    master_path = ROOT / "data" / "ipo_master.csv"
+    assert master_path.exists(), "data/ipo_master.csv must exist"
+    m = pd.read_csv(master_path)
+    ev = ROOT / "data" / "evidence" / "gmp"
+    have = {p.stem for p in ev.iterdir()} if ev.exists() else set()
+    
+    def slug(s):
+        return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")
+        
+    o = m[(m.gmp_status == "OBSERVED") & ((m.gmp_pct > 100) | (m.gmp_pct < -30))]
+    miss = [r.company for r in o.itertuples() if f"{pd.to_datetime(r.listing_date).date()}_{slug(r.company)}" not in have]
+    assert len(miss) == 0, f"Found extreme GMP rows without snapshots: {miss}"
+
 
 
 def test_sector_catchall_share_reported():

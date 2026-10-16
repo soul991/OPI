@@ -34,6 +34,7 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - **D-010 (Historical GMP Availability)**: GMP quotes are unrecorded for 304 of 333 pre-2022 issues (2010–2021). The model is historically trained largely without GMP and evaluated with verified GMP quotes primarily from 2022 onward; line closed as `ACCEPTED`.
 - **D-011 (Sector Distribution)**: The broad classification "Industrial & Manufacturing" represents 137 of 731 issues (18.74%). While the largest category, it does not dominate the dataset; line closed as `ACCEPTED`.
 - **D-012 (Capital Markets Dry Spell 2012–2014)**: Years 2012–2014 contain very few mainboard IPOs (2012: 11, 2013: 3, 2014: 5). Verified against NSE/BSE official listing notices and Chittorgarh archives as reflecting historical market stagnation; line closed as `ACCEPTED`.
+- **D-013 (Upstream Audit Sample URLs & Snapshots)**: The 15-row duplicate verification and 40-row random audit from Phase 7 contained corrupted upstream URLs (wrong Chittorgarh SME IDs and generic 404s). In Phase 8, 20 audit snapshots were saved under `data/evidence/audit/` documenting this mismatch. Live bulk re-scraping remains blocked by site permissions; those 15 entities carry status `UNVERIFIED` in `phases/Phase 9/duplicate_verification.csv`; line maintained as `PARTIAL`.
 
 *Disclaimer: This system is a quantitative decision aid and research benchmark only. It does not constitute financial, investment, or trading advice.*
 

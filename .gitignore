@@ -10,8 +10,9 @@ env/
 files.zip
 files/
 
-# Trained model binaries — regenerate with: python3 model/train.py
+# Trained model binaries — tracked champion models explicitly allowed
 *.joblib
+!model/*.joblib
 
 # Raw data sources (redistribution restrictions; rebuild with scripts/download_all_raw_data.py)
 data/raw/

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent verification of the OPI repo. Does NOT trust the phase reports.
+"""Independent verification of the OPI repo (v2). Does NOT trust the phase reports.
 
 Usage:  python scripts/verify_all.py            # run all checks
         python scripts/verify_all.py --no-tests # skip pytest (faster)
@@ -135,6 +135,10 @@ def check_forward():
     if f.empty:
         return
     f["listing_date"] = pd.to_datetime(f.listing_date); f["close_date"] = pd.to_datetime(f.close_date)
+    # scored_at: tz-naive values are assumed IST (+05:30); tz-aware values are converted to IST. New rows SHOULD carry an offset.
+    sc = pd.to_datetime(f.scored_at, utc=False, errors="coerce", format="mixed")
+    f["scored_utc"] = sc.apply(lambda t: t.tz_localize("Asia/Kolkata").tz_convert("UTC") if t.tzinfo is None else t.tz_convert("UTC"))
+    f["scored_at"] = f.scored_utc.dt.tz_convert("Asia/Kolkata").dt.tz_localize(None)
     late = (f.scored_at >= f.listing_date).sum()
     add("FAIL" if late else "PASS", "FORWARD rows scored before listing", f"{late} rows")
     # final-day rule: scored after bidding closed (assume 18:00 on close date, local time)
@@ -149,6 +153,22 @@ def check_forward():
     add("FAIL" if ((p < 0) | (p > 1)).any() else "PASS", "probabilities within [0,1]")
     dup = f.duplicated(["company", "listing_date"]).sum()
     add("FAIL" if dup else "PASS", "no duplicate FORWARD rows", f"{dup}")
+    # backdating: a row's scored_at must match the real time the row was first committed (git is the clock)
+    bad = []
+    lraw = read("predictions/prediction_log.csv", dtype=str)
+    for _, row in lraw[lraw.status == "FORWARD"].iterrows():
+        raw = str(row.scored_at)
+        r = subprocess.run(["git", "log", f"-S{raw}", "--format=%aI", "--", "predictions/prediction_log.csv"],
+                           cwd=ROOT, capture_output=True, text=True)
+        times = [pd.Timestamp(x).tz_convert("UTC") for x in r.stdout.split()]
+        if not times:
+            continue  # not yet committed
+        first = min(times)
+        t = pd.Timestamp(raw)
+        t = t.tz_localize("Asia/Kolkata").tz_convert("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+        if t < first - pd.Timedelta(hours=2) or t > first + pd.Timedelta(minutes=10):
+            bad.append(f"{row.company}: scored_at {raw} vs first commit {first.tz_convert('Asia/Kolkata'):%Y-%m-%d %H:%M} IST")
+    add("FAIL" if bad else "PASS", "FORWARD scored_at matches first commit time (no backdating)", "; ".join(bad))
     early_act = f[(f.actual_gain_pct.notna()) & (f.listing_date.dt.date > date.today())]
     add("FAIL" if len(early_act) else "PASS", "no actuals for unlisted IPOs")
     nourl = (~f.features_snapshot_json.astype(str).str.contains("http")).sum()
@@ -251,13 +271,75 @@ def check_recompute():
             bad.append(f"{k}: reported {rep:.4f}, recomputed {v:.4f}")
     add("FAIL" if bad else "PASS", f"{ph.name} headline metrics recompute from raw predictions", "; ".join(bad))
 
+
+# ---------- 9. new in v2 ----------
+def git(*args):
+    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout
+
+def check_fresh_clone():
+    """Tests must pass on a CLEAN clone of the committed repo (no ignored/untracked files)."""
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        c = subprocess.run(["git", "clone", "-q", str(ROOT), td], capture_output=True, text=True)
+        if c.returncode:
+            add("FAIL", "fresh clone of repo", c.stderr[:200]); return
+        r = subprocess.run([sys.executable, "-m", "pytest", "-q"], cwd=td, capture_output=True, text=True, timeout=900)
+        tail = (r.stdout.strip().splitlines() or ["(no output)"])[-1]
+        add("PASS" if r.returncode == 0 else "FAIL", "pytest passes on a fresh clone (no untracked/ignored files)", tail)
+
+def check_ci_model():
+    wf = ROOT / ".github" / "workflows"
+    if not wf.exists():
+        add("WARN", "CI workflow present", "no .github/workflows"); return
+    tracked = [x for x in git("ls-files", "model").splitlines() if x.endswith((".joblib", ".pkl"))]
+    trains = any(re.search(r"train|retrain|build_model", p.read_text(errors="ignore")) for p in wf.glob("*.yml"))
+    ok = bool(tracked) or trains
+    add("PASS" if ok else "FAIL", "CI can obtain the model (tracked artifact or training step)",
+        "" if ok else "model binary is untracked and workflows never train it")
+
+def check_immutable_history():
+    """Files of earlier phases must not be altered after the current phase's gate commit (errata may only ADD lines to .md)."""
+    phases = sorted((ROOT / "phases").glob("Phase *"), key=lambda p: int(p.name.split()[1]))
+    if len(phases) < 2:
+        return
+    n = int(phases[-1].name.split()[1])
+    log = git("log", "--format=%H%x09%s").splitlines()
+    gate = [x.split("\t")[0] for x in log if x.split("\t")[-1] == f"phase{n}-gate-a"]
+    if not gate:
+        add("WARN", "earlier-phase files unchanged", f"phase{n}-gate-a commit not found"); return
+    base = git("rev-parse", gate[0] + "^").strip()
+    bad = []
+    for line in git("diff", "--numstat", base, "HEAD", "--", "phases").splitlines():
+        a, d, path = line.split("\t", 2)
+        m = re.match(r"phases/Phase (\d+)/", path)
+        if not m or int(m.group(1)) >= n:
+            continue
+        if not path.endswith(".md") or (d.isdigit() and int(d) > 0):
+            bad.append(path)
+    add("FAIL" if bad else "PASS", f"earlier-phase artifacts unchanged since phase{n}-gate-a (errata may only add lines)",
+        f"{len(bad)} changed: " + ", ".join(sorted(bad)[:4]) if bad else "")
+
+def check_gmp_outliers_evidence(m):
+    if m is None:
+        return
+    ev = ROOT / "data" / "evidence" / "gmp"
+    have = {p.stem for p in ev.iterdir()} if ev.exists() else set()
+    o = m[(m.gmp_status == "OBSERVED") & ((m.gmp_pct > 100) | (m.gmp_pct < -30))]
+    miss = [r.company for r in o.itertuples() if f"{r.listing_date.date()}_{slug(r.company)}" not in have]
+    add("FAIL" if miss else "PASS", "extreme GMP values (>100% or <-30%) have a snapshot or are NOT_RECORDED",
+        f"{len(miss)} of {len(o)} without snapshot: " + ", ".join(miss[:4]) if miss else "")
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--no-tests", action="store_true"); a = ap.parse_args()
     check_hygiene()
     if not a.no_tests:
         check_tests()
     m = check_master()
-    for fn in (lambda: check_gmp(m), check_forward, check_phases_and_defects, check_git, check_recompute):
+    fns = [lambda: check_gmp(m), check_forward, check_phases_and_defects, check_git, check_recompute,
+           check_ci_model, check_immutable_history, lambda: check_gmp_outliers_evidence(m)]
+    if not a.no_tests:
+        fns.append(check_fresh_clone)
+    for fn in fns:
         try:
             fn()
         except Exception as e:

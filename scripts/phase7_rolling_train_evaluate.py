@@ -39,8 +39,9 @@ warnings.filterwarnings("ignore")
 np.random.seed(42)
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PHASE7_DIR = os.path.join(ROOT_DIR, "phases", "Phase 7")
-os.makedirs(PHASE7_DIR, exist_ok=True)
+DEFAULT_PHASE7_DIR = os.path.join(ROOT_DIR, "phases", "Phase 7")
+PHASE7_DIR = DEFAULT_PHASE7_DIR
+
 
 BASE_NUM = [
     "issue_size_cr", "fresh_issue_pct", "ofs_pct", "lot_size",
@@ -183,9 +184,18 @@ def reliability_table_with_wilson(y_true, y_prob, n_bins=10):
     return pd.DataFrame(rows)
 
 
-def run_pipeline():
+def run_pipeline(output_dir=None):
+    if output_dir is None:
+        import argparse
+        parser = argparse.ArgumentParser(description="Phase 7 Rolling Origin Evaluation")
+        parser.add_argument("--output-dir", default=None, help="Output directory for generated evaluation CSVs")
+        args, _ = parser.parse_known_args()
+        output_dir = args.output_dir or DEFAULT_PHASE7_DIR
+    target_out_dir = os.path.abspath(output_dir)
+    os.makedirs(target_out_dir, exist_ok=True)
+
     print("=" * 80)
-    print("  PHASE 7: ROLLING-ORIGIN RE-EVALUATION & REGIME-CONDITIONAL CONFORMAL")
+    print(f"  PHASE 7: ROLLING-ORIGIN RE-EVALUATION [Output: {target_out_dir}]")
     print("=" * 80)
 
     # 1. Load Purified Master Dataset
@@ -430,7 +440,7 @@ def run_pipeline():
             })
 
     pred_df = pd.DataFrame(out_of_sample_rows)
-    pred_df.to_csv(os.path.join(PHASE7_DIR, "rolling_origin_predictions.csv"), index=False)
+    pred_df.to_csv(os.path.join(target_out_dir, "rolling_origin_predictions.csv"), index=False)
     print(f"Generated {len(pred_df)} clean out-of-sample predictions.")
 
     # -------------------------------------------------------------
@@ -472,7 +482,7 @@ def run_pipeline():
         })
 
     q_df = pd.DataFrame(quarterly_stats)
-    q_df.to_csv(os.path.join(PHASE7_DIR, "rolling_origin_quarterly.csv"), index=False)
+    q_df.to_csv(os.path.join(target_out_dir, "rolling_origin_quarterly.csv"), index=False)
     print("Quarterly / Half-Year summary saved.")
 
     # -------------------------------------------------------------
@@ -605,7 +615,7 @@ def run_pipeline():
             "verdict": "Beats Baseline" if (lo_blend_base < 0 and hi_blend_base < 0) else "no demonstrated difference"
         }
     ]
-    pd.DataFrame(boot_rows).to_csv(os.path.join(PHASE7_DIR, "model_comparisons_bootstrap.csv"), index=False)
+    pd.DataFrame(boot_rows).to_csv(os.path.join(target_out_dir, "model_comparisons_bootstrap.csv"), index=False)
     print("Bootstrap comparisons saved.")
 
     # -------------------------------------------------------------
@@ -662,14 +672,14 @@ def run_pipeline():
             "status": "PASS" if (75.0 <= top10_cov <= 85.0) else "FAIL"
         },
     ]
-    pd.DataFrame(conf_summary).to_csv(os.path.join(PHASE7_DIR, "conformal_intervals_coverage.csv"), index=False)
+    pd.DataFrame(conf_summary).to_csv(os.path.join(target_out_dir, "conformal_intervals_coverage.csv"), index=False)
     print("Conformal intervals coverage report saved.")
 
     # -------------------------------------------------------------
     # Calibration Table with Wilson 95% Intervals
     # -------------------------------------------------------------
     cal_table = reliability_table_with_wilson(pred_df["actual_class"], pred_df["pred_prob_calibrated"], n_bins=10)
-    cal_table.to_csv(os.path.join(PHASE7_DIR, "calibration_table.csv"), index=False)
+    cal_table.to_csv(os.path.join(target_out_dir, "calibration_table.csv"), index=False)
     print("Reliability table with Wilson intervals saved.")
 
     # -------------------------------------------------------------
@@ -681,7 +691,7 @@ def run_pipeline():
     best_10 = pred_df.sort_values("abs_error", ascending=True).head(10).copy()
     best_10["error_type"] = "10 Best Absolute Errors"
     tail_df = pd.concat([worst_10, best_10], ignore_index=True)
-    tail_df.to_csv(os.path.join(PHASE7_DIR, "tail_and_error_distribution.csv"), index=False)
+    tail_df.to_csv(os.path.join(target_out_dir, "tail_and_error_distribution.csv"), index=False)
     print("Tail and error distribution saved.")
 
     # -------------------------------------------------------------
@@ -723,7 +733,7 @@ def run_pipeline():
         {"metric": "Equal-Frequency ECE", "phase_6": round(p6_ece, 4), "phase_7": round(p7_ece, 4), "delta": round(p7_ece - p6_ece, 4), "notes": "Calibration error"},
         {"metric": "Brier Score Loss", "phase_6": round(p6_brier, 4), "phase_7": round(p7_brier, 4), "delta": round(p7_brier - p6_brier, 4), "notes": "Probability score"},
     ]
-    pd.DataFrame(comp_rows).to_csv(os.path.join(PHASE7_DIR, "before_after_comparison.csv"), index=False)
+    pd.DataFrame(comp_rows).to_csv(os.path.join(target_out_dir, "before_after_comparison.csv"), index=False)
     print("Before vs After comparison saved.")
     print("Pipeline Execution Completed Successfully.")
 

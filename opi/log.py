@@ -3,15 +3,34 @@
 import csv
 import json
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Callable
 import numpy as np
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 RUN_LOG_PATH = ROOT_DIR / "predictions" / "run_log.csv"
+
+IST = timezone(timedelta(hours=5, minutes=30))
+_TEST_FIXTURE_CLOCK: Optional[Callable[[], str]] = None
+
+
+def set_test_fixture_clock(clock_fn: Optional[Callable[[], str]] = None):
+    """Set or reset an explicit fixture clock strictly for test runs."""
+    global _TEST_FIXTURE_CLOCK
+    _TEST_FIXTURE_CLOCK = clock_fn
+
+
+def get_write_timestamp() -> str:
+    """Generate ISO 8601 timestamp with timezone offset at write time.
+    Never accepts caller-supplied or hardcoded timestamps except via test fixture clock.
+    """
+    if _TEST_FIXTURE_CLOCK is not None:
+        return _TEST_FIXTURE_CLOCK()
+    return datetime.now(IST).isoformat()
+
 
 LOG_COLUMNS = [
     "scored_at",
@@ -58,7 +77,7 @@ def append_run_log(run_id: str, action: str, company: str, status: str, details:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow(["timestamp", "run_id", "action", "company", "status", "details"])
-        writer.writerow([datetime.now().isoformat(), run_id, action, company, status, details])
+        writer.writerow([get_write_timestamp(), run_id, action, company, status, details])
 
 
 def append_prediction_log(
@@ -73,13 +92,18 @@ def append_prediction_log(
     status: str = "FORWARD",
     notes: str = "",
     model_version: Optional[str] = None,
-    scored_at: Optional[str] = None
+    _fixture_clock: Optional[Callable[[], str]] = None
 ) -> Dict[str, Any]:
-    """Append a verified forward prediction row to predictions/prediction_log.csv (append-only)."""
+    """Append a verified forward prediction row to predictions/prediction_log.csv (append-only).
+    Timestamp is strictly generated at write time with timezone offset.
+    """
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     file_exists = LOG_PATH.exists()
     
-    timestamp = scored_at or datetime.now().isoformat()
+    if _fixture_clock is not None:
+        timestamp = _fixture_clock()
+    else:
+        timestamp = get_write_timestamp()
     snapshot_json = serialize_features_snapshot(features, model_version)
     
     row_dict = {

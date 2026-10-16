@@ -1,0 +1,10 @@
+company,listing_date,issue_price,flagged_gmp_pct,verified_gmp_pct,actual_gain_pct,status,source_url,notes
+Mukka Proteins,2024-03-07,28.0,321.43,NaN,50.89,REVERTED_NOT_RECORDED,,Phase 8 Mukka 125% correction cited invalid Chittorgarh ID 1647 without snapshot. Reverted to NOT_RECORDED per Gate A9 V4.
+Motisons Jewellers,2023-12-26,55.0,127.27,NaN,88.91,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Bls Eservices,2024-02-06,135.0,114.81,NaN,128.89,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Exicom Telesystems,2024-03-05,142.0,112.68,NaN,86.62,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Premier Energies,2024-09-03,450.0,108.22,NaN,120.0,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Bajaj Housing Finance,2024-09-16,70.0,102.86,NaN,150.71,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Krn Heat Exchanger Refrigeration,2024-10-03,220.0,106.82,NaN,113.64,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Mamata Machinery,2024-12-27,243.0,107.0,NaN,146.91,REVERTED_NOT_RECORDED,,Extreme GMP >100% lacked code-saved snapshot under data/evidence/gmp/. Removed 'audited genuine'; reverted to NOT_RECORDED.
+Tempsens Instruments India,2026-08-28,300.0,108.33,NaN,111.33,REVERTED_NOT_RECORDED,,Phase 7 unverified backfill value reverted to NOT_RECORDED in Phase 8 per D-001/D-002.

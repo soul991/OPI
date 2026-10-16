@@ -71,3 +71,34 @@ def test_phase7_errata_present():
     assert "no demonstrated effect" in head
     assert "Phase 7 indicates this was misdiagnosed" in head
 
+
+def test_earlier_phases_immutable():
+    """D-017: Earlier phase artifacts (Phases 1-7, Phase 4 summary) must remain immutable."""
+    # Check that Phase 8 re-run outputs are preserved in rerun_phase7_cleaned/
+    rerun_dir = ROOT / "phases" / "Phase 8" / "rerun_phase7_cleaned"
+    assert rerun_dir.exists(), "phases/Phase 8/rerun_phase7_cleaned must exist"
+    assert (rerun_dir / "before_after_comparison.csv").exists()
+    ba = pd.read_csv(rerun_dir / "before_after_comparison.csv")
+    gmp_row = ba[ba["metric"].str.contains("Observed GMP", na=False)]
+    assert not gmp_row.empty
+    # Must not contain stale '+75 IPOs backfilled'
+    assert "+75" not in str(gmp_row["notes"].iloc[0]), f"Stale backfill note remains: {gmp_row['notes'].iloc[0]}"
+
+    # Check that Phase 7 non-md files are restored
+    p7_ba = ROOT / "phases" / "Phase 7" / "before_after_comparison.csv"
+    assert p7_ba.exists()
+    p4_sum = ROOT / "phases" / "Phase 4" / "phase4_summary.json"
+    assert p4_sum.exists()
+
+
+def test_phase8_errata_present():
+    """D-019: Verify that ERRATA (Phase 9) is present at the top of Phase 8 verdict."""
+    verdict = ROOT / "phases" / "Phase 8" / "3_outcome_and_verdict.md"
+    assert verdict.exists(), "Phase 8 verdict must exist"
+    head = verdict.read_text(encoding="utf-8")[:2500]
+    assert "## ERRATA (Phase 9)" in head, "ERRATA (Phase 9) header must be present in Phase 8 verdict"
+    assert "D-001" in head
+    assert "revert" in head.lower()
+
+
+

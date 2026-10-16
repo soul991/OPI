@@ -30,6 +30,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Verify or Retrain Model Binary
+        run: |
+          if [ ! -f "model/ipo_model_phase4.joblib" ] && [ ! -f "model/ipo_model.joblib" ]; then
+            echo "Model binary missing, running deterministic build..."
+            python model/train.py
+          fi
+
       - name: Execute Daily Forward Test Runner
         run: |
           python -m opi.run_daily

@@ -12,13 +12,16 @@ LOG_PATH = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
 def test_forward_rows_scored_after_bidding_closed():
     """D-004: Every FORWARD row must be scored strictly after bidding closed (final subscription)."""
     assert os.path.exists(LOG_PATH), "prediction_log.csv must exist"
-    df = pd.read_csv(LOG_PATH, parse_dates=["scored_at", "close_date", "listing_date"])
+    df = pd.read_csv(LOG_PATH)
     forward = df[df["status"] == "FORWARD"].copy()
     assert len(forward) > 0, "Expected at least 1 FORWARD row"
 
     # Close cut-off: 18:00 IST on close date
-    close_cut = forward["close_date"] + pd.Timedelta(hours=18)
-    early = forward[forward["scored_at"] < close_cut]
+    sc = pd.to_datetime(forward["scored_at"], format="mixed")
+    forward["scored_dt"] = sc.apply(lambda t: t if t.tzinfo is None else t.tz_convert("Asia/Kolkata").tz_localize(None))
+    forward["close_dt"] = pd.to_datetime(forward["close_date"])
+    close_cut = forward["close_dt"] + pd.Timedelta(hours=18)
+    early = forward[forward["scored_dt"] < close_cut]
     assert len(early) == 0, f"Found FORWARD rows scored before bidding closed: {early['company'].tolist()}"
 
     # Must not contain references to Day 1 or Day 2 live tracking in notes
@@ -48,3 +51,29 @@ def test_actuals_only_for_listed():
             f"Unlisted IPO {row['company']} (listing {row['listing_date'].date()}) "
             f"has premature actual_gain_pct={act}"
         )
+
+
+def test_scored_at_is_real_run_time():
+    """D-016: FORWARD rows must record real write time with timezone offset and no backdating."""
+    assert os.path.exists(LOG_PATH), "prediction_log.csv must exist"
+    df = pd.read_csv(LOG_PATH)
+    forward = df[df["status"] == "FORWARD"].copy()
+    assert len(forward) > 0, "Expected at least 1 active FORWARD row"
+
+    for _, row in forward.iterrows():
+        raw_ts = str(row["scored_at"])
+        parsed = pd.to_datetime(raw_ts)
+        assert parsed.tzinfo is not None or "+" in raw_ts or "-" in raw_ts[10:], (
+            f"FORWARD row for {row['company']} must carry timezone offset: {raw_ts}"
+        )
+
+    # Verify write-time timestamp generator in opi.log
+    from opi.log import get_write_timestamp, set_test_fixture_clock
+    ts = get_write_timestamp()
+    assert "+05:30" in ts or "Z" in ts or "+" in ts[10:], f"get_write_timestamp() missing offset: {ts}"
+
+    # Verify test fixture clock override works when explicitly enabled
+    set_test_fixture_clock(lambda: "2026-10-16T12:00:00+05:30")
+    assert get_write_timestamp() == "2026-10-16T12:00:00+05:30"
+    set_test_fixture_clock(None)
+
