@@ -1,11 +1,13 @@
 """Append-only forward prediction log and outcome recording module."""
 
 import csv
+import hashlib
 import json
 import os
 from datetime import datetime, date, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Callable
+from urllib.parse import urlsplit
 import numpy as np
 import pandas as pd
 
@@ -149,30 +151,89 @@ def update_actual_outcome(
     source_snapshot_path: Optional[str] = None,
     log_path: Optional[Union[str, Path]] = None
 ) -> Tuple[bool, str]:
-    """Record actual listing outcome for a listed FORWARD row."""
+    """Record an actual only when an official exchange snapshot is present."""
     target_log = Path(log_path) if log_path else LOG_PATH
     if not target_log.exists():
         return False, f"{target_log} does not exist"
+
+    if actual_gain_pct is not None:
+        return False, "Direct gain entry is disabled; provide a verified opening price and issue price."
+    if not source_url or not source_snapshot_path:
+        return False, "An official source URL and saved evidence snapshot are required."
+    try:
+        source_parts = urlsplit(source_url)
+        source_host = (source_parts.hostname or "").lower().rstrip(".")
+        official_host = source_parts.scheme == "https" and any(
+            source_host == domain or source_host.endswith("." + domain)
+            for domain in ("nseindia.com", "bseindia.com")
+        ) and not source_parts.username and not source_parts.password and source_parts.port in (None, 443)
+        snapshot = Path(source_snapshot_path)
+        if not snapshot.is_absolute():
+            snapshot = ROOT_DIR / snapshot
+        evidence_root = (ROOT_DIR / "data" / "evidence" / "actuals").resolve()
+        snapshot_resolved = snapshot.resolve()
+        snapshot_resolved.relative_to(evidence_root)
+    except (ValueError, OSError):
+        return False, "Evidence snapshot must be saved under data/evidence/actuals/."
+    if not official_host:
+        return False, "Actual outcomes can only be attributed to an HTTPS NSE or BSE source."
+    if not snapshot_resolved.is_file() or snapshot_resolved.stat().st_size == 0:
+        return False, "A non-empty saved exchange snapshot is required."
+    manifest_path = snapshot_resolved.with_suffix(".json")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        snapshot_hash = hashlib.sha256(snapshot_resolved.read_bytes()).hexdigest()
+    except (OSError, json.JSONDecodeError):
+        return False, "A readable evidence manifest for the exchange snapshot is required."
+    rel_snapshot = snapshot_resolved.relative_to(ROOT_DIR).as_posix()
+    if (
+        manifest.get("verification_status") != "VERIFIED_IN_SNAPSHOT"
+        or manifest.get("snapshot_path") != rel_snapshot
+        or manifest.get("snapshot_sha256") != snapshot_hash
+        or manifest.get("final_url") != source_url
+    ):
+        return False, "Evidence manifest, snapshot hash, and official source URL do not match."
         
     df = pd.read_csv(target_log)
     mask = (df["company"] == company) & (df["listing_date"] == listing_date) & (df["status"] == "FORWARD")
     
     if mask.sum() == 0:
         return False, f"No active FORWARD row found for {company} ({listing_date})"
+
+    try:
+        listing_day = datetime.strptime(listing_date[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return False, "Listing date must use YYYY-MM-DD."
+    if listing_day > datetime.now(IST).date():
+        return False, f"{company} has not reached its listing date ({listing_day})."
+    if df.loc[mask, "actual_gain_pct"].notna().any():
+        return False, f"An actual outcome is already recorded for {company} ({listing_date}); no overwrite was made."
         
-    if actual_gain_pct is not None:
-        actual_gain = round(float(actual_gain_pct), 2)
-    elif actual_listing_price is not None and issue_price is not None and issue_price > 0:
+    if actual_listing_price is not None and issue_price is not None and issue_price > 0:
         actual_gain = round(((actual_listing_price - issue_price) / issue_price) * 100.0, 2)
     else:
-        return False, "Must provide either actual_gain_pct or (actual_listing_price and issue_price)"
+        return False, "Must provide actual_listing_price and a positive issue_price."
+    try:
+        manifest_matches_outcome = (
+            manifest.get("company") == company
+            and manifest.get("listing_date") == listing_day.isoformat()
+            and abs(float(manifest.get("official_opening_price")) - float(actual_listing_price)) <= 1e-9
+            and abs(float(manifest.get("issue_price_in_prediction")) - float(issue_price)) <= 1e-9
+            and abs(float(manifest.get("computed_listing_gain_pct")) - actual_gain) <= 1e-9
+        )
+    except (TypeError, ValueError):
+        manifest_matches_outcome = False
+    if not manifest_matches_outcome:
+        return False, "Evidence manifest does not match the company, prices, date, or computed gain."
 
     df.loc[mask, "actual_gain_pct"] = actual_gain
     
     old_notes = str(df.loc[mask, "notes"].iloc[0]) if pd.notna(df.loc[mask, "notes"].iloc[0]) else ""
-    if source_url:
-        evidence_note = f"Actual listing verified via {source_url}"
-        df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")
+    evidence_note = (
+        f"Actual opening price verified via {source_url}; "
+        f"snapshot={Path(source_snapshot_path).as_posix()}"
+    )
+    df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")
     
     df.to_csv(target_log, index=False)
     return True, f"Updated {company} actual gain to {actual_gain}%"
