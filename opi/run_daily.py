@@ -124,7 +124,11 @@ def run_daily_forward_test(dry_run: bool = False):
             l_date = pd.to_datetime(r["listing_date"]).date()
             if l_date <= today_date:
                 print(f"\n{comp_name} listed on {l_date} <= today ({today_date}) - outcome update pending.")
-                # Outcome fetching hook
+                print(
+                    "Record it with scripts/update_actuals.py using an official NSE/BSE page, "
+                    "the opening-price quote, and the listing-date quote. The runner will not "
+                    "copy an actual from the historical master dataset."
+                )
             else:
                 print(f"{comp_name} scheduled to list on {l_date} > today ({today_date}) - unlisted, carried over.")
 

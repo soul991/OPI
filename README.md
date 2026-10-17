@@ -25,9 +25,17 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - **Probability Reliability Warning**: Do not treat predicted probabilities above approximately **0.85** or below approximately **0.10** as certainty. Empirical binomial Wilson intervals show wide dispersion in extreme bins.
 
 ### 4. Forward Test Status
-- Genuine FORWARD predictions logged: **1** (`HD Fire Protect Limited`, scored post-close with final features, listing scheduled for 2026-10-21).
+- Genuine FORWARD predictions logged: **2** (`HD Fire Protect Limited`, listing scheduled for 2026-10-21; `Fusion CX Limited`, listing scheduled for 2026-10-22).
 - Genuine FORWARD listings completed: **0**.
 - Status: **Provisional, no performance claims permitted below n = 30** (per pre-registered rules).
+
+### 4a. Champion Replay and Live Accuracy Dashboard
+- The registered champion remains `v4.0.0-champion`, with a training window ending 2021-12-31; its artifact hash matches the registry. The master contains 333 IPOs through 2021 and 398 later rows. No training or model promotion was performed for this replay.
+- `predictions/champion_replay_v4.0.0-champion.csv` records inference-only comparisons across the 396 eligible Mainboard rows in `data/ipo_master.csv` dated 2022 onward. The two InvIT/REIT rows are excluded by the model's Mainboard eligibility rule. Replay MAE is 7.98 percentage points and positive/non-positive direction matched 84.3% of the time.
+- This is a retrospective replay using stored historical feature values; it is not a prospectively recorded prediction series, and not every historical feature has a verified pre-listing snapshot. The replay is shown separately from genuine FORWARD predictions and must not be presented as the live track record.
+- Newly completed listings after the master data cutoff were checked; R.K. Fashion Accessories listed on NSE SME on 2026-10-12 and is outside this Mainboard model's scope, so it was not added or scored.
+- `dashboard/index.html` compares replay predictions with actual listing gains and separately tracks the champion's genuine FORWARD predictions. `opi.run_daily` refreshes it during the daily run, and `scripts/update_actuals.py` refreshes it immediately after an official exchange outcome is recorded.
+- Fusion CX's final bidding figures were available only after its 2026-10-16 close; the live champion prediction is **+4.33%**, with calibrated P(gain > 10%) of **30.1%**. No GMP input was recorded. It is due to be compared with the official listing outcome after 2026-10-22.
 
 ### 5. Known Limitations
 - **D-006 (Accounting Fundamentals Completeness)**: Fundamentals columns `roce` and `revenue_growth_pct` are 0% filled; `pe_ratio`/`peer_median_pe` are ~61-62% filled. All fundamental ratios are aggregator-sourced (medium confidence). Pre-IPO accounting fundamentals showed no demonstrated effect in Phase 6/7 evaluations ($\Delta\text{MAE} = +0.08\%$, 95% CI: [-0.16%, +0.33%]); line closed as `ACCEPTED`.
@@ -181,7 +189,27 @@ Audit unlisted vs listed candidate rows for promotion into master:
 python scripts/promote_forward_rows.py --audit
 ```
 
-### 5. Full Test Suite & Independent Verification
+### 5. Record an Actual Listing Outcome
+The updater lists pending forward predictions without changing data:
+```bash
+python scripts/update_actuals.py
+```
+
+After an IPO lists, record its **opening/listing price** from an official NSE or BSE page. The command fetches that page itself, checks that the company identifier, listing date, and opening-price quote appear in the fetched content, saves an immutable snapshot and metadata manifest under `data/evidence/actuals/`, computes the gain from the issue price saved with the original prediction, and only then updates the forward log. It refuses non-exchange URLs, redirects away from NSE/BSE, future listing dates, missing quotes, and repeat updates.
+
+```bash
+python scripts/update_actuals.py \
+  --company "Exact company name from prediction_log.csv" \
+  --source-url "<official NSE/BSE page URL>" \
+  --actual-listing-price "<opening price shown on the page>" \
+  --page-date "<listing date YYYY-MM-DD>" \
+  --company-quote "<exact company identifier visible on the page>" \
+  --price-quote "<exact opening/listing price excerpt from the page>"
+```
+
+This is a command template; replace each quoted placeholder with values visible on the official exchange page. The quote must identify an opening/listing price and include the exact supplied price; the page must show the prediction's listing date. If the exchange page cannot be fetched or the supplied text is not present in its snapshot, the outcome stays pending. The legacy historical master CSV is not used to fill forward outcomes.
+
+### 6. Full Test Suite & Independent Verification
 ```bash
 python -m pytest -q            # Runs 64 unit, schema, app, and governance tests
 python scripts/verify_all.py   # Independent repository verification (48 checks, 0 fail)
