@@ -16,3 +16,7 @@ files/
 
 # Raw data sources (redistribution restrictions; rebuild with scripts/download_all_raw_data.py)
 data/raw/
+# Environment variables
+.env
+.env.*
+!.env.example

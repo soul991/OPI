@@ -1,8 +1,8 @@
 # OPI Session Report
 
 **Date:** 2026-10-17
-**Repository:** `/Users/istakahamed06/Documents/OPI`
-**Archive:** `codex shit/`
+**Repository:** `OPI`
+**Archive:** `docs/session_reports/`
 
 ## Goal
 

@@ -22,7 +22,7 @@ MAX_REDIRECTS = 4
 OFFICIAL_EXCHANGE_DOMAINS = ("nseindia.com", "bseindia.com")
 PRICE_TOKEN = re.compile(r"(?<![\w])(?:₹\s*)?([0-9][0-9,]*(?:\.[0-9]+)?)(?![\w])")
 OPENING_PRICE_LABEL = re.compile(
-    r"\b(?:listing|opening|open|first[\s-]+traded?)\s+(?:day\s+)?price\b",
+    r"\b(?:(?:listing|opening|open|first[\s-]+traded?)\s+(?:day\s+)?price|open)\b",
     re.IGNORECASE,
 )
 
@@ -188,6 +188,7 @@ def record_actual_from_exchange(
     company_quote: str,
     price_quote: str,
     log_path: str | Path,
+    evidence_file: str | Path | None = None,
 ) -> dict[str, Any]:
     """Fetch official exchange evidence, verify it, save it, and record the actual outcome."""
     if not is_official_exchange_url(source_url):
@@ -204,7 +205,29 @@ def record_actual_from_exchange(
     if not price.is_finite() or price <= 0:
         raise ActualsEvidenceError("Opening price must be greater than zero.")
 
-    final_url, raw_body, content_type = _fetch_exchange_page(source_url)
+    if evidence_file is not None:
+        ev_path = Path(evidence_file).resolve()
+        if not ev_path.is_file():
+            raise ActualsEvidenceError(f"Evidence file does not exist: {evidence_file}")
+        if ev_path.stat().st_size == 0:
+            raise ActualsEvidenceError("Evidence file is empty.")
+        if ev_path.stat().st_size > MAX_RESPONSE_BYTES:
+            raise ActualsEvidenceError("Evidence file exceeds the 12 MiB evidence limit.")
+        raw_body = ev_path.read_bytes()
+        final_url = source_url
+        ext = ev_path.suffix.lower()
+        if ext in (".html", ".htm"):
+            content_type = "text/html"
+        elif ext == ".xhtml":
+            content_type = "application/xhtml+xml"
+        elif ext == ".json":
+            content_type = "application/json"
+        elif ext == ".txt":
+            content_type = "text/plain"
+        else:
+            content_type = "text/html"
+    else:
+        final_url, raw_body, content_type = _fetch_exchange_page(source_url)
     encoding = "utf-8"
     page = raw_body.decode(encoding, errors="replace")
     visible_text = extract_clean_text_from_html(page) if "html" in content_type or "xhtml" in content_type else page
@@ -267,3 +290,26 @@ def record_actual_from_exchange(
     if not ok:
         raise ActualsEvidenceError(f"Evidence saved, but prediction log was not changed: {message}")
     return {**manifest, "update_message": message}
+
+def record_actual_from_evidence_file(
+    *,
+    company: str,
+    source_url: str,
+    evidence_file: str | Path,
+    listing_price: float,
+    page_date: str,
+    company_quote: str,
+    price_quote: str,
+    log_path: str | Path,
+) -> dict[str, Any]:
+    """Record an actual outcome from a locally saved official exchange page."""
+    return record_actual_from_exchange(
+        company=company,
+        source_url=source_url,
+        listing_price=listing_price,
+        page_date=page_date,
+        company_quote=company_quote,
+        price_quote=price_quote,
+        log_path=log_path,
+        evidence_file=evidence_file,
+    )

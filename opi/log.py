@@ -194,7 +194,9 @@ def update_actual_outcome(
     ):
         return False, "Evidence manifest, snapshot hash, and official source URL do not match."
         
-    df = pd.read_csv(target_log)
+    df = pd.read_csv(target_log, dtype={"notes": object})
+    if "notes" in df.columns:
+        df["notes"] = df["notes"].astype(object)
     mask = (df["company"] == company) & (df["listing_date"] == listing_date) & (df["status"] == "FORWARD")
     
     if mask.sum() == 0:

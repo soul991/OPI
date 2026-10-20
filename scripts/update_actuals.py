@@ -63,6 +63,12 @@ def main() -> int:
     parser.add_argument("--page-date", help="Date represented by the exchange record, YYYY-MM-DD")
     parser.add_argument("--company-quote", help="Exact company identifier copied from the fetched exchange page")
     parser.add_argument(
+        "--evidence-file",
+        type=Path,
+        default=None,
+        help="Path to locally saved official exchange page from browser",
+    )
+    parser.add_argument(
         "--price-quote",
         help="Exact page excerpt that labels the opening/listing price and includes its value",
     )
@@ -75,7 +81,7 @@ def main() -> int:
         args.company_quote,
         args.price_quote,
     )
-    if not args.company and not any(evidence_args):
+    if not args.company and not any(evidence_args) and not args.evidence_file:
         return show_pending(args.log)
     if not args.company or not all(evidence_args):
         parser.error(
@@ -92,6 +98,7 @@ def main() -> int:
             company_quote=args.company_quote,
             price_quote=args.price_quote,
             log_path=args.log,
+            evidence_file=args.evidence_file,
         )
     except ActualsEvidenceError as exc:
         print(f"NOT RECORDED: {exc}", file=sys.stderr)
