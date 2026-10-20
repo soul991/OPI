@@ -243,10 +243,12 @@ with tab_evidence:
         "debt_equity", "sector", "exchange", "gmp_pct", "open_date", "close_date", "listing_date"
     ]:
         prop: FieldProposal = getattr(schema, fname, FieldProposal())
+        gv = prop.get_grounded_value()
+        rv = prop.value
         rows.append({
             "Feature": fname,
-            "Grounded Value": prop.get_grounded_value(),
-            "Raw Value": prop.value,
+            "Grounded Value": str(gv) if gv is not None else "None",
+            "Raw Value": str(rv) if rv is not None else "None",
             "Grounding Status": prop.grounding_status,
             "Source URL": prop.source_url or "N/A",
             "Snapshot Path": prop.snapshot_path or "N/A",

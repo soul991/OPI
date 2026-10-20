@@ -114,6 +114,24 @@ def verify_value_in_html(
     if val_str and val_str in plain_text.lower():
         return True, f"Substring match for '{value}'"
 
+    # Try date format variations if value is an ISO date string
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", str(value).strip()):
+        try:
+            dt = pd.to_datetime(value)
+            date_variants = [
+                dt.strftime("%b %d, %Y").lower(),
+                dt.strftime("%B %d, %Y").lower(),
+                dt.strftime("%d %b %Y").lower(),
+                dt.strftime("%d %B %Y").lower(),
+                dt.strftime("%d-%m-%Y").lower(),
+                dt.strftime("%d/%m/%Y").lower()
+            ]
+            for variant in date_variants:
+                if variant in plain_text.lower():
+                    return True, f"Date format match for '{value}' as '{variant}'"
+        except Exception:
+            pass
+
     return False, f"Value '{value}' not found in snapshot text"
 
 

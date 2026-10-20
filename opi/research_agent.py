@@ -69,7 +69,7 @@ class MockResearchProvider:
             "sector": {"value": "Industrial & Manufacturing", "quote": "Industry: Industrial & Manufacturing", "url": "https://www.chittorgarh.com/ipo/mock-ipo", "page_date": "2026-10-13"},
             "exchange": {"value": "BOTH", "quote": "Listing at BSE, NSE", "url": "https://www.chittorgarh.com/ipo/mock-ipo", "page_date": "2026-10-13"},
             "gmp_pct": {"value": 30.26, "quote": "GMP 30.26%", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},
-            "gmp_as_of_date": {"value": "2026-10-15", "quote": "GMP as of Oct 15, 2026", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},
+            "gmp_as_of_date": {"value": "2026-10-15", "quote": "as of Oct 15, 2026", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},
             "nifty_30d_return": {"value": -3.03, "quote": "Nifty 30d return -3.03%", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},
             "india_vix": {"value": 14.12, "quote": "India VIX 14.12", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},
             "recent_ipo_avg_gain": {"value": 17.22, "quote": "Recent IPO average gain 17.22%", "url": "https://www.investorgain.com/mock-gmp", "page_date": "2026-10-15"},

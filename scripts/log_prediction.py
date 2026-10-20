@@ -159,6 +159,7 @@ def score_dataframe(df, art, notes_override=None, log_file=LOG_PATH, status="FOR
                     notes=combined_notes,
                     model_version=scored["model_version"]
                 )
+                now_iso = record.get("scored_at", datetime.now().isoformat())
             except ValueError as dup_err:
                 print(f"Notice: {dup_err}")
                 continue
