@@ -1,0 +1,11 @@
+{
+  "as_of_date": "2026-10-19",
+  "accessed_at": "2026-10-20T14:01:36.191829+05:30",
+  "nifty_close": 22888.94921875,
+  "nifty_30d_ago_close": 23346.400390625,
+  "nifty_30d_return": -1.96,
+  "india_vix": 14.77,
+  "recent_ipo_avg_gain": 17.22,
+  "nifty_source": "^NSEI via yfinance (public exchange data)",
+  "vix_source": "^INDIAVIX via yfinance (public exchange data)"
+}
