@@ -1,5 +1,9 @@
 {
   "active_champion": "v4.0.0-champion",
+  "calibrated_probability_range": {
+    "min": 0.091,
+    "max": 0.882
+  },
   "models": {
     "v4.0.0-champion": {
       "model_version": "v4.0.0-champion",
@@ -8,6 +12,10 @@
       "created_at": "2026-10-15T00:00:00Z",
       "champion": true,
       "sha256": "335dd32d3ab3127de378316d64690b1a9bd6c2e8377859671916b1347e9b9069",
+      "calibrated_probability_range": {
+        "min": 0.091,
+        "max": 0.882
+      },
       "features": [
         "issue_size_cr", "fresh_issue_pct", "ofs_pct", "lot_size",
         "sub_qib", "sub_nii", "sub_retail", "sub_total",

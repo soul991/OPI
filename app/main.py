@@ -15,6 +15,22 @@ import streamlit as st
 
 # Setup repository root on sys.path
 ROOT_DIR = Path(__file__).resolve().parents[1]
+
+
+def get_calibrated_probability_range():
+    reg_path = ROOT_DIR / "model" / "registry.json"
+    if reg_path.exists():
+        try:
+            import json
+            data = json.loads(reg_path.read_text(encoding="utf-8"))
+            champ = data.get("active_champion", "v4.0.0-champion")
+            models = data.get("models", {})
+            r = data.get("calibrated_probability_range") or models.get(champ, {}).get("calibrated_probability_range")
+            if r:
+                return float(r.get("min", 0.091)), float(r.get("max", 0.882))
+        except Exception:
+            pass
+    return 0.091, 0.882
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -100,13 +116,18 @@ if "candidate_schema" not in st.session_state or analyze_btn:
     with st.spinner(f"Initiating grounded research agent for '{query}'..."):
         # Progress steps
         pbar = st.progress(20, text="Searching verified prospectus filings and aggregator tables...")
-        schema = execute_research_run(query)
-        pbar.progress(60, text="Fetching HTML pages and saving evidence snapshots under data/evidence/research/...")
-        pbar.progress(90, text="Running code-based numeric and quote grounding verification...")
-        st.session_state["candidate_schema"] = schema
-        st.session_state["current_query"] = query
-        pbar.progress(100, text="Research run complete.")
-        pbar.empty()
+        try:
+            schema = execute_research_run(query)
+            pbar.progress(60, text="Fetching HTML pages and saving evidence snapshots under data/evidence/research/...")
+            pbar.progress(90, text="Running code-based numeric and quote grounding verification...")
+            st.session_state["candidate_schema"] = schema
+            st.session_state["current_query"] = query
+            pbar.progress(100, text="Research run complete.")
+            pbar.empty()
+        except PermissionError as exc:
+            pbar.empty()
+            st.error(str(exc))
+            st.stop()
 
 schema: IPOCandidateSchema = st.session_state["candidate_schema"]
 metrics = schema.grounding_metrics()
@@ -160,11 +181,12 @@ with tab_analysis:
             st.metric("Estimated Listing Gain", f"{pt_est:+.2f}%")
         with col2:
             st.metric("80% Conformal Interval", f"[{c_low:+.1f}%, {c_high:+.1f}%]")
+        cal_min, cal_max = get_calibrated_probability_range()
         with col3:
-            if 0.0 <= p_gt10 <= 0.98:
-                st.metric("P(Listing Gain > 10%)", f"{p_gt10 * 100:.1f}%", help="Platt-calibrated probability")
+            if cal_min <= p_gt10 <= cal_max:
+                st.metric("P(Listing Gain > 10%)", f"{p_gt10 * 100:.1f}%", help=f"Platt-calibrated probability (measured range: {cal_min*100:.1f}% - {cal_max*100:.1f}%)")
             else:
-                st.metric("P(Listing Gain > 10%)", "Uncalibrated / Hidden")
+                st.metric("P(Listing Gain > 10%)", "not shown: outside measured range", help=f"Value outside empirically calibrated range [{cal_min*100:.1f}%, {cal_max*100:.1f}%]")
         with col4:
             gmp_display = f"{gmp_val:+.2f}%" if gmp_val is not None else "Not Available"
             st.metric("Observed Final GMP", gmp_display)
@@ -243,10 +265,13 @@ with tab_evidence:
         "debt_equity", "sector", "exchange", "gmp_pct", "open_date", "close_date", "listing_date"
     ]:
         prop: FieldProposal = getattr(schema, fname, FieldProposal())
+        gv = prop.get_grounded_value()
+        rv = prop.value
+        label = f"{fname} (not used by model)" if fname in ("pe_ratio", "peer_median_pe", "debt_equity") else fname
         rows.append({
-            "Feature": fname,
-            "Grounded Value": prop.get_grounded_value(),
-            "Raw Value": prop.value,
+            "Feature": label,
+            "Grounded Value": str(gv) if gv is not None else "None",
+            "Raw Value": str(rv) if rv is not None else "None",
             "Grounding Status": prop.grounding_status,
             "Source URL": prop.source_url or "N/A",
             "Snapshot Path": prop.snapshot_path or "N/A",

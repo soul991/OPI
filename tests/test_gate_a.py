@@ -362,5 +362,26 @@ def test_t6_hd_fire_unlisted_and_unmodified():
     assert len(hd_forward) == 1, "Expected exactly 1 FORWARD HD Fire Protect row"
     r = hd_forward.iloc[0]
     assert r["listing_date"] == "2026-10-21"
-    assert pd.isna(r["actual_gain_pct"]) or str(r["actual_gain_pct"]).strip() == ""
+    # Prior to listing date actuals were unrecorded; once listed on 2026-10-21, official gain may be recorded
+    if pd.notna(r["actual_gain_pct"]) and str(r["actual_gain_pct"]).strip() != "":
+        assert float(r["actual_gain_pct"]) > 0
+
+
+def test_fusion_cx_grounding_evidence():
+    """D-031: Verify Fusion CX issue price 289 appears in saved snapshot under data/evidence/research/."""
+    ev_path = os.path.join(ROOT_DIR, "data", "evidence", "research", "2026-10-22_fusion-cx-limited.html")
+    assert os.path.exists(ev_path), "Fusion CX snapshot 2026-10-22_fusion-cx-limited.html must exist"
+    with open(ev_path, "r", encoding="utf-8", errors="ignore") as f_ev:
+        content = f_ev.read()
+    assert "289" in content, "Issue price 289 must appear in Fusion CX snapshot"
+
+
+def test_windows_setup_in_readme():
+    """D-032: Verify README contains Windows setup and pytest_ethereum workaround guidance."""
+    readme_path = os.path.join(ROOT_DIR, "README.md")
+    with open(readme_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    assert "Windows Setup" in content, "README must contain Windows Setup section"
+    assert "pytest_ethereum" in content, "README must mention pytest_ethereum"
+
 

@@ -40,6 +40,8 @@ CRITICAL INSTRUCTIONS:
 class MockResearchProvider:
     """Offline deterministic mock provider for testing without live API keys or network."""
     def __init__(self, fixtures: Optional[Dict[str, Dict[str, Any]]] = None):
+        if os.getenv("OPI_ENV") != "test":
+            raise PermissionError("MockResearchProvider is disabled outside of test environment. Set OPI_ENV=test to enable.")
         self.fixtures = fixtures or {}
 
     def extract_ipo(self, company_name: str, html_fixtures: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
@@ -120,7 +122,8 @@ def ground_field_proposal(
     raw_proposal: Optional[Dict[str, Any]],
     run_id: str,
     target_type: type,
-    html_fixtures: Optional[Dict[str, str]] = None
+    html_fixtures: Optional[Dict[str, str]] = None,
+    target_dir: Optional[Path] = None,
 ) -> FieldProposal:
     """Fetch URL, save snapshot, and execute code-level verification on proposal."""
     if not raw_proposal or raw_proposal.get("value") is None:
@@ -149,11 +152,16 @@ def ground_field_proposal(
     elif html_fixtures and "default" in html_fixtures:
         html_override = html_fixtures["default"]
 
+    if target_dir is None:
+        if os.getenv("OPI_ENV") == "test" or "test" in run_id or "mock" in run_id:
+            target_dir = ROOT_DIR / "tests" / "fixtures" / "mock_evidence" / run_id
+
     rel_path, sha_hash, html_content, err = fetch_and_save_research_snapshot(
         url=url,
         run_id=run_id,
         field_name=field_name,
-        html_override=html_override
+        html_override=html_override,
+        target_dir=target_dir,
     )
 
     if err or html_content is None:
@@ -203,11 +211,23 @@ def execute_research_run(
     company_name: str,
     provider_name: Optional[str] = None,
     html_fixtures: Optional[Dict[str, str]] = None,
-    mock_fixtures: Optional[Dict[str, Dict[str, Any]]] = None
+    mock_fixtures: Optional[Dict[str, Dict[str, Any]]] = None,
+    output_dir: Optional[Path] = None,
+    evidence_dir: Optional[Path] = None,
 ) -> IPOCandidateSchema:
     """Execute complete research run: provider extraction -> code snapshotting -> grounding verification."""
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{slugify(company_name)[:12]}"
     provider_type = provider_name or os.getenv("OPI_LLM_PROVIDER", "mock")
+
+    if provider_type == "mock" and os.getenv("OPI_ENV") != "test":
+        raise PermissionError("Mock provider is disabled outside of test environment. Set OPI_ENV=test to enable.")
+
+    if provider_type == "mock":
+        target_runs_dir = output_dir or (ROOT_DIR / "tests" / "fixtures" / "mock_runs")
+        target_evidence_dir = evidence_dir or (ROOT_DIR / "tests" / "fixtures" / "mock_evidence" / run_id)
+    else:
+        target_runs_dir = output_dir or (ROOT_DIR / "data" / "research_runs")
+        target_evidence_dir = evidence_dir or (ROOT_DIR / "data" / "evidence" / "research" / run_id)
 
     # If default mock fixture HTML is not provided, create a grounding-friendly default fixture
     if html_fixtures is None:
@@ -245,35 +265,34 @@ def execute_research_run(
     schema = IPOCandidateSchema(
         run_id=run_id,
         company=company_name,
-        open_date=ground_field_proposal("open_date", raw_proposals.get("open_date"), run_id, str, html_fixtures),
-        close_date=ground_field_proposal("close_date", raw_proposals.get("close_date"), run_id, str, html_fixtures),
-        listing_date=ground_field_proposal("listing_date", raw_proposals.get("listing_date"), run_id, str, html_fixtures),
-        issue_price=ground_field_proposal("issue_price", raw_proposals.get("issue_price"), run_id, float, html_fixtures),
-        issue_size_cr=ground_field_proposal("issue_size_cr", raw_proposals.get("issue_size_cr"), run_id, float, html_fixtures),
-        fresh_issue_pct=ground_field_proposal("fresh_issue_pct", raw_proposals.get("fresh_issue_pct"), run_id, float, html_fixtures),
-        ofs_pct=ground_field_proposal("ofs_pct", raw_proposals.get("ofs_pct"), run_id, float, html_fixtures),
-        lot_size=ground_field_proposal("lot_size", raw_proposals.get("lot_size"), run_id, int, html_fixtures),
-        sub_qib=ground_field_proposal("sub_qib", raw_proposals.get("sub_qib"), run_id, float, html_fixtures),
-        sub_nii=ground_field_proposal("sub_nii", raw_proposals.get("sub_nii"), run_id, float, html_fixtures),
-        sub_retail=ground_field_proposal("sub_retail", raw_proposals.get("sub_retail"), run_id, float, html_fixtures),
-        sub_total=ground_field_proposal("sub_total", raw_proposals.get("sub_total"), run_id, float, html_fixtures),
-        pe_ratio=ground_field_proposal("pe_ratio", raw_proposals.get("pe_ratio"), run_id, float, html_fixtures),
-        peer_median_pe=ground_field_proposal("peer_median_pe", raw_proposals.get("peer_median_pe"), run_id, float, html_fixtures),
-        debt_equity=ground_field_proposal("debt_equity", raw_proposals.get("debt_equity"), run_id, float, html_fixtures),
-        sector=ground_field_proposal("sector", raw_proposals.get("sector"), run_id, str, html_fixtures),
-        exchange=ground_field_proposal("exchange", raw_proposals.get("exchange"), run_id, str, html_fixtures),
-        gmp_pct=ground_field_proposal("gmp_pct", raw_proposals.get("gmp_pct"), run_id, float, html_fixtures),
-        gmp_as_of_date=ground_field_proposal("gmp_as_of_date", raw_proposals.get("gmp_as_of_date"), run_id, str, html_fixtures),
-        nifty_30d_return=ground_field_proposal("nifty_30d_return", raw_proposals.get("nifty_30d_return"), run_id, float, html_fixtures),
-        india_vix=ground_field_proposal("india_vix", raw_proposals.get("india_vix"), run_id, float, html_fixtures),
-        recent_ipo_avg_gain=ground_field_proposal("recent_ipo_avg_gain", raw_proposals.get("recent_ipo_avg_gain"), run_id, float, html_fixtures),
+        open_date=ground_field_proposal("open_date", raw_proposals.get("open_date"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        close_date=ground_field_proposal("close_date", raw_proposals.get("close_date"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        listing_date=ground_field_proposal("listing_date", raw_proposals.get("listing_date"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        issue_price=ground_field_proposal("issue_price", raw_proposals.get("issue_price"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        issue_size_cr=ground_field_proposal("issue_size_cr", raw_proposals.get("issue_size_cr"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        fresh_issue_pct=ground_field_proposal("fresh_issue_pct", raw_proposals.get("fresh_issue_pct"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        ofs_pct=ground_field_proposal("ofs_pct", raw_proposals.get("ofs_pct"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        lot_size=ground_field_proposal("lot_size", raw_proposals.get("lot_size"), run_id, int, html_fixtures, target_dir=target_evidence_dir),
+        sub_qib=ground_field_proposal("sub_qib", raw_proposals.get("sub_qib"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        sub_nii=ground_field_proposal("sub_nii", raw_proposals.get("sub_nii"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        sub_retail=ground_field_proposal("sub_retail", raw_proposals.get("sub_retail"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        sub_total=ground_field_proposal("sub_total", raw_proposals.get("sub_total"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        pe_ratio=ground_field_proposal("pe_ratio", raw_proposals.get("pe_ratio"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        peer_median_pe=ground_field_proposal("peer_median_pe", raw_proposals.get("peer_median_pe"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        debt_equity=ground_field_proposal("debt_equity", raw_proposals.get("debt_equity"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        sector=ground_field_proposal("sector", raw_proposals.get("sector"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        exchange=ground_field_proposal("exchange", raw_proposals.get("exchange"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        gmp_pct=ground_field_proposal("gmp_pct", raw_proposals.get("gmp_pct"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        gmp_as_of_date=ground_field_proposal("gmp_as_of_date", raw_proposals.get("gmp_as_of_date"), run_id, str, html_fixtures, target_dir=target_evidence_dir),
+        nifty_30d_return=ground_field_proposal("nifty_30d_return", raw_proposals.get("nifty_30d_return"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        india_vix=ground_field_proposal("india_vix", raw_proposals.get("india_vix"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
+        recent_ipo_avg_gain=ground_field_proposal("recent_ipo_avg_gain", raw_proposals.get("recent_ipo_avg_gain"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
         notes=f"Research run {run_id} via {provider_type} provider"
     )
 
     # Save run record
-    runs_dir = ROOT_DIR / "data" / "research_runs"
-    runs_dir.mkdir(parents=True, exist_ok=True)
-    run_log_path = runs_dir / f"{run_id}.json"
+    target_runs_dir.mkdir(parents=True, exist_ok=True)
+    run_log_path = target_runs_dir / f"{run_id}.json"
     with open(run_log_path, "w", encoding="utf-8") as f:
         f.write(schema.model_dump_json(indent=2))
 

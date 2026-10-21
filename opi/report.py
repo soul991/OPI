@@ -245,7 +245,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{r['listing_date']}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: {status_color}; font-weight: 600;">{r['status']}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{f"{r['pred_gain_pct']:+.2f}%" if r['pred_gain_pct'] is not None else "-"}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{f"{r['pred_prob_gt10']*100:.1f}%" if r['pred_prob_gt10'] is not None else "-"}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{(f"{r['pred_prob_gt10']*100:.1f}%" if (0.091 <= r['pred_prob_gt10'] <= 0.882) else "not shown: outside measured range") if r['pred_prob_gt10'] is not None else "-"}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{f"{r['gmp_pct']:+.2f}%" if r['gmp_pct'] is not None else "-"}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{f"{r['actual_gain_pct']:+.2f}%" if r['actual_gain_pct'] is not None else "Pending"}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px; color: #4b5563;">{r['notes'][:80]}...</td>

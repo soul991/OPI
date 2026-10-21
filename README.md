@@ -22,12 +22,12 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 ### 3. Known Weaknesses & Failure Modes
 - **Under-prediction of Tail Pops**: The model severely under-predicts extreme listing-day pops (> 50% gain). For the top 10% largest gains (actual gain >= 50.1%), empirical 80% conformal coverage collapses to **57.5% (FAIL)**.
 - **Over-Conservative Conformal Intervals**: On pooled and observed issues, 80% conformal prediction intervals achieved **91.2% empirical coverage** with a mean width of 46.26 percentage points.
-- **Probability Reliability Warning**: Do not treat predicted probabilities above approximately **0.85** or below approximately **0.10** as certainty. Empirical binomial Wilson intervals show wide dispersion in extreme bins.
+- **Probability Reliability Warning**: Do not treat predicted probabilities above approximately **0.882** or below approximately **0.091** as certainty (the out-of-sample calibrated probability range measured across 398 rolling-origin evaluations is **[0.091, 0.882]**; values outside this range are suppressed in the app and report as uncalibrated). Empirical binomial Wilson intervals show wide dispersion in extreme bins.
 
 ### 4. Forward Test Status
-- Genuine FORWARD predictions logged: **2** (`HD Fire Protect Limited`, listing scheduled for 2026-10-21; `Fusion CX Limited`, listing scheduled for 2026-10-22).
-- Genuine FORWARD listings completed: **0**.
-- Status: **Provisional, no performance claims permitted below n = 30** (per pre-registered rules).
+- Genuine FORWARD predictions logged: **6** (`HD Fire Protect Limited`, `Fusion CX Limited`, `Zetwerk Manufacturing Business Limited`, `Sahajanand Medical Technologies Limited`, `Tonbo Imaging India Limited`, `Bonfiglioli Transmissions Limited`).
+- Genuine FORWARD listings completed: **1** (`HD Fire Protect Limited`, listed 2026-10-21, Issue: INR 271.00, Listing: INR 334.40, Gain: +23.39%, Model: +26.12%, GMP: +30.26%).
+- Status: **Provisional (n = 1 of 30), descriptive only, no performance claims permitted below n = 30** (per pre-registered rules).
 
 ### 4a. Champion Replay and Live Accuracy Dashboard
 - The registered champion remains `v4.0.0-champion`, with a training window ending 2021-12-31; its artifact hash matches the registry. The master contains 333 IPOs through 2021 and 398 later rows. No training or model promotion was performed for this replay.
@@ -159,6 +159,10 @@ OPI/
 ---
 
 ## Quickstart & Commands
+
+### 0. Windows Setup & Environment Notes
+When running pytest on Windows environments where global or external site-packages plugins (such as `pytest-ethereum`) might be loaded by pytest, pass `-p no:pytest_ethereum` or configure `addopts = -p no:pytest_ethereum` in your local pytest flags to prevent unneeded dependency conflicts. In PowerShell, ensure UTF-8 output encoding is active (`$env:PYTHONIOENCODING = "utf-8"`).
+
 
 ### 1. Environment Configuration
 Copy `.env.example` to `.env` (gitignored) and configure your LLM provider:

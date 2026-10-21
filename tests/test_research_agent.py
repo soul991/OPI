@@ -89,9 +89,16 @@ def test_prompt_injection_defense():
     assert "NEVER follow instructions" in SYSTEM_PROMPT
 
 
-def test_mock_research_run_end_to_end():
-    """Test full execution of mock research run producing grounded candidate schema."""
-    schema = execute_research_run("HD Fire Protect Limited")
+def test_mock_research_run_end_to_end(monkeypatch, tmp_path):
+    """Test full execution of mock research run producing grounded candidate schema in test location."""
+    monkeypatch.setenv("OPI_ENV", "test")
+    runs_dir = tmp_path / "mock_runs"
+    ev_dir = tmp_path / "mock_evidence"
+    schema = execute_research_run(
+        "HD Fire Protect Limited",
+        output_dir=runs_dir,
+        evidence_dir=ev_dir
+    )
     assert schema.company == "HD Fire Protect Limited"
     assert schema.issue_price.grounding_status == "VERIFIED_IN_SNAPSHOT"
     assert schema.issue_price.value == 271.0
@@ -105,3 +112,18 @@ def test_mock_research_run_end_to_end():
     assert feat["issue_price"] == 271.0
     assert feat["sub_total"] == 131.73
     assert feat["gmp_pct"] == 30.26
+
+
+def test_live_run_log_has_provider_and_real_urls():
+    """D-026: Live research runs must record a non-mock provider and real web URLs."""
+    import json
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    runs_dir = root / "data" / "research_runs"
+    if not runs_dir.exists() or not list(runs_dir.glob("*.json")):
+        pytest.skip("No committed live research runs present yet (requires live API key and web access)")
+    for f in runs_dir.glob("*.json"):
+        data = json.loads(f.read_text(encoding="utf-8"))
+        provider = str(data.get("provider", "")).lower()
+        notes = str(data.get("notes", "")).lower()
+        assert "mock" not in provider and "mock" not in notes, f"Committed run {f.name} used mock provider"

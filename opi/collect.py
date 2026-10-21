@@ -1,14 +1,12 @@
 """Data collection and evidence snapshotting module for upcoming IPOs."""
 
+import hashlib
 import os
 import re
 from datetime import datetime, date
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
-import requests
-from bs4 import BeautifulSoup
-
-import hashlib
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
@@ -28,10 +26,14 @@ def fetch_and_save_research_snapshot(
     run_id: str,
     field_name: str,
     timeout: int = 15,
-    html_override: Optional[str] = None
+    html_override: Optional[str] = None,
+    target_dir: Optional[Path] = None,
 ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
-    """Fetch URL, save snapshot under data/evidence/research/<run_id>/, and return (rel_path, hash, content, error)."""
-    evidence_dir = ROOT_DIR / "data" / "evidence" / "research" / run_id
+    """Fetch URL, save snapshot under target_dir or data/evidence/research/<run_id>/, and return (rel_path, hash, content, error)."""
+    if target_dir is not None:
+        evidence_dir = Path(target_dir)
+    else:
+        evidence_dir = ROOT_DIR / "data" / "evidence" / "research" / run_id
     evidence_dir.mkdir(parents=True, exist_ok=True)
     slug = slugify(field_name)
     filename = f"{slug}.html"
@@ -50,7 +52,10 @@ def fetch_and_save_research_snapshot(
 
     target_path.write_text(content, encoding="utf-8", errors="replace")
     content_hash = hashlib.sha256(content.encode("utf-8", errors="replace")).hexdigest()
-    rel_path = str(target_path.relative_to(ROOT_DIR)).replace("\\", "/")
+    try:
+        rel_path = str(target_path.relative_to(ROOT_DIR)).replace("\\", "/")
+    except ValueError:
+        rel_path = str(target_path).replace("\\", "/")
     return rel_path, content_hash, content, None
 
 
@@ -113,6 +118,24 @@ def verify_value_in_html(
     val_str = str(value).strip().lower()
     if val_str and val_str in plain_text.lower():
         return True, f"Substring match for '{value}'"
+
+    # Try date format variations if value is an ISO date string
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", str(value).strip()):
+        try:
+            dt = pd.to_datetime(value)
+            date_variants = [
+                dt.strftime("%b %d, %Y").lower(),
+                dt.strftime("%B %d, %Y").lower(),
+                dt.strftime("%d %b %Y").lower(),
+                dt.strftime("%d %B %Y").lower(),
+                dt.strftime("%d-%m-%Y").lower(),
+                dt.strftime("%d/%m/%Y").lower()
+            ]
+            for variant in date_variants:
+                if variant in plain_text.lower():
+                    return True, f"Date format match for '{value}' as '{variant}'"
+        except Exception:
+            pass
 
     return False, f"Value '{value}' not found in snapshot text"
 

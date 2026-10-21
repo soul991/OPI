@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent verification of the OPI repo (v2). Does NOT trust the phase reports.
+"""Independent verification of the OPI repo (v3). Does NOT trust the phase reports.
 
 Usage:  python scripts/verify_all.py            # run all checks
         python scripts/verify_all.py --no-tests # skip pytest (faster)
@@ -329,6 +329,77 @@ def check_gmp_outliers_evidence(m):
     add("FAIL" if miss else "PASS", "extreme GMP values (>100% or <-30%) have a snapshot or are NOT_RECORDED",
         f"{len(miss)} of {len(o)} without snapshot: " + ", ".join(miss[:4]) if miss else "")
 
+# ---------- 10. new in v3 ----------
+def _text_of(path):
+    import html as _h
+    raw = Path(path).read_text(encoding="utf-8", errors="ignore")
+    raw = re.sub(r"(?is)<(script|style).*?</\1>", " ", raw)
+    raw = re.sub(r"<[^>]+>", " ", raw)
+    return re.sub(r"\s+", " ", _h.unescape(raw))
+
+def check_mock_quarantine():
+    """Mock/test output must never live in committed data folders."""
+    import json as _json
+    runs = list((ROOT / "data" / "research_runs").glob("*.json")) if (ROOT / "data" / "research_runs").exists() else []
+    mock_runs = []
+    for f in runs:
+        try:
+            d = _json.loads(f.read_text(errors="ignore"))
+        except Exception:
+            continue
+        blob = (str(d.get("notes", "")) + str(d.get("provider", "")) + str(d.get("model", ""))).lower()
+        if "mock" in blob:
+            mock_runs.append(f.name)
+    add("FAIL" if mock_runs else "PASS", "no mock research runs in data/research_runs",
+        f"{len(mock_runs)} of {len(runs)} runs are mock" if mock_runs else "")
+    ev = ROOT / "data" / "evidence" / "research"
+    fake = []
+    if ev.exists():
+        mock_stems = {Path(n).stem for n in mock_runs}
+        for d in ev.iterdir():
+            if d.is_dir() and d.name in mock_stems:
+                fake.extend(str(p.relative_to(ROOT)) for p in d.rglob("*") if p.is_file())
+        for p in ev.rglob("*"):
+            if p.is_file() and p.stat().st_size < 20000 and str(p.relative_to(ROOT)) not in fake:
+                head = p.read_text(encoding="utf-8", errors="ignore")[:3000].lower()
+                if "mock-ipo" in head or "mock provider" in head:
+                    fake.append(str(p.relative_to(ROOT)))
+    add("FAIL" if fake else "PASS", "no mock evidence files under data/evidence/",
+        f"{len(fake)} files (e.g. {fake[0]})" if fake else "")
+
+def check_forward_grounding():
+    """Every numeric input of every FORWARD row must literally appear in a saved snapshot for that IPO."""
+    import json as _json
+    l = read("predictions/prediction_log.csv", dtype=str)
+    if l is None:
+        return
+    fields = ["sub_qib", "sub_nii", "sub_retail", "sub_total", "issue_price", "gmp_pct"]
+    for _, row in l[l.status == "FORWARD"].iterrows():
+        try:
+            feats = _json.loads(row.features_snapshot_json)
+        except Exception:
+            add("FAIL", f"grounding: {row.company}", "features_snapshot_json unreadable"); continue
+        d = slug(row.company)
+        files = [p for p in (ROOT / "data" / "evidence").glob(f"*/*{d}*") if p.is_file() and p.suffix in (".html", ".htm", ".txt", ".json")]
+        if not files:
+            add("WARN", f"grounding: {row.company}", "no snapshots found under data/evidence/*/"); continue
+        text = " ".join(_text_of(p) for p in files)
+        miss = []
+        for k in fields:
+            v = feats.get(k)
+            v = v.get("value") if isinstance(v, dict) else v
+            if v in (None, "", "nan"):
+                continue
+            try:
+                x = float(v)
+            except Exception:
+                continue
+            forms = {f"{x:.2f}", f"{x:.1f}", f"{x:g}", f"{x:,.2f}", f"{x:,.0f}" if x == int(x) else f"{x:g}"}
+            if not any(re.search(r"(?<![\d.])" + re.escape(f) + r"(?![\d])", text) for f in forms):
+                miss.append(f"{k}={v}")
+        add("FAIL" if miss else "PASS", f"grounding: {row.company} inputs appear in saved snapshots",
+            "not found: " + ", ".join(miss) if miss else f"{len(files)} snapshot files")
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--no-tests", action="store_true"); a = ap.parse_args()
     check_hygiene()
@@ -336,7 +407,8 @@ def main():
         check_tests()
     m = check_master()
     fns = [lambda: check_gmp(m), check_forward, check_phases_and_defects, check_git, check_recompute,
-           check_ci_model, check_immutable_history, lambda: check_gmp_outliers_evidence(m)]
+           check_ci_model, check_immutable_history, lambda: check_gmp_outliers_evidence(m),
+           check_mock_quarantine, check_forward_grounding]
     if not a.no_tests:
         fns.append(check_fresh_clone)
     for fn in fns:

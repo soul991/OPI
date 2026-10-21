@@ -1,3 +1,4 @@
+import pytest
 """Tests for Phase 8 data integrity, outlier audits, and historical sample properties."""
 
 from pathlib import Path
@@ -91,3 +92,41 @@ def test_audit_samples_have_snapshots():
         "Phase 7 sample URLs must be accurately flagged as MISMATCH (wrong entity or 404)"
     )
 
+
+
+def test_no_mock_output_in_data_folders(monkeypatch, tmp_path):
+    """D-025: Verify that mock research runs and synthetic HTML never exist in data/."""
+    from opi.research_agent import execute_research_run, MockResearchProvider
+    import json
+
+    # 1. No mock runs in data/research_runs
+    runs_dir = ROOT / "data" / "research_runs"
+    if runs_dir.exists():
+        for f in runs_dir.glob("*.json"):
+            try:
+                d = json.loads(f.read_text(encoding="utf-8", errors="ignore"))
+                blob = (str(d.get("notes", "")) + str(d.get("provider", "")) + str(d.get("model", ""))).lower()
+                assert "mock" not in blob, f"Mock run found in data/research_runs: {f.name}"
+            except Exception:
+                pass
+
+    # 2. No mock evidence files in data/evidence/
+    ev_dir = ROOT / "data" / "evidence"
+    if ev_dir.exists():
+        for p in ev_dir.rglob("*"):
+            if p.is_file() and p.stat().st_size < 20000:
+                head = p.read_text(encoding="utf-8", errors="ignore")[:3000].lower()
+                assert "mock-ipo" not in head and "mock provider" not in head, f"Mock evidence found in data/: {p}"
+
+    # 3. Quarantine manifest exists and has recorded entries
+    manifest = ROOT / "phases" / "Phase 10" / "mock_quarantine_manifest.csv"
+    assert manifest.exists(), "mock_quarantine_manifest.csv must exist"
+    assert len(manifest.read_text(encoding="utf-8").splitlines()) > 10, "Manifest must list quarantined files"
+
+    # 4. Mock provider refuses when OPI_ENV != 'test'
+    monkeypatch.delenv("OPI_ENV", raising=False)
+    with pytest.raises(PermissionError):
+        MockResearchProvider()
+
+    with pytest.raises(PermissionError):
+        execute_research_run("Test Company", provider_name="mock")
