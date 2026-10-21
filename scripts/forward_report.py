@@ -8,12 +8,15 @@ Description:
     Reads predictions/prediction_log.csv and evaluates performance strictly on
     genuine out-of-sample forward predictions (status == 'FORWARD').
     Explicitly filters out and reports counts of excluded rows (TEST_* and INVALID).
-    Enforces Phase 5 Rule: no statistical claims allowed when n < 30 ("n too small").
+    Enforces Phase 10 Rule: no statistical claims or interval comparisons allowed
+    when n < 30 ("n listed = ... of 30", descriptive only).
 """
 
+from __future__ import annotations
+
+import argparse
 import os
 import sys
-import argparse
 import pandas as pd
 import numpy as np
 
@@ -26,7 +29,7 @@ from opi.report import parse_defects_summary
 LOG_PATH = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
 
 
-def generate_forward_report(log_path=LOG_PATH):
+def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
     """Analyze and report on genuine forward predictions in log_path."""
     if not os.path.exists(log_path):
         print(f"Prediction log not found at: {log_path}")
@@ -37,12 +40,10 @@ def generate_forward_report(log_path=LOG_PATH):
         print("Prediction log is empty.")
         return None
 
-    # Ensure status column exists
     if "status" not in df.columns:
         print("Warning: 'status' column missing; treating all rows as unverified.")
         df["status"] = "UNVERIFIED"
 
-    # Identify and categorize rows
     status_series = df["status"].fillna("").astype(str).str.strip().str.upper()
     test_mask = status_series.str.startswith("TEST")
     invalid_mask = status_series.str.startswith("INVALID")
@@ -56,9 +57,9 @@ def generate_forward_report(log_path=LOG_PATH):
     forward_df = df[forward_mask].copy()
     n_forward = len(forward_df)
 
-    print("=" * 78)
-    print("  OPI FORWARD PREDICTION AUDIT & PERFORMANCE REPORT")
-    print("=" * 78)
+    print("=" * 86)
+    print("  OPI FORWARD PREDICTION AUDIT & PROSPECTIVE PERFORMANCE REPORT")
+    print("=" * 86)
     print(f"Log File Location          : {os.path.relpath(log_path, ROOT_DIR)}")
     print(f"Total Logged Rows          : {total_rows}")
     print(f"Excluded TEST Rows         : {test_count} (status starting with TEST_*)")
@@ -68,71 +69,71 @@ def generate_forward_report(log_path=LOG_PATH):
     print(f"Genuine FORWARD Rows       : {n_forward} (status == 'FORWARD')")
     defects = parse_defects_summary()
     print(f"Tracked Defects Health     : {defects['TOTAL']} total ({defects['FIXED']} fixed, {defects['ACCEPTED']} accepted, {defects['DEFERRED']} deferred, {defects['OPEN'] + defects['PARTIAL']} open/partial)")
-    print("-" * 78)
+    print("-" * 86)
 
     if n_forward == 0:
         print("No genuine forward predictions recorded yet.")
-        print("All existing rows are test placeholders or invalid entries.")
-        print("Genuine upcoming IPO predictions will be logged in Phase 5 Workstream D.")
-        print("=" * 78)
+        print("=" * 86)
         return {
             "total_rows": total_rows,
             "test_rows": test_count,
             "invalid_rows": invalid_count,
             "forward_rows": 0,
             "evaluated_rows": 0,
-            "mae": None,
             "status": "NO_FORWARD_ROWS"
         }
 
-    # Analyze evaluated vs pending forward rows
     forward_df["actual_clean"] = pd.to_numeric(forward_df["actual_gain_pct"], errors="coerce")
     forward_df["pred_clean"] = pd.to_numeric(forward_df["pred_gain_pct"], errors="coerce")
     forward_df["prob_clean"] = pd.to_numeric(forward_df["pred_prob_gt10"], errors="coerce")
+    forward_df["gmp_clean"] = pd.to_numeric(forward_df["gmp_pct_at_scoring"], errors="coerce")
 
     evaluated = forward_df[forward_df["actual_clean"].notna()].copy()
     pending = forward_df[forward_df["actual_clean"].isna()].copy()
     n_eval = len(evaluated)
     n_pending = len(pending)
 
-    print(f"Evaluated (Listed) Rows    : {n_eval}")
+    print(f"Evaluated (Listed) Rows    : {n_eval} of 30 target")
     print(f"Pending (Unlisted) Rows    : {n_pending}")
-    print("-" * 78)
+    print("-" * 86)
 
-    if n_eval < 30:
-        print(f"[!] Sample Size Warning: n = {n_eval} evaluated IPOs.")
-        print("    Per Phase 5 Section 4.D / Section 6: claims about final forward performance")
-        print("    are strictly forbidden below n = 30 ('n too small'). All metrics are PROVISIONAL.")
-        print("-" * 78)
+    print(f"[!] PROVISIONAL STATUS BANNER: n listed = {n_eval} of 30")
+    print("    Per pre-registered rules: no empirical superiority claims or interval comparisons")
+    print("    are permitted below n = 30 ('n too small'). All metrics are strictly descriptive.")
+    print("-" * 86)
+
+    mae_model = None
+    mae_gmp = None
 
     if n_eval > 0:
-        evaluated["abs_error"] = (evaluated["pred_clean"] - evaluated["actual_clean"]).abs()
-        mae = float(evaluated["abs_error"].mean())
-        median_err = float(evaluated["abs_error"].median())
-        
-        # Binary pop prediction accuracy
-        pred_pop = evaluated["pred_clean"] > 10.0
-        act_pop = evaluated["actual_clean"] > 10.0
-        acc_pop = float((pred_pop == act_pop).mean() * 100)
+        evaluated["err_model"] = (evaluated["pred_clean"] - evaluated["actual_clean"]).abs()
+        mae_model = float(evaluated["err_model"].mean())
+        has_gmp = evaluated[evaluated["gmp_clean"].notna()].copy()
+        if len(has_gmp) > 0:
+            has_gmp["err_gmp"] = (has_gmp["gmp_clean"] - has_gmp["actual_clean"]).abs()
+            mae_gmp = float(has_gmp["err_gmp"].mean())
 
-        print(f"Provisional MAE            : {mae:.2f}% (n={n_eval})")
-        print(f"Provisional Median Error   : {median_err:.2f}%")
-        print(f"Provisional Pop (>10%) Acc : {acc_pop:.1f}%")
-        print("-" * 78)
-        print(f"{'Company':<25} {'Listing Date':<12} {'Pred %':<9} {'Actual %':<10} {'Error %':<9}")
-        print("-" * 78)
+        print(f"Provisional Model MAE      : {mae_model:.2f} percentage points (n={n_eval})")
+        if mae_gmp is not None:
+            print(f"Provisional Raw GMP MAE    : {mae_gmp:.2f} percentage points (n={len(has_gmp)})")
+        print("-" * 86)
+        print(f"{'Company':<26} {'Listing':<11} {'Model %':<9} {'GMP %':<8} {'Actual %':<10} {'Err Model':<10} {'Err GMP'}")
+        print("-" * 86)
         for _, r in evaluated.iterrows():
-            print(f"{str(r['company'])[:24]:<25} {str(r.get('listing_date',''))[:10]:<12} {r['pred_clean']:+6.2f}%   {r['actual_clean']:+6.2f}%    {r['abs_error']:5.2f}%")
+            gmp_str = f"{r['gmp_clean']:+5.1f}%" if pd.notna(r['gmp_clean']) else "  N/A"
+            err_gmp_str = f"{abs(r['gmp_clean'] - r['actual_clean']):5.2f} pp" if pd.notna(r['gmp_clean']) else "  N/A"
+            print(f"{str(r['company'])[:25]:<26} {str(r.get('listing_date',''))[:10]:<11} {r['pred_clean']:+6.2f}%   {gmp_str:<8} {r['actual_clean']:+6.2f}%    {r['err_model']:5.2f} pp    {err_gmp_str}")
     else:
-        mae = None
         print("No forward rows have listed yet. Awaiting actual listing day returns.")
 
     if n_pending > 0:
         print("\nPending Upcoming IPOs:")
         for _, r in pending.iterrows():
-            print(f"  - {r['company']}: Pred {r['pred_clean']:+.2f}%, P(>10%) {r['prob_clean']:.1%}, Listing: {r.get('listing_date', 'N/A')}")
+            gmp_str = f", GMP {r['gmp_clean']:+.1f}%" if pd.notna(r['gmp_clean']) else ""
+            thin = " [Thin inputs: No GMP]" if pd.isna(r['gmp_clean']) else ""
+            print(f"  - {r['company']}: Model {r['pred_clean']:+.2f}%{gmp_str}, P(>10%) {r['prob_clean']:.1%}, Listing: {r.get('listing_date', 'N/A')}{thin}")
 
-    print("=" * 78)
+    print("=" * 86)
     return {
         "total_rows": total_rows,
         "test_rows": test_count,
@@ -140,7 +141,8 @@ def generate_forward_report(log_path=LOG_PATH):
         "forward_rows": n_forward,
         "evaluated_rows": n_eval,
         "pending_rows": n_pending,
-        "mae": mae,
+        "mae_model": mae_model,
+        "mae_gmp": mae_gmp,
         "provisional": n_eval < 30
     }
 

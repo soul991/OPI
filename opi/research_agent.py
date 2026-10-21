@@ -223,8 +223,9 @@ def execute_research_run(
         raise PermissionError("Mock provider is disabled outside of test environment. Set OPI_ENV=test to enable.")
 
     if provider_type == "mock":
-        target_runs_dir = output_dir or (ROOT_DIR / "tests" / "fixtures" / "mock_runs")
-        target_evidence_dir = evidence_dir or (ROOT_DIR / "tests" / "fixtures" / "mock_evidence" / run_id)
+        import tempfile
+        target_runs_dir = output_dir or (Path(tempfile.gettempdir()) / "opi_mock_runs")
+        target_evidence_dir = evidence_dir or (Path(tempfile.gettempdir()) / "opi_mock_evidence" / run_id)
     else:
         target_runs_dir = output_dir or (ROOT_DIR / "data" / "research_runs")
         target_evidence_dir = evidence_dir or (ROOT_DIR / "data" / "evidence" / "research" / run_id)
