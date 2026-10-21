@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Score the four closed October 15-19, 2026 mainboard IPOs and save code-fetched evidence snapshots.
+"""[DEPRECATED in Phase 10 - see scripts/score_ipo.py]
+Score the four closed October 15-19, 2026 mainboard IPOs and save code-fetched evidence snapshots.
+Kept for historical audit trail. Replaced by scripts/score_ipo.py with opi/ingest.py deterministic parsers.
 
 IPOs:
 1. Zetwerk Manufacturing Business Limited
