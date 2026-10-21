@@ -1,0 +1,18 @@
+{
+  "company": "HD Fire Protect Limited",
+  "listing_date": "2026-10-21",
+  "page_date": "2026-10-21",
+  "accessed_at": "2026-10-21T12:53:34.865268+05:30",
+  "source_url": "https://www.bseindia.com/stock-share-price/hd-fire-protect-ltd/hdfire/544994",
+  "final_url": "https://www.bseindia.com/stock-share-price/hd-fire-protect-ltd/hdfire/544994",
+  "source_host": "www.bseindia.com",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-21_hd-fire-protect-limited_1995cac2f37d.html",
+  "snapshot_sha256": "1995cac2f37d239f67aa80fb6bccf25a13d6aa6511ec2f9f7f50cbf6015b459e",
+  "company_quote": "HD Fire Protect Ltd",
+  "opening_price_quote": "Open 334.40",
+  "issue_price_in_prediction": 271.0,
+  "official_opening_price": 334.4,
+  "computed_listing_gain_pct": 23.39,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}
