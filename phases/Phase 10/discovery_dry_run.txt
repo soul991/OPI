@@ -1,0 +1,24 @@
+OPI IPO Discovery Dry-Run Output
+Timestamp: 2026-10-23T01:50:54.003306+05:30
+Command: python -m opi.discover --dry-run
+======================================================================
+
+
+Discovered 17 eligible Mainboard candidate(s) (as of 2026-10-21):
+  - BLS Polymers | Close: 2026-10-29 | Status: UPCOMING | URL: https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/
+  - SFC Environmental Technologies | Close: 2026-10-29 | Status: UPCOMING | URL: https://www.chittorgarh.com/ipo/sfc-environmental-technologies-ipo/2070/
+  - EAAA India Alternatives | Close: 2026-10-28 | Status: UPCOMING | URL: https://www.chittorgarh.com/ipo/eaaa-india-alternatives-ipo/2061/
+  - Jio Platforms | Close: 2026-10-23 | Status: BIDDING_OPEN | URL: https://www.chittorgarh.com/ipo/jio-platforms-ipo/3152/
+  - Paras Healthcare | Close: 2026-10-23 | Status: BIDDING_OPEN | URL: https://www.chittorgarh.com/ipo/paras-healthcare-ipo/2256/
+  - Tonbo Imaging India | Close: 2026-10-19 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/tonbo-imaging-india-ipo/3215/
+  - Zetwerk Manufacturing Business | Close: 2026-10-19 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/zetwerk-ipo/3091/
+  - Bonfiglioli Transmissions | Close: 2026-10-19 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/bonfiglioli-transmissions-ipo/2861/
+  - Sahajanand Medical Technologies | Close: 2026-10-19 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/sahajanand-medical-technologies-ipo/2550/
+  - Fusion CX | Close: 2026-10-16 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/fusion-cx-ipo/2455/
+  - HD Fire Protect | Close: 2026-10-15 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/hd-fire-protect-ipo/2628/
+  - SRIT India | Close: 2026-09-30 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/srit-india-ipo/2858/
+  - Shah Investor's Home | Close: 2026-09-30 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/shah-investors-home-ipo/2657/
+  - Acevector (Snapdeal) | Close: 2026-09-29 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/snapdeal-ipo/2543/
+  - Orient Cables (India) | Close: 2026-09-29 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/orient-cables-ipo/2532/
+  - German Green Steel & Power | Close: 2026-09-29 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/german-green-steel-and-power-ipo/2497/
+  - Runwal Enterprises | Close: 2026-09-29 | Status: CLOSED_UNLISTED | URL: https://www.chittorgarh.com/ipo/runwal-enterprises-ipo/2298/
