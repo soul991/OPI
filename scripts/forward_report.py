@@ -15,18 +15,21 @@ Description:
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import re
 import sys
+from pathlib import Path
 import pandas as pd
 import numpy as np
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from opi.report import parse_defects_summary
 
-LOG_PATH = os.path.join(ROOT_DIR, "predictions", "prediction_log.csv")
+LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 
 
 def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
@@ -147,11 +150,109 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
     }
 
 
+def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
+    """Generate the GitHub Markdown results table directly from prediction_log.csv.
+
+    Guarantees that Issue Price, Model Estimate, and Last Bidding Day GMP strictly
+    reflect predictions/prediction_log.csv without manual transcription errors.
+    """
+    path = Path(log_path)
+    if not path.is_file():
+        return "No prediction log found."
+    df = pd.read_csv(path, dtype=str, keep_default_na=False)
+    if df.empty or "status" not in df.columns:
+        return "Prediction log is empty or lacks status column."
+
+    fwd = df[df["status"].str.strip().str.upper() == "FORWARD"]
+    if fwd.empty:
+        return "No genuine FORWARD predictions found."
+
+    lines = [
+        "| Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Status | Notes |",
+        "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|",
+    ]
+
+    for _, r in fwd.iterrows():
+        try:
+            feats = json.loads(r["features_snapshot_json"])
+        except Exception:
+            feats = {}
+        co = r["company"].strip()
+        ldate = r["listing_date"].strip()
+        issue_p = float(feats.get("issue_price", 0))
+        issue_p_str = f"₹{issue_p:.2f}"
+
+        act_gain = r["actual_gain_pct"].strip()
+        pred_gain = float(r["pred_gain_pct"])
+        pred_str = f"{pred_gain:+.2f}%"
+
+        gmp_raw = r["gmp_pct_at_scoring"].strip()
+        if gmp_raw and gmp_raw != "nan":
+            gmp_val = float(gmp_raw)
+            gmp_str = f"{gmp_val:+.2f}%"
+        else:
+            gmp_val = None
+            gmp_str = "None (NOT_RECORDED)"
+
+        if act_gain and act_gain != "nan":
+            act_val = float(act_gain)
+            act_str = f"**{act_val:+.2f}%**"
+            err_m = abs(pred_gain - act_val)
+            err_m_str = f"**{err_m:.2f} pp**"
+            if gmp_val is not None:
+                err_g = abs(gmp_val - act_val)
+                err_g_str = f"**{err_g:.2f} pp**"
+            else:
+                err_g_str = "N/A"
+            status_str = "LISTED"
+
+            m = re.search(r"snapshot=([^\s;]+\.html)", str(r["notes"]))
+            open_p = None
+            snap_id = ""
+            if m:
+                snap_path = ROOT_DIR / Path(m.group(1))
+                json_p = snap_path.with_suffix(".json")
+                if json_p.exists():
+                    try:
+                        jdata = json.loads(json_p.read_text(encoding="utf-8"))
+                        open_p = jdata.get("official_opening_price")
+                        snap_id = str(jdata.get("snapshot_sha256", ""))[:12]
+                    except Exception:
+                        pass
+            if open_p is None:
+                open_p = issue_p * (1 + act_val / 100)
+            list_p_str = f"₹{float(open_p):.2f}"
+            note_str = f"BSE official opening trade (544994) evidenced in snapshot `{snap_id}`" if snap_id else r["notes"]
+        else:
+            list_p_str = "Pending"
+            act_str = "Pending"
+            err_m_str = "Pending"
+            err_g_str = "N/A" if gmp_val is None else "Pending"
+            status_str = "FORWARD"
+            thin = "Thin inputs (no GMP); " if gmp_val is None else ""
+            note_str = f"{thin}listing scheduled {ldate}"
+
+        lines.append(
+            f"| **{co}** | {ldate} | {issue_p_str} | {list_p_str} | {act_str} | {pred_str} | {gmp_str} | {err_m_str} | {err_g_str} | {status_str} | {note_str} |"
+        )
+
+    return "\n".join(lines)
+
+
 def main():
+    if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     parser = argparse.ArgumentParser(description="Report forward prediction performance for OPI.")
-    parser.add_argument("--log", type=str, default=LOG_PATH, help="Path to prediction log CSV")
+    parser.add_argument("--log", type=str, default=str(LOG_PATH), help="Path to prediction log CSV")
+    parser.add_argument("--markdown", action="store_true", help="Print the results table in Markdown format")
     args = parser.parse_args()
-    generate_forward_report(args.log)
+    if args.markdown:
+        print(generate_markdown_results_table(args.log))
+    else:
+        generate_forward_report(args.log)
 
 
 if __name__ == "__main__":

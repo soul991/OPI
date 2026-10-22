@@ -5,6 +5,30 @@
 
 ---
 
+## ERRATA (patch)
+
+> **Date**: 2026-10-23 (Post-Phase 10 Verification Patch)  
+> **Corrections Applied**:
+> 1. **Results Table Figures (Section 3)**: Corrected transcription errors to strictly equal `predictions/prediction_log.csv`:
+>    - Tonbo Imaging India Limited: Issue price corrected to ₹700.00 (was erroneously ₹540.00); GMP corrected to +72.86% (was +72.92%).
+>    - Bonfiglioli Transmissions Limited: Issue price corrected to ₹586.00 (was erroneously ₹625.00); GMP corrected to +21.67% (was +21.68%).
+>    - Sahajanand Medical Technologies Limited: GMP corrected to +6.98% (was +7.03%).
+> 2. **Master Dataset Row Count (Section 4)**: Recompute 5 in Section 4 originally reported "654 rows" for `data/ipo_master.csv`. `data/ipo_master.csv` actually contains 731 rows on disk. The count 654 corresponds to 731 total master rows minus the 77 unverified Phase 7 backfill rows ($731 - 77 = 654$), but those 77 rows were retained with `gmp_status=NOT_RECORDED` rather than purged from the file. Because `data/ipo_master.csv` literally contains 731 rows on disk, the 654 row count check as a direct file row count is marked **UNSUPPORTED** (and corrected to 731).
+> 3. **Automated Table Generation**: To eliminate manual transcription errors, results tables are now generated programmatically from `predictions/prediction_log.csv` using `scripts/forward_report.py --markdown` (Defect D-035).
+
+### Corrected Results Table (Generated from `predictions/prediction_log.csv`)
+
+| Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Status | Notes |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|
+| **HD Fire Protect Limited** | 2026-10-21 | ₹271.00 | ₹334.40 | **+23.39%** | +26.12% | +30.26% | **2.73 pp** | **6.87 pp** | LISTED | BSE official opening trade (544994) evidenced in snapshot `1995cac2f37d` |
+| **Fusion CX Limited** | 2026-10-22 | ₹289.00 | Pending | Pending | +4.33% | None (NOT_RECORDED) | Pending | N/A | FORWARD | Thin inputs (no GMP); listing scheduled 2026-10-22 |
+| **Zetwerk Manufacturing Business Limited** | 2026-10-23 | ₹151.00 | Pending | Pending | -0.77% | +2.32% | Pending | Pending | FORWARD | listing scheduled 2026-10-23 |
+| **Sahajanand Medical Technologies Limited** | 2026-10-23 | ₹344.00 | Pending | Pending | +8.32% | +6.98% | Pending | Pending | FORWARD | listing scheduled 2026-10-23 |
+| **Tonbo Imaging India Limited** | 2026-10-23 | ₹700.00 | Pending | Pending | +74.70% | +72.86% | Pending | Pending | FORWARD | listing scheduled 2026-10-23 |
+| **Bonfiglioli Transmissions Limited** | 2026-10-23 | ₹586.00 | Pending | Pending | +21.10% | +21.67% | Pending | Pending | FORWARD | listing scheduled 2026-10-23 |
+
+---
+
 ## 1. Targets Missed and Unfixed Items
 
 "Unfixed items: None" is **not true**. The following targets remain open, partial, or carried over in Phase 10:
