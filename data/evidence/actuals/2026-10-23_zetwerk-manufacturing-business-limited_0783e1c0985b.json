@@ -1,0 +1,19 @@
+{
+  "company": "Zetwerk Manufacturing Business Limited",
+  "listing_date": "2026-10-23",
+  "page_date": "2026-10-23",
+  "accessed_at": "2026-10-24T02:25:48.884635+05:30",
+  "source_url": "https://www.nseindia.com/get-quote/equity/ZETWERK/Zetwerk-Manufacturing-Businesses-Limited",
+  "final_url": "https://www.nseindia.com/get-quote/equity/ZETWERK/Zetwerk-Manufacturing-Businesses-Limited",
+  "source_host": "www.nseindia.com",
+  "exchange_used": "NSE",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-23_zetwerk-manufacturing-business-limited_0783e1c0985b.html",
+  "snapshot_sha256": "0783e1c0985b31fe23bdae60f84fff3ea1bf30f5b187ed328e4a26988e5c2814",
+  "company_quote": "Zetwerk Manufacturing Businesses Limited",
+  "opening_price_quote": "23-Oct-2026 EQ 159.25",
+  "issue_price_in_prediction": 151.0,
+  "official_opening_price": 159.25,
+  "computed_listing_gain_pct": 5.46,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}
