@@ -1,0 +1,19 @@
+{
+  "company": "Sahajanand Medical Technologies Limited",
+  "listing_date": "2026-10-23",
+  "page_date": "2026-10-23",
+  "accessed_at": "2026-10-24T02:26:39.830166+05:30",
+  "source_url": "https://www.nseindia.com/get-quote/equity/SMT/Sahajanand-Medical-Technologies-Limited",
+  "final_url": "https://www.nseindia.com/get-quote/equity/SMT/Sahajanand-Medical-Technologies-Limited",
+  "source_host": "www.nseindia.com",
+  "exchange_used": "NSE",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-23_sahajanand-medical-technologies-limited_d69406a6b7e8.html",
+  "snapshot_sha256": "d69406a6b7e89f5f176acd7124378ead6edbe98670754e216d29af4906547c4c",
+  "company_quote": "Sahajanand Medical Technologies Limited",
+  "opening_price_quote": "23-Oct-2026 EQ 371.15",
+  "issue_price_in_prediction": 344.0,
+  "official_opening_price": 371.15,
+  "computed_listing_gain_pct": 7.89,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}
