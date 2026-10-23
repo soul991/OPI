@@ -67,27 +67,36 @@ def parse_chittorgarh_subscription(html_text: str) -> Dict[str, float]:
     soup = BeautifulSoup(html_text, "html.parser")
     results: Dict[str, float] = {}
 
-    for tr in soup.find_all("tr"):
-        cells = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
-        if len(cells) < 2:
-            continue
-        label = cells[0].lower()
-        val_str = cells[1].replace(",", "").replace("x", "").strip()
-        try:
-            val = float(val_str)
-        except ValueError:
-            continue
+    sub_tables = []
+    for table in soup.find_all("table"):
+        text = " ".join([th.get_text(strip=True).lower() for th in table.find_all(["th", "td"])[:15]])
+        if "subscription" in text and ("(x)" in text or "times" in text):
+            sub_tables.append(table)
 
-        if "qib" in label and "anchor" in label:
-            results["sub_qib"] = val
-        elif label == "qib":
-            results.setdefault("sub_qib", val)
-        elif label == "nii":
-            results["sub_nii"] = val
-        elif label == "retail" or "retail individual" in label:
-            results["sub_retail"] = val
-        elif "total" in label and ("**" in cells[0] or "subscription" in label):
-            results["sub_total"] = val
+    tables_to_search = sub_tables if sub_tables else soup.find_all("table")
+
+    for table in tables_to_search:
+        for tr in table.find_all("tr"):
+            cells = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
+            if len(cells) < 2:
+                continue
+            label = cells[0].lower().strip()
+            val_str = cells[1].replace(",", "").replace("x", "").strip()
+            try:
+                val = float(val_str)
+            except ValueError:
+                continue
+
+            if "qualified institutional" in label or ("qib" in label and "anchor" in label):
+                results["sub_qib"] = val
+            elif label == "qib":
+                results.setdefault("sub_qib", val)
+            elif "non institutional" in label or label == "nii":
+                results["sub_nii"] = val
+            elif "retail" in label or "retail individual" in label:
+                results["sub_retail"] = val
+            elif "total" in label and ("**" in cells[0] or "subscription" in label):
+                results["sub_total"] = val
 
     return results
 
@@ -165,6 +174,12 @@ def fetch_and_save_evidence(
     target_dir = ROOT_DIR / "data" / "evidence" / category
     target_dir.mkdir(parents=True, exist_ok=True)
     target_file = target_dir / f"{listing_date}_{slug}.html"
+
+    if target_file.exists():
+        existing_html = target_file.read_text(encoding="utf-8", errors="replace")
+        if "<table" in existing_html:
+            sha256 = hashlib.sha256(existing_html.encode("utf-8", errors="replace")).hexdigest()
+            return target_file, sha256, existing_html
 
     resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout)
     if resp.status_code != 200:

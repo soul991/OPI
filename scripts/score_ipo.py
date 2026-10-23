@@ -33,15 +33,16 @@ from opi.validate import validate_candidate_for_forward_logging
 def get_market_data(as_of_date: str) -> tuple[float, float, float]:
     """Fetch market macro data, save raw response with SHA-256 hash, and return (nifty_30d, vix, recent_avg)."""
     print(f"Fetching public market data for Nifty 50 and India VIX as of {as_of_date}...")
-    nifty = yf.download("^NSEI", start="2026-08-01", end="2026-10-21", progress=False)
+    dt = pd.to_datetime(as_of_date)
+    end_date = (dt + pd.Timedelta(days=2)).strftime("%Y-%m-%d")
+    nifty = yf.download("^NSEI", start="2026-08-01", end=end_date, progress=False)
     if isinstance(nifty.columns, pd.MultiIndex):
         nifty.columns = nifty.columns.get_level_values(0)
 
-    vix = yf.download("^INDIAVIX", start="2026-08-01", end="2026-10-21", progress=False)
+    vix = yf.download("^INDIAVIX", start="2026-08-01", end=end_date, progress=False)
     if isinstance(vix.columns, pd.MultiIndex):
         vix.columns = vix.columns.get_level_values(0)
 
-    dt = pd.to_datetime(as_of_date)
     sub1 = nifty.loc[:dt]
     sub0 = nifty.loc[:(dt - pd.Timedelta(days=30))]
     p1 = float(sub1.iloc[-1]["Close"])
@@ -174,36 +175,29 @@ def score_and_log_ipo(
         return res
 
     # 5. Build Grounded Evidence Snapshots
-    evidence_snapshot = {}
-    for k, v in features.items():
-        if k in ("overview_url", "sub_url", "gmp_url"):
-            continue
-        url = overview_url
-        if "sub" in k:
-            url = sub_url
-        elif "gmp" in k and gmp_url:
-            url = gmp_url
-        elif k in ("nifty_30d_return", "india_vix"):
-            url = "https://finance.yahoo.com"
-        evidence_snapshot[k] = {
-            "value": v,
-            "source_url": url,
-            "verification_status": "VERIFIED_IN_SNAPSHOT",
-        }
+    features["overview_url"] = overview_url
+    features["sub_url"] = sub_url
+    if gmp_url:
+        features["gmp_url"] = gmp_url
+        features["source_urls"] = f"{overview_url};{sub_url};{gmp_url}"
+    else:
+        features["source_urls"] = f"{overview_url};{sub_url}"
+    notes = f"Closed {close_date}; final subscription and GMP grounded via opi.ingest | Scheduled listing {listing_date}"
+    features["notes"] = notes
 
     # 6. Append to Log and Regenerate Dashboard
-    notes = f"Closed {close_date}; final subscription and GMP grounded via opi.ingest"
     append_prediction_log(
         company=company,
         open_date=features["open_date"],
         close_date=close_date,
         listing_date=listing_date,
-        features_snapshot=evidence_snapshot,
+        features=features,
         pred_gain_pct=res["predicted_gain_pct"],
         pred_prob_gt10=res["prob_gt10"],
-        gmp_pct=res.get("gmp_pct"),
+        gmp_pct_at_scoring=res.get("gmp_pct"),
         status="FORWARD",
         notes=notes,
+        model_version="v4.0.0-champion",
     )
     render_dashboard_html()
     print("  Successfully logged prediction and refreshed dashboard.")
