@@ -77,3 +77,25 @@ def test_scored_at_is_real_run_time():
     assert get_write_timestamp() == "2026-10-16T12:00:00+05:30"
     set_test_fixture_clock(None)
 
+
+def test_candidate_ipos_scored_after_close():
+    """D-023, D-024: Jio Platforms and Paras Healthcare scored after bidding closed with valid groundings."""
+    assert os.path.exists(LOG_PATH), "prediction_log.csv must exist"
+    df = pd.read_csv(LOG_PATH)
+    companies = df["company"].tolist()
+    assert "Jio Platforms Limited" in companies, "Jio Platforms Limited must be scored"
+    assert "Paras Healthcare Limited" in companies, "Paras Healthcare Limited must be scored"
+
+    jio = df[df["company"] == "Jio Platforms Limited"].iloc[0]
+    paras = df[df["company"] == "Paras Healthcare Limited"].iloc[0]
+
+    assert jio["status"] == "FORWARD"
+    assert paras["status"] == "FORWARD"
+    assert jio["listing_date"] == "2026-10-28"
+    assert paras["listing_date"] == "2026-10-28"
+    assert pd.isna(jio["actual_gain_pct"])
+    assert pd.isna(paras["actual_gain_pct"])
+    assert float(jio["pred_prob_gt10"]) > 0.0
+    assert float(paras["pred_prob_gt10"]) > 0.0
+
+
