@@ -1,0 +1,19 @@
+{
+  "company": "Bonfiglioli Transmissions Limited",
+  "listing_date": "2026-10-23",
+  "page_date": "2026-10-23",
+  "accessed_at": "2026-10-24T02:29:30.771884+05:30",
+  "source_url": "https://www.nseindia.com/get-quote/equity/BONFIG/Bonfiglioli-Transmissions-Limited",
+  "final_url": "https://www.nseindia.com/get-quote/equity/BONFIG/Bonfiglioli-Transmissions-Limited",
+  "source_host": "www.nseindia.com",
+  "exchange_used": "NSE",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-23_bonfiglioli-transmissions-limited_6df55c3addef.html",
+  "snapshot_sha256": "6df55c3addef7f06a15b0b3cb1cd94e4ca8966936f5b3cbebc7fbc08c59520ff",
+  "company_quote": "Bonfiglioli Transmissions Limited",
+  "opening_price_quote": "23-Oct-2026 EQ 586.00",
+  "issue_price_in_prediction": 586.0,
+  "official_opening_price": 586.0,
+  "computed_listing_gain_pct": 0.0,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}
