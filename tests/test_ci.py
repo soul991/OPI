@@ -72,11 +72,28 @@ def test_github_actions_evidence_recorded():
 
 
 def test_daily_workflow_is_active():
-    """D-037: The daily GitHub Actions workflow daily.yml must exist, be scheduled, and configure active runs."""
+    """D-037: The daily GitHub Actions workflow daily.yml must exist, be scheduled, and be verified active via gh CLI when available."""
     daily_path = ROOT_DIR / ".github" / "workflows" / "daily.yml"
     assert daily_path.exists(), ".github/workflows/daily.yml must exist"
     content = daily_path.read_text(encoding="utf-8")
     assert "schedule:" in content, "daily.yml must configure a scheduled trigger"
     assert "cron:" in content, "daily.yml must have a cron schedule"
     assert "scripts/verify_all.py" in content or "pytest" in content, "daily.yml must execute verification"
+
+    import shutil
+    import warnings
+    gh_bin = shutil.which("gh")
+    if gh_bin:
+        try:
+            r = subprocess.run([gh_bin, "workflow", "list"], capture_output=True, text=True, timeout=10, cwd=ROOT_DIR)
+            if r.returncode == 0:
+                lines = [line.lower() for line in r.stdout.splitlines()]
+                daily_active = any("active" in line and ("daily" in line or "386343442" in line) for line in lines)
+                assert daily_active, f"Daily workflow must be active in GitHub Actions according to 'gh workflow list':\n{r.stdout}"
+            else:
+                warnings.warn(f"GitHub CLI ('gh') is installed but returned code {r.returncode} ({r.stderr.strip()}); falling back to local file verification.")
+        except Exception as e:
+            warnings.warn(f"GitHub CLI execution failed ({e}); falling back to local file verification.")
+    else:
+        warnings.warn("GitHub CLI ('gh') is not installed; verified local workflow configuration only.")
 

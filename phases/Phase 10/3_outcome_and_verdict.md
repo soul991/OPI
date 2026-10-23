@@ -15,6 +15,7 @@
 >    - Sahajanand Medical Technologies Limited: GMP corrected to +6.98% (was +7.03%).
 > 2. **Master Dataset Row Count (Section 4)**: Recompute 5 in Section 4 originally reported "654 rows" for `data/ipo_master.csv`. `data/ipo_master.csv` actually contains 731 rows on disk. The count 654 corresponds to 731 total master rows minus the 77 unverified Phase 7 backfill rows ($731 - 77 = 654$), but those 77 rows were retained with `gmp_status=NOT_RECORDED` rather than purged from the file. Because `data/ipo_master.csv` literally contains 731 rows on disk, the 654 row count check as a direct file row count is marked **UNSUPPORTED** (and corrected to 731).
 > 3. **Automated Table Generation**: To eliminate manual transcription errors, results tables are now generated programmatically from `predictions/prediction_log.csv` using `scripts/forward_report.py --markdown` (Defect D-035).
+> 4. **654 Rows Discrepancy - Hypothesis (untested)**: The prior explanation that the 654-row figure in Section 4 Recompute 5 was derived by excluding 77 Phase 7 rows ($731 - 77 = 654$) is an untested guess. A rigorous audit of git history across all commits of `data/ipo_master.csv` shows that no revision of the master file ever contained 654 rows (it transitioned directly from 750 lines in Phase 5 to 732 lines / 731 data rows in Phase 6). Therefore, the 731-row file was never physically reduced to 654 rows in git history, and the 77-row subtraction claim is labeled strictly as "Hypothesis (untested)".
 
 ### Corrected Results Table (Generated from `predictions/prediction_log.csv`)
 
