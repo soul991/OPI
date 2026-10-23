@@ -1,0 +1,19 @@
+{
+  "company": "Fusion CX Limited",
+  "listing_date": "2026-10-22",
+  "page_date": "2026-10-22",
+  "accessed_at": "2026-10-24T02:24:52.576235+05:30",
+  "source_url": "https://www.nseindia.com/get-quote/equity/FUSIONCX/Fusion-CX-Limited",
+  "final_url": "https://www.nseindia.com/get-quote/equity/FUSIONCX/Fusion-CX-Limited",
+  "source_host": "www.nseindia.com",
+  "exchange_used": "NSE",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-22_fusion-cx-limited_1ef0c35a650c.html",
+  "snapshot_sha256": "1ef0c35a650c449455816b19ca45ea114e1549e6dc58d069b41811fbfb984c01",
+  "company_quote": "Fusion CX Limited",
+  "opening_price_quote": "22-Oct-2026 EQ 305.00",
+  "issue_price_in_prediction": 289.0,
+  "official_opening_price": 305.0,
+  "computed_listing_gain_pct": 5.54,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}

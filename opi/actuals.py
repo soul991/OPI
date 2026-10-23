@@ -13,6 +13,7 @@ from urllib.parse import urljoin, urlsplit
 
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 
 from opi.collect import DEFAULT_HEADERS, extract_clean_text_from_html
 from opi.log import IST, ROOT_DIR, get_write_timestamp, update_actual_outcome
@@ -129,12 +130,53 @@ def _decimal_price_tokens(text: str) -> set[Decimal]:
     return values
 
 
+def _extract_table_open(content: str, listing_date: date) -> Decimal | None:
+    """Extract opening price from a historical price table (HTML or CSV) for the listing date."""
+    date_vars = set(v.casefold() for v in _date_variants(listing_date))
+    # 1. HTML table check
+    if "<table" in content.lower():
+        try:
+            soup = BeautifulSoup(content, "html.parser")
+            for table in soup.find_all("table"):
+                header = None
+                for tr in table.find_all("tr"):
+                    cells = [td.get_text(strip=True) for td in tr.find_all(["th", "td"])]
+                    lower = [c.lower() for c in cells]
+                    if any("date" in c for c in lower) and any("open" in c for c in lower):
+                        header = lower
+                        continue
+                    if header and any(any(dv in c.lower() for dv in date_vars) for c in cells):
+                        open_indices = [i for i, h in enumerate(header) if "open" in h]
+                        if open_indices and open_indices[0] < len(cells):
+                            val = re.sub(r"[^\d.]", "", cells[open_indices[0]])
+                            if val:
+                                return Decimal(val)
+        except Exception:
+            pass
+    # 2. Text / CSV lines
+    header = None
+    for line in content.splitlines():
+        parts = [p.strip() for p in re.split(r"[	,]+", line.strip()) if p.strip()]
+        lower = [p.lower() for p in parts]
+        if any("date" in p for p in lower) and any("open" in p for p in lower):
+            header = lower
+            continue
+        if header and any(any(dv in p.lower() for dv in date_vars) for p in parts):
+            open_indices = [i for i, h in enumerate(header) if "open" in h]
+            if open_indices and open_indices[0] < len(parts):
+                val = re.sub(r"[^\d.]", "", parts[open_indices[0]])
+                if val:
+                    return Decimal(val)
+    return None
+
+
 def _verify_page(
     page_text: str,
     company_quote: str,
     price_quote: str,
     listing_price: Decimal,
     listing_date: date,
+    raw_content: str | None = None,
 ) -> None:
     compact_page = " ".join(page_text.split()).casefold()
     compact_company = " ".join(company_quote.split()).casefold()
@@ -142,18 +184,31 @@ def _verify_page(
 
     if not compact_company or compact_company not in compact_page:
         raise ActualsEvidenceError("Company quote was not found in the fetched exchange page.")
-    if not compact_price_quote or compact_price_quote not in compact_page:
-        raise ActualsEvidenceError("Opening-price quote was not found in the fetched exchange page.")
-    if not OPENING_PRICE_LABEL.search(compact_price_quote):
-        raise ActualsEvidenceError(
-            "Price quote must identify an opening/listing price (for example, 'Open Price' or 'Listing Price')."
-        )
-    if listing_price not in _decimal_price_tokens(price_quote):
-        raise ActualsEvidenceError("The supplied opening price does not appear as a number in the price quote.")
-    if listing_price not in _decimal_price_tokens(compact_page):
-        raise ActualsEvidenceError("The supplied opening price was not found in the exchange page.")
     if not any(v.casefold() in compact_page for v in _date_variants(listing_date)):
         raise ActualsEvidenceError("The listing date was not found in the fetched exchange page.")
+
+    content_to_check = raw_content or page_text
+    table_open = _extract_table_open(content_to_check, listing_date)
+    if table_open is not None:
+        if table_open != listing_price:
+            raise ActualsEvidenceError(
+                f"Historical table row for {listing_date} has Open {table_open}, does not match expected {listing_price}."
+            )
+        if not compact_price_quote or compact_price_quote not in compact_page:
+            raise ActualsEvidenceError("Opening-price quote was not found in the fetched exchange page.")
+        if listing_price not in _decimal_price_tokens(price_quote):
+            raise ActualsEvidenceError("The supplied opening price does not appear as a number in the price quote.")
+    else:
+        if not compact_price_quote or compact_price_quote not in compact_page:
+            raise ActualsEvidenceError("Opening-price quote was not found in the fetched exchange page.")
+        if not OPENING_PRICE_LABEL.search(compact_price_quote):
+            raise ActualsEvidenceError(
+                "Price quote must identify an opening/listing price (for example, 'Open Price' or 'Listing Price')."
+            )
+        if listing_price not in _decimal_price_tokens(price_quote):
+            raise ActualsEvidenceError("The supplied opening price does not appear as a number in the price quote.")
+        if listing_price not in _decimal_price_tokens(compact_page):
+            raise ActualsEvidenceError("The supplied opening price was not found in the exchange page.")
 
 
 def _pending_row(log_path: Path, company: str) -> tuple[pd.Series, Decimal]:
@@ -231,7 +286,7 @@ def record_actual_from_exchange(
     encoding = "utf-8"
     page = raw_body.decode(encoding, errors="replace")
     visible_text = extract_clean_text_from_html(page) if "html" in content_type or "xhtml" in content_type else page
-    _verify_page(visible_text, company_quote, price_quote, price, listing_date)
+    _verify_page(visible_text, company_quote, price_quote, price, listing_date, raw_content=page)
 
     content_hash = hashlib.sha256(raw_body).hexdigest()
     evidence_dir = ROOT_DIR / "data" / "evidence" / "actuals"
@@ -256,6 +311,7 @@ def record_actual_from_exchange(
         "source_url": source_url,
         "final_url": final_url,
         "source_host": urlsplit(final_url).hostname,
+        "exchange_used": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
         "content_type": content_type,
         "snapshot_path": snapshot_path.relative_to(ROOT_DIR).as_posix(),
         "snapshot_sha256": content_hash,

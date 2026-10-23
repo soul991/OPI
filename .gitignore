@@ -20,3 +20,4 @@ data/raw/
 .env
 .env.*
 !.env.example
+saved_pages/
