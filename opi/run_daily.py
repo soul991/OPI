@@ -13,7 +13,7 @@ from datetime import datetime, date
 from pathlib import Path
 import pandas as pd
 
-from opi.discover import discover_ipos
+from opi.discover import discover_ipos, is_company_in_master, get_today_ist
 from opi.ingest import ingest_ipo_data, IngestionError
 from opi.validate import validate_timing_and_leakage, validate_ipo_features
 from opi.score import score_ipo
@@ -73,6 +73,40 @@ def run_daily_forward_test(dry_run: bool = False):
         cand_status = cand.get("status", "UNKNOWN")
         close_date = str(cand.get("close_date", ""))
         listing_date = str(cand.get("listing_date", ""))
+
+        in_master, _ = is_company_in_master(company)
+        if in_master or cand_status == "LISTED":
+            print(f"\nCandidate: {company} | Status: ALREADY_LISTED in master or market.")
+            if not dry_run:
+                append_run_log(
+                    run_id, "DISCOVERY", company, "SKIPPED_ALREADY_LISTED",
+                    "Company already listed in ipo_master or market"
+                )
+            continue
+
+        if listing_date:
+            try:
+                l_dt = datetime.strptime(listing_date[:10], "%Y-%m-%d").date()
+                today_ist_dt = datetime.strptime(get_today_ist(), "%Y-%m-%d").date()
+                if l_dt <= today_ist_dt:
+                    print(f"\nCandidate: {company} | Listing date {listing_date} is on or before today.")
+                    if not dry_run:
+                        append_run_log(
+                            run_id, "DISCOVERY", company, "SKIPPED_ALREADY_LISTED",
+                            f"Listing date {listing_date} is on or before today"
+                        )
+                    continue
+            except Exception:
+                pass
+
+        if cand_status == "UNKNOWN_LISTING_DATE" or not listing_date:
+            print(f"\nCandidate: {company} | Status: UNKNOWN_LISTING_DATE.")
+            if not dry_run:
+                append_run_log(
+                    run_id, "DISCOVERY", company, "SKIPPED_UNKNOWN_LISTING_DATE",
+                    "Listing date missing or unknown; cannot score"
+                )
+            continue
 
         if cand_status == "BIDDING_OPEN":
             print(f"\nCandidate: {company} | Status: BIDDING_OPEN")

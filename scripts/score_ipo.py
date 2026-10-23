@@ -22,6 +22,7 @@ if str(ROOT_DIR) not in sys.path:
 import pandas as pd
 import yfinance as yf
 
+from opi.discover import is_company_in_master, get_today_ist
 from opi.ingest import ingest_ipo_data, save_raw_market_data, IngestionError
 from opi.score import score_ipo
 from opi.log import append_prediction_log, append_run_log, get_write_timestamp
@@ -85,6 +86,40 @@ def score_and_log_ipo(
     """Ingest, deterministically parse, score, and optionally log an IPO prediction."""
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     print(f"\n--- Grounded Scoring: {company} (Listing: {listing_date}) ---")
+
+    # 0. Refuse to score already-listed companies or unknown listing dates
+    in_master, _ = is_company_in_master(company)
+    if in_master:
+        msg = f"Refusing to score {company}: already in data/ipo_master.csv"
+        print(f"  [SKIPPED_ALREADY_LISTED] {msg}")
+        if not dry_run:
+            append_run_log(run_id, "SCORE", company, "SKIPPED_ALREADY_LISTED", msg)
+        raise ValueError(f"SKIPPED_ALREADY_LISTED: {msg}")
+
+    if not listing_date or str(listing_date).strip().lower() in ("", "unknown", "none"):
+        msg = f"Refusing to score {company}: listing date is missing or unknown"
+        print(f"  [SKIPPED_UNKNOWN_LISTING_DATE] {msg}")
+        if not dry_run:
+            append_run_log(run_id, "SCORE", company, "SKIPPED_UNKNOWN_LISTING_DATE", msg)
+        raise ValueError(f"SKIPPED_UNKNOWN_LISTING_DATE: {msg}")
+
+    try:
+        l_dt = datetime.strptime(str(listing_date)[:10], "%Y-%m-%d").date()
+        today_dt = datetime.strptime(get_today_ist(), "%Y-%m-%d").date()
+        if l_dt <= today_dt:
+            msg = f"Refusing to score {company}: listing date {listing_date} is on or before today ({today_dt})"
+            print(f"  [SKIPPED_ALREADY_LISTED] {msg}")
+            if not dry_run:
+                append_run_log(run_id, "SCORE", company, "SKIPPED_ALREADY_LISTED", msg)
+            raise ValueError(f"SKIPPED_ALREADY_LISTED: {msg}")
+    except ValueError as ve:
+        if "SKIPPED_" in str(ve):
+            raise
+        msg = f"Refusing to score {company}: invalid listing date '{listing_date}' ({ve})"
+        print(f"  [SKIPPED_UNKNOWN_LISTING_DATE] {msg}")
+        if not dry_run:
+            append_run_log(run_id, "SCORE", company, "SKIPPED_UNKNOWN_LISTING_DATE", msg)
+        raise ValueError(f"SKIPPED_UNKNOWN_LISTING_DATE: {msg}")
 
     # 1. Deterministic Ingestion & Grounding
     parsed = ingest_ipo_data(
