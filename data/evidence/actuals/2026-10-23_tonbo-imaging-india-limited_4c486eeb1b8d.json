@@ -1,0 +1,19 @@
+{
+  "company": "Tonbo Imaging India Limited",
+  "listing_date": "2026-10-23",
+  "page_date": "2026-10-23",
+  "accessed_at": "2026-10-24T02:27:27.522470+05:30",
+  "source_url": "https://www.nseindia.com/get-quote/equity/TONBO/Tonbo-Imaging-India-Limited",
+  "final_url": "https://www.nseindia.com/get-quote/equity/TONBO/Tonbo-Imaging-India-Limited",
+  "source_host": "www.nseindia.com",
+  "exchange_used": "NSE",
+  "content_type": "text/html",
+  "snapshot_path": "data/evidence/actuals/2026-10-23_tonbo-imaging-india-limited_4c486eeb1b8d.html",
+  "snapshot_sha256": "4c486eeb1b8d4bb8bb80d7934fe8ad5f77a7d77eac45086bb1d85770b6a79b50",
+  "company_quote": "Tonbo Imaging India Limited",
+  "opening_price_quote": "23-Oct-2026 EQ 1,160.00",
+  "issue_price_in_prediction": 700.0,
+  "official_opening_price": 1160.0,
+  "computed_listing_gain_pct": 65.71,
+  "verification_status": "VERIFIED_IN_SNAPSHOT"
+}
