@@ -3,6 +3,16 @@
 > Mandated by Phase 11 Workstream B (Defect D-041).
 > **Mandatory Epistemic Guardrail**: Sample size $n = 6 < 30$. No causal conclusions or generalizable performance claims are permitted. All explanatory hypotheses are explicitly labeled **Hypothesis (untested)**.
 
+## ERRATA (patch)
+
+> **Date**: 2026-10-24 (Phase 13 Gate A13 Verification Patch, Defect D-053)  
+> **Corrections Applied**:
+> 1. **Bonfiglioli Transmissions Limited QIB Subscription Figure (Section 3.A)**:
+>    - Section 3.A stated: "Bonfiglioli's QIB subscription was only 3.4x, markedly lower than hot issues like Tonbo Imaging (100x+ QIB)."
+>    - In `predictions/prediction_log.csv`, Bonfiglioli's true QIB subscription `sub_qib` was `120.78x` (Total subscription `sub_total` was `46.05x`). The 3.4x figure was an errant manual transcription.
+> 2. **Invalid 'Subdued Institutional Demand' Hypothesis (Section 3.A)**:
+>    - The hypothesis that Bonfiglioli suffered from "subdued institutional demand" or "tepid institutional book-building" was derived directly from the incorrect 3.4x transcription and is invalid. Institutional demand was in fact robust at 120.78x QIB subscription. The flat opening trade (+0.00%) occurred despite high QIB subscription, highlighting the risk of 100% OFS secondary supply overhang and broad-market morning volatility rather than lack of institutional interest.
+
 ---
 
 ## 1. Complete Forward Listed Post-Mortem Table

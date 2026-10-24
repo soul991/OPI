@@ -35,6 +35,18 @@ keys = {key(n): n for n in fwd}
 # ---- docs in scope: Phase 11 onward
 docs = [p for p in (ROOT / "phases").glob("Phase *") if p.name.split()[-1].isdigit() and int(p.name.split()[-1]) >= 11]
 md_files = [m for d in docs for m in d.glob("*.md") if not m.name.startswith("1_planning")]
+def errata_block(path):
+    """text of the file's top '## ERRATA' block (historical files may only be corrected this way)"""
+    t = path.read_text(encoding="utf-8").splitlines()
+    out, on = [], False
+    for ln in t[:120]:
+        if ln.startswith("## ERRATA"): on = True; continue
+        if on and (ln.startswith("## ") or ln.strip() == "---"): break
+        if on: out.append(ln)
+    return "\n".join(out)
+ERR = {m: errata_block(m) for m in md_files}
+def quoted_out(line):
+    return re.sub(r'"[^"]*"|`[^`]*`', " ", line)
 FIELD = {"qib": "sub_qib", "nii": "sub_nii", "retail": "sub_retail", "total": "sub_total"}
 pat = re.compile(r"\b(QIB|NII|Retail|Total)\b[^0-9\n]{0,25}?(\d+(?:\.\d+)?)\s*x", re.I)
 
@@ -48,16 +60,17 @@ for m in md_files:
         for fld, val in pat.findall(line):
             truth = fwd[cur].get(FIELD[fld.lower()])
             if truth is None: continue
+            if val in ERR[m] and key(cur) in ERR[m].lower(): continue  # corrected by ERRATA
             if abs(float(val) - float(truth)) > 0.06 and not re.search(r"(100|>|≥|over|above|\+)", line[max(0,line.find(val)-6):line.find(val)]):
                 bad.append(f"{m.relative_to(ROOT)}:{i} {cur} {fld} {val}x != log {truth}x")
 rec("FAIL" if bad else "PASS", "subscription figures in Phase 11+ reports equal prediction_log values", f"{len(bad)} mismatches")
 for b in bad[:20]: print("      ", b)
 
-# 2. exchange/evidence notes: HD Fire's BSE code must not be reused for other companies
+# 2. exchange/evidence notes (a wrong figure in an immutable older file is accepted only if its top ERRATA block names it): HD Fire's BSE code must not be reused for other companies
 bad = []
 for m in md_files:
     for i, line in enumerate(m.read_text(encoding="utf-8").splitlines(), 1):
-        if "544994" in line and who(line) not in (None, "HD Fire Protect Limited"):
+        if "544994" in line and "544994" not in ERR[m] and who(line) not in (None, "HD Fire Protect Limited"):
             bad.append(f"{m.relative_to(ROOT)}:{i}")
 rec("FAIL" if bad else "PASS", "no company other than HD Fire cites BSE code 544994", f"{len(bad)} lines")
 for b in bad[:10]: print("      ", b)
@@ -89,7 +102,7 @@ for m in md_files:
     cur = None
     for i, line in enumerate(m.read_text(encoding="utf-8").splitlines(), 1):
         cur = who(line) or cur
-        if cur and re.search(r"\b(only|tepid|subdued|weak)\b[^.\n]{0,40}(subscription|demand)", line, re.I):
+        if cur and key(cur) not in ERR[m].lower() and re.search(r"\b(only|tepid|subdued|weak)\b[^.\n]{0,40}(subscription|demand)", quoted_out(line), re.I):
             q = fwd[cur].get("sub_qib") or 0
             if q > 50: bad.append(f"{m.relative_to(ROOT)}:{i} {cur} described weak but QIB={q}x")
 rec("FAIL" if bad else "PASS", "no 'weak/only/subdued demand' text for IPOs with QIB > 50x", f"{len(bad)} lines")

@@ -154,6 +154,35 @@ def parse_defects_summary() -> Dict[str, Any]:
     return counts
 
 
+def get_last_cloud_run_time() -> str:
+    """Retrieve timestamp of the most recent scheduled/daily GitHub Actions run."""
+    import subprocess
+    try:
+        res = subprocess.run(
+            ["gh", "run", "list", "--workflow", "daily.yml", "--limit", "1", "--json", "createdAt"],
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            if data and "createdAt" in data[0]:
+                return data[0]["createdAt"]
+    except Exception:
+        pass
+
+    lag_file = ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md"
+    if lag_file.exists():
+        try:
+            m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", lag_file.read_text(encoding="utf-8"))
+            if m:
+                return m.group(1)
+        except Exception:
+            pass
+    return "Unknown"
+
+
 def generate_dashboard_data() -> Dict[str, Any]:
     """Compile all necessary data for the forward test dashboard."""
     data: Dict[str, Any] = {
@@ -166,7 +195,8 @@ def generate_dashboard_data() -> Dict[str, Any]:
         "forward_rows": [],
         "defects_summary": parse_defects_summary(),
         "provisional": True,
-        "disclaimer": "Decision aid only, not financial advice. No empirical performance claims permitted until n >= 30."
+        "disclaimer": "Decision aid only, not financial advice. No empirical performance claims permitted until n >= 30.",
+        "last_cloud_run": get_last_cloud_run_time()
     }
     data["champion_replay"] = _champion_replay_summary()
     data["forward_chart"] = ""
@@ -376,6 +406,12 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                     {defects['OPEN'] + defects['PARTIAL']}
                 </div>
             </div>
+            <div class="card">
+                <div class="card-label">Last Cloud Run</div>
+                <div class="card-num" style="font-size: 16px; color: #1f2937; margin-top: 14px;">
+                    {d['last_cloud_run']}
+                </div>
+            </div>
         </div>
 
         <div class="section">
@@ -458,7 +494,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         </div>
 
         <div class="footer">
-            Generated automatically by <code>opi.report</code> at {d['generated_at']} IST.<br>
+            Generated automatically by <code>opi.report</code> at {d['generated_at']} IST · Last cloud run: <strong>{d['last_cloud_run']}</strong>.<br>
             Strictly append-only audit provenance. Relative repository links only.
         </div>
     </div>

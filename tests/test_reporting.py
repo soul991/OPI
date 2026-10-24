@@ -227,7 +227,13 @@ def test_forward_report_exchange_matches_source():
         if "NSE official" in note:
             assert "HD Fire" not in co, f"NSE erroneously cited for HD Fire"
 
-
-
-
+def test_phase11_postmortem_has_errata():
+    """D-053: Verify that ERRATA is present in Phase 11 forward_postmortem.md."""
+    postmortem = ROOT / "phases" / "Phase 11" / "forward_postmortem.md"
+    assert postmortem.exists(), "Phase 11 forward_postmortem.md must exist"
+    head = postmortem.read_text(encoding="utf-8")[:2500]
+    assert "## ERRATA (patch)" in head, "ERRATA (patch) must be present in Phase 11 post-mortem"
+    assert "Bonfiglioli" in head
+    assert "120.78x" in head
+    assert "3.4x" in head
 
