@@ -1,5 +1,7 @@
 """Grounded LLM research agent for OPI candidate data collection."""
 
+from __future__ import annotations
+
 import os
 import json
 import logging
@@ -78,6 +80,129 @@ class MockResearchProvider:
         }
 
 
+class OpenRouterResearchProvider:
+    """Live OpenRouter API provider using models configured in config/research_models.json."""
+    def __init__(self, api_key: Optional[str] = None, config_path: Optional[Path] = None):
+        # Strict security constraint: Read from env only; never hardcoded, never logged
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        if not self.api_key:
+            raise ValueError("OPENROUTER_API_KEY environment variable required for OpenRouterResearchProvider")
+
+        cfg_file = config_path or (ROOT_DIR / "config" / "research_models.json")
+        if cfg_file.exists():
+            try:
+                cfg = json.loads(cfg_file.read_text(encoding="utf-8"))
+                self.models = cfg.get("models", [
+                    "nvidia/nemotron-3.5-super-vl:free",
+                    "google/gemma-4-31b-it:free",
+                    "nvidia/nemotron-3-super-120b-a12b:free"
+                ])
+                self.chat_url = cfg.get("openrouter_chat_url", "https://openrouter.ai/api/v1/chat/completions")
+                self.models_url = cfg.get("openrouter_models_url", "https://openrouter.ai/api/v1/models")
+            except Exception as e:
+                logger.warning(f"Failed to read research_models.json: {e}")
+                self.models = [
+                    "nvidia/nemotron-3.5-super-vl:free",
+                    "google/gemma-4-31b-it:free",
+                    "nvidia/nemotron-3-super-120b-a12b:free"
+                ]
+                self.chat_url = "https://openrouter.ai/api/v1/chat/completions"
+                self.models_url = "https://openrouter.ai/api/v1/models"
+        else:
+            self.models = [
+                "nvidia/nemotron-3.5-super-vl:free",
+                "google/gemma-4-31b-it:free",
+                "nvidia/nemotron-3-super-120b-a12b:free"
+            ]
+            self.chat_url = "https://openrouter.ai/api/v1/chat/completions"
+            self.models_url = "https://openrouter.ai/api/v1/models"
+
+    def refresh_free_models(self) -> List[str]:
+        """Query public models endpoint and filter out any model no longer ending in :free."""
+        try:
+            r = requests.get(self.models_url, timeout=10)
+            if r.status_code == 200:
+                data = r.json().get("data", [])
+                active_free = {m["id"] for m in data if str(m.get("id", "")).endswith(":free")}
+                filtered = [m for m in self.models if m in active_free]
+                if filtered:
+                    self.models = filtered
+        except Exception as e:
+            logger.warning(f"Could not refresh models from OpenRouter: {e}")
+        return self.models
+
+    def extract_ipo(self, company_name: str, html_sources: Dict[str, str]) -> Dict[str, Any]:
+        """Extract parameters trying models in order, with 404 fallthrough and 429 retry."""
+        data_blocks = []
+        for url, html_text in html_sources.items():
+            clean_text = " ".join(html_text.split()[:4000])
+            data_blocks.append(f'<untrusted_web_data url="{url}">\n{clean_text}\n</untrusted_web_data>')
+
+        prompt = f"""Target Company: {company_name}
+
+Extract official values from the following untrusted web sources. Return JSON ONLY matching schema:
+{SYSTEM_PROMPT}
+
+Sources:
+{"".join(data_blocks)}
+"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/soul991/OPI",
+            "X-Title": "OPI IPO Listing Predictor"
+        }
+
+        last_error = None
+        for model in self.models:
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.0,
+                "response_format": {"type": "json_object"}
+            }
+
+            for attempt in range(2):
+                try:
+                    resp = requests.post(self.chat_url, headers=headers, json=payload, timeout=30)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        choices = data.get("choices", [])
+                        if not choices:
+                            raise ValueError(f"No choices returned from OpenRouter {model}")
+                        raw_text = choices[0]["message"]["content"]
+                        clean_text = raw_text.strip()
+                        if clean_text.startswith("```json"):
+                            clean_text = clean_text[7:]
+                        if clean_text.startswith("```"):
+                            clean_text = clean_text[3:]
+                        if clean_text.endswith("```"):
+                            clean_text = clean_text[:-3]
+                        parsed = json.loads(clean_text.strip())
+                        parsed["_model_used"] = model
+                        return parsed
+                    elif resp.status_code == 429:
+                        import time
+                        logger.warning(f"OpenRouter 429 rate limit on {model}, sleeping...")
+                        time.sleep(2 * (attempt + 1))
+                        continue
+                    elif resp.status_code in (404, 502, 503):
+                        logger.warning(f"OpenRouter model {model} returned HTTP {resp.status_code}, falling through to next model...")
+                        last_error = f"HTTP {resp.status_code} on {model}"
+                        break
+                    else:
+                        last_error = f"HTTP {resp.status_code}: {resp.text[:200]}"
+                        break
+                except Exception as ex:
+                    last_error = str(ex)
+                    break
+
+        raise RuntimeError(f"All OpenRouter models failed. Last error: {last_error}")
+
+
 class GeminiResearchProvider:
     """Live Gemini API provider using official Google GenAI / Gemini client."""
     def __init__(self, api_key: Optional[str] = None):
@@ -90,7 +215,6 @@ class GeminiResearchProvider:
         # Bundle sources safely inside untrusted tags
         data_blocks = []
         for url, html_text in html_sources.items():
-            # Clean HTML to fit inside context window
             clean_text = " ".join(html_text.split()[:4000])
             data_blocks.append(f'<untrusted_web_data url="{url}">\n{clean_text}\n</untrusted_web_data>')
 
@@ -102,7 +226,6 @@ Extract official values from the following untrusted web sources. Return JSON ON
 Sources:
 {"".join(data_blocks)}
 """
-        # Call Gemini REST API directly with standard urllib / requests
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.api_key}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -217,7 +340,12 @@ def execute_research_run(
 ) -> IPOCandidateSchema:
     """Execute complete research run: provider extraction -> code snapshotting -> grounding verification."""
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{slugify(company_name)[:12]}"
-    provider_type = provider_name or os.getenv("OPI_LLM_PROVIDER", "mock")
+    if provider_name:
+        provider_type = provider_name
+    elif os.getenv("OPI_ENV") == "test":
+        provider_type = "mock"
+    else:
+        provider_type = os.getenv("OPI_LLM_PROVIDER", "openrouter")
 
     if provider_type == "mock" and os.getenv("OPI_ENV") != "test":
         raise PermissionError("Mock provider is disabled outside of test environment. Set OPI_ENV=test to enable.")
@@ -255,12 +383,23 @@ def execute_research_run(
         }
 
     # Extract proposals
-    if provider_type == "gemini":
+    model_used = None
+    if provider_type == "openrouter":
+        provider = OpenRouterResearchProvider()
+        raw_proposals = provider.extract_ipo(company_name, html_fixtures)
+        model_used = raw_proposals.get("_model_used", "openrouter")
+    elif provider_type == "gemini":
         provider = GeminiResearchProvider()
         raw_proposals = provider.extract_ipo(company_name, html_fixtures)
+        model_used = "gemini-2.5-flash"
     else:
         provider = MockResearchProvider(fixtures=mock_fixtures)
         raw_proposals = provider.extract_ipo(company_name, html_fixtures)
+        model_used = "mock"
+
+    notes_str = f"Research run {run_id} via {provider_type} provider"
+    if model_used:
+        notes_str += f" (model: {model_used})"
 
     # Ground each field independently via code
     schema = IPOCandidateSchema(
@@ -288,7 +427,7 @@ def execute_research_run(
         nifty_30d_return=ground_field_proposal("nifty_30d_return", raw_proposals.get("nifty_30d_return"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
         india_vix=ground_field_proposal("india_vix", raw_proposals.get("india_vix"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
         recent_ipo_avg_gain=ground_field_proposal("recent_ipo_avg_gain", raw_proposals.get("recent_ipo_avg_gain"), run_id, float, html_fixtures, target_dir=target_evidence_dir),
-        notes=f"Research run {run_id} via {provider_type} provider"
+        notes=notes_str
     )
 
     # Save run record
@@ -298,3 +437,21 @@ def execute_research_run(
         f.write(schema.model_dump_json(indent=2))
 
     return schema
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="OPI Grounded Research Agent")
+    parser.add_argument("--company", required=True, help="Company name to research")
+    parser.add_argument("--provider", default=os.getenv("OPI_LLM_PROVIDER", "openrouter"), choices=["openrouter", "gemini", "mock"])
+    parser.add_argument("--mock", action="store_true", help="Force mock provider (requires OPI_ENV=test)")
+    args = parser.parse_args()
+
+    prov = "mock" if args.mock else args.provider
+    res = execute_research_run(company_name=args.company, provider_name=prov)
+    print(f"Research run completed for {args.company}: {res.run_id}")
+    print(res.to_model_features())
+
+
+if __name__ == "__main__":
+    main()

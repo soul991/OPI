@@ -6,12 +6,18 @@ on:
     - cron: '0 6,14 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: daily-forward-test
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
 jobs:
   run-forward-test:
     runs-on: ubuntu-latest
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     steps:
       - name: Check out repository
