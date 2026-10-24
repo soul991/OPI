@@ -212,5 +212,22 @@ def test_discovery_dry_run_artifact():
     assert "Paras Healthcare" in content
 
 
+def test_forward_report_exchange_matches_source():
+    """D-047: Verify that forward_report notes cite real exchange and do not misattribute BSE 544994."""
+    from scripts.forward_report import generate_markdown_results_table
+    md = generate_markdown_results_table()
+    for line in md.splitlines():
+        if not line.startswith("|") or "Company" in line or ":---" in line:
+            continue
+        cols = [c.strip() for c in line.strip("|").split("|")]
+        co = re.sub(r"\*+", "", cols[0]).strip()
+        note = cols[-1]
+        if "544994" in note:
+            assert "HD Fire" in co, f"544994 erroneously cited for {co}"
+        if "NSE official" in note:
+            assert "HD Fire" not in co, f"NSE erroneously cited for HD Fire"
+
+
+
 
 

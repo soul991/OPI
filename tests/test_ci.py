@@ -118,3 +118,15 @@ def test_dashboard_publishing_status_documented():
     assert "404" in content or "not enabled" in content
 
 
+def test_schedule_lag_recorded():
+    """D-051: Schedule lag of last 10 scheduled runs must be analyzed and recorded."""
+    lag_file = ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md"
+    assert lag_file.exists(), "phases/Phase 12/actions_schedule_lag.md must exist"
+    content = lag_file.read_text(encoding="utf-8")
+    assert "cron: '0 6,14 * * *'" in content
+    assert "Last 10 Scheduled Runs" in content
+    assert "Mean Schedule Delay" in content
+    assert "40084848056" in content
+
+
+

@@ -209,6 +209,7 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
             m = re.search(r"snapshot=([^\s;]+\.html)", str(r["notes"]))
             open_p = None
             snap_id = ""
+            jdata = None
             if m:
                 snap_path = ROOT_DIR / Path(m.group(1))
                 json_p = snap_path.with_suffix(".json")
@@ -222,7 +223,12 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
             if open_p is None:
                 open_p = issue_p * (1 + act_val / 100)
             list_p_str = f"₹{float(open_p):.2f}"
-            note_str = f"BSE official opening trade (544994) evidenced in snapshot `{snap_id}`" if snap_id else r["notes"]
+            if snap_id:
+                exch = "BSE" if (jdata and ("bseindia" in str(jdata.get("source_url", "")).lower() or jdata.get("exchange_used") == "BSE")) else "NSE"
+                code_suffix = " (544994)" if (jdata and exch == "BSE" and "544994" in str(jdata.get("source_url", ""))) else ""
+                note_str = f"{exch} official opening trade{code_suffix} evidenced in snapshot `{snap_id}`"
+            else:
+                note_str = r["notes"]
         else:
             list_p_str = "Pending"
             act_str = "Pending"

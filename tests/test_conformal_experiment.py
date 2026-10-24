@@ -48,3 +48,17 @@ def test_defects_documented_in_readme():
     content = readme_path.read_text(encoding="utf-8")
     assert "D-007" in content, "D-007 not documented in README"
     assert "D-008" in content, "D-008 not documented in README"
+
+
+def test_coverage_reconciliation_script_and_readme():
+    """D-049: Reconcile champion coverage figures (91.2% vs 87.94%) across scripts and README."""
+    from scripts.reconcile_coverage import reconcile
+    res = reconcile()
+    assert abs(res["protocol_1"]["coverage_pct"] - 91.20) < 0.05
+    assert abs(res["protocol_2"]["coverage_pct"] - 87.94) < 0.05
+
+    readme_content = (ROOT_DIR / "README.md").read_text(encoding="utf-8")
+    assert "91.2%" in readme_content
+    assert "87.94%" in readme_content
+    assert "reconcile_coverage.py" in readme_content
+

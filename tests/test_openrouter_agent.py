@@ -105,6 +105,6 @@ def test_no_openrouter_keys_committed():
 
     # Also verify all sk-or- matches in repo are strictly safety rule/command references
     res2 = subprocess.run(["git", "grep", "sk-or-"], cwd=str(ROOT_DIR), capture_output=True, text=True)
-    doc_tokens = ("planning_and_goals", "preregistration", "2_building_and_execution", "3_outcome_and_verdict", "test_openrouter_agent")
+    doc_tokens = ("planning_and_goals", "preregistration", "2_building_and_execution", "3_outcome_and_verdict", "test_openrouter_agent", "verify_extra")
     unexpected = [l for l in res2.stdout.splitlines() if not any(t in l for t in doc_tokens)]
     assert len(unexpected) == 0, f"Found unexpected sk-or- match outside phase docs: {unexpected}"

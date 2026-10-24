@@ -1,0 +1,21 @@
+﻿[FAIL] subscription figures in Phase 11+ reports equal prediction_log values                    3 mismatches
+       phases\Phase 11\3_outcome_and_verdict.md:144 Zetwerk Manufacturing Business Limited Retail 11.8x != log 0.77x
+       phases\Phase 11\3_outcome_and_verdict.md:146 Tonbo Imaging India Limited QIB 185.4x != log 293.56x
+       phases\Phase 11\forward_postmortem.md:37 Bonfiglioli Transmissions Limited QIB 3.4x != log 120.78x
+[FAIL] no company other than HD Fire cites BSE code 544994                                      5 lines
+       phases\Phase 11\3_outcome_and_verdict.md:80
+       phases\Phase 11\3_outcome_and_verdict.md:81
+       phases\Phase 11\3_outcome_and_verdict.md:82
+       phases\Phase 11\3_outcome_and_verdict.md:83
+       phases\Phase 11\3_outcome_and_verdict.md:84
+[FAIL] no hard-coded dated numeric constants in scripts/ or opi/                                3 lines
+       scripts\forward_postmortem.py:22
+       scripts\forward_postmortem.py:23
+       scripts\forward_postmortem.py:24
+[FAIL] each listed date has a parsed Nifty evidence file (close + prev close or day return)     missing: 2026-10-21, 2026-10-22, 2026-10-23
+[FAIL] no 'weak/only/subdued demand' text for IPOs with QIB > 50x                               1 lines
+       phases\Phase 11\forward_postmortem.md:37 Bonfiglioli Transmissions Limited described weak but QIB=120.78x
+[PASS] README's two champion coverage figures (91.2% vs 87.94%) are reconciled in text          
+[PASS] no OpenRouter key material in tracked files                                              
+
+SUMMARY: 2 pass, 0 warn, 5 fail

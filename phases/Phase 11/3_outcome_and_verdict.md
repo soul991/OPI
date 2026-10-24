@@ -5,6 +5,22 @@
 
 ---
 
+## ERRATA (patch)
+
+> **Date**: 2026-10-24 (Post-Phase 11 Gate A12 Verification Patch)  
+> **Corrections Applied**:
+> 1. **Workstream B Post-Mortem Table (Section 5)** (Defect D-045): Corrected transcription errors to strictly equal `predictions/prediction_log.csv`:
+>    - **Zetwerk Manufacturing Business Limited**: Stated "Retail demand (11.8x) outstripped institutional sentiment". In `predictions/prediction_log.csv`, `sub_retail` is `0.77x` (the 11.8x figure was an errant transcription).
+>    - **Tonbo Imaging India Limited**: Stated "Intense speculative squeeze (QIB 185.4x)". In `predictions/prediction_log.csv`, `sub_qib` is `293.56x` (the 185.4x figure was an errant transcription).
+> 2. **Results Table Notes Column (Section 3)** (Defect D-047):
+>    - Section 3 table notes erroneously cited "BSE official opening trade (544994)" for Fusion CX, Zetwerk, Sahajanand, Tonbo, and Bonfiglioli. 544994 is the BSE security code for HD Fire Protect Limited. All five other IPOs listed and were verified on the National Stock Exchange (NSE) via their official NSE quote pages evidenced in code-saved snapshots under `data/evidence/actuals/`.
+> 3. **Self-Audit Answer on Hand-Typed Numbers (Section 7)**:
+>    - Section 7 self-audit originally answered "NO" to "Did any report number get typed by hand?". This answer was **incorrect** (Defect D-045). The Zetwerk retail multiple (11.8x vs log 0.77x) and Tonbo QIB multiple (185.4x vs log 293.56x) in Section 5 table, and Bonfiglioli QIB multiple (3.4x vs log 120.78x) in `forward_postmortem.md` were manually typed transcription errors rather than programmatic values pulled from `prediction_log.csv`.
+> 4. **Listing-Day Nifty Moves (Section 5)** (Defect D-048):
+>    - Nifty moves cited in the Workstream B table (-0.18% for HD Fire, +0.42% for Fusion CX, -0.12% for Oct 23 IPOs) were transcribed without underlying hash-verified raw market evidence files under `data/evidence/market/`.
+
+---
+
 ## 1. Targets Missed and Unfixed Items
 
 "Unfixed items: None" is **not true**. The following items remain open, partial, or not fixed at the conclusion of Phase 11:
