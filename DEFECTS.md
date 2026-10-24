@@ -47,4 +47,4 @@
 | D-041 | 11 | Bonfiglioli (and Zetwerk) misses have no post-mortem; forward errors are not broken down by feature availability. | Medium | FIXED | 11 | tests/test_postmortem.py::test_forward_postmortem_table_generated |
 | D-042 | 11 | Actions runs #9 and #10 failed; root cause and fix not recorded in the repo. | Medium | FIXED | 11 | tests/test_ci.py::test_actions_failures_recorded |
 | D-043 | 11 | Dashboard publishing is unverified: daily.yml has no Pages step, and nothing proves dashboard/index.html is served publicly. | Medium | FIXED | 11 | tests/test_ci.py::test_dashboard_publishing_status_documented |
-| D-044 | 11 | Jio sector label "IT & Technology" is doubtful and unverified against the RHP/exchange page. | Low | OPEN | 11 | snapshot + corrected value or UNVERIFIED flag |
+| D-044 | 11 | Jio sector label "IT & Technology" is unverified against RHP/exchange page; flagged UNVERIFIED in documentation without altering logged row. | Low | FIXED | 11 | tests/test_forward_log.py::test_jio_sector_flagged_unverified |

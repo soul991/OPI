@@ -99,3 +99,18 @@ def test_candidate_ipos_scored_after_close():
     assert float(paras["pred_prob_gt10"]) > 0.0
 
 
+def test_jio_sector_flagged_unverified():
+    """D-044: Jio Platforms sector label is audited and flagged as UNVERIFIED without row alteration."""
+    status_doc = os.path.join(ROOT_DIR, "phases", "Phase 11", "forward_status.md")
+    assert os.path.exists(status_doc), "forward_status.md must exist"
+    content = open(status_doc, encoding="utf-8").read()
+    assert "UNVERIFIED (D-044)" in content, "Jio Platforms sector must be documented as UNVERIFIED"
+
+    # Verify original row in prediction_log.csv was not modified in-place
+    df = pd.read_csv(LOG_PATH)
+    jio = df[df["company"] == "Jio Platforms Limited"].iloc[0]
+    assert jio["status"] == "FORWARD"
+    assert "IT & Technology" in str(jio["features_snapshot_json"])
+
+
+
