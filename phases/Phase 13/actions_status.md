@@ -34,3 +34,13 @@ Query: `gh run list --workflow daily.yml --event schedule --limit 10`
 - 9 consecutive successful scheduled runs since run #11 (`39410837110` on 2026-10-20).
 - The historical failure on 2026-10-19 was root-caused and resolved in Phase 9 (`test_all_empty_notes_column_does_not_crash`).
 - Secrets remain strictly guarded: zero secret key occurrences in repository commits, logs, or issues.
+
+
+---
+
+## 3. Retraining Governance Audit (Workstream E)
+- **Workflow File**: `.github/workflows/monthly_retrain.yml`
+- **Dependencies**: Verified installation pinned to `requirements.lock` (`pip install -r requirements.lock`).
+- **Zero Auto-Promotion**: Strict governance step verified (`git status --porcelain model/` must be empty; exit 1 on any modification).
+- **Champion Integrity**: Champion `v4.0.0-champion` artifact and inference replay `predictions/champion_replay_v4.0.0-champion.csv` preserved untouched.
+- **Verification Suite**: Passed all governance tests (`tests/test_retraining.py` [3 passed], `tests/test_governance.py` [3 passed]).
