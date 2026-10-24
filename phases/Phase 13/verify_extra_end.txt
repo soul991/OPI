@@ -1,0 +1,9 @@
+[PASS] subscription figures in Phase 11+ reports equal prediction_log values                    0 mismatches
+[PASS] no company other than HD Fire cites BSE code 544994                                      0 lines
+[PASS] no hard-coded dated numeric constants in scripts/ or opi/                                0 lines
+[PASS] each listed date has a parsed Nifty evidence file (close + prev close or day return)     missing: none
+[PASS] no 'weak/only/subdued demand' text for IPOs with QIB > 50x                               0 lines
+[PASS] README's two champion coverage figures (91.2% vs 87.94%) are reconciled in text          
+[PASS] no OpenRouter key material in tracked files                                              
+
+SUMMARY: 7 pass, 0 warn, 0 fail
