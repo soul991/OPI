@@ -97,3 +97,24 @@ def test_daily_workflow_is_active():
     else:
         warnings.warn("GitHub CLI ('gh') is not installed; verified local workflow configuration only.")
 
+
+def test_actions_failures_recorded():
+    """D-042: Actions runs #9 and #10 failures must be recorded with root cause and resolution."""
+    failures_file = ROOT_DIR / "phases" / "Phase 11" / "actions_failures.md"
+    assert failures_file.exists(), "phases/Phase 11/actions_failures.md must exist"
+    content = failures_file.read_text(encoding="utf-8")
+    assert "39248257712" in content
+    assert "39312521616" in content
+    assert "AssertionError: Hyundai row must be INVALID, got FORWARD" in content
+    assert "test_r6_prediction_log_status_and_filtering" in content
+
+
+def test_dashboard_publishing_status_documented():
+    """D-043: Dashboard publishing status must be verified and documented."""
+    doc_file = ROOT_DIR / "phases" / "Phase 11" / "actions_failures.md"
+    assert doc_file.exists(), "phases/Phase 11/actions_failures.md must exist"
+    content = doc_file.read_text(encoding="utf-8")
+    assert "GitHub Pages" in content
+    assert "404" in content or "not enabled" in content
+
+

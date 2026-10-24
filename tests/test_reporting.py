@@ -173,7 +173,7 @@ def test_verdict_table_matches_log():
             cols = [c.strip() for c in line.strip("|").split("|")]
             if len(cols) >= 7:
                 co = re.sub(r"\*+", "", cols[0]).strip()
-                p_issue_match = re.search(r"₹?\s*([0-9]+(?:\.[0-9]+)?)", cols[2])
+                p_issue_match = re.search(r"\u20b9?\s*([0-9]+(?:\.[0-9]+)?)", cols[2])
                 p_issue = float(p_issue_match.group(1)) if p_issue_match else None
                 gmp_col = cols[6]
                 p_gmp_match = re.search(r"([+-]?[0-9]+(?:\.[0-9]+)?)\s*%", gmp_col)

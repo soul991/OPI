@@ -78,7 +78,7 @@ def test_r2_paired_bootstrap_intervals():
         diffs.append(err_blend[idx].mean() - err_gmp[idx].mean())
 
     ci = np.percentile(diffs, [2.5, 97.5])
-    assert ci[0] <= 0 <= ci[1], f"Bootstrap interval for Δ(Blend - GMP) must include 0, got [{ci[0]:.4f}, {ci[1]:.4f}]"
+    assert ci[0] <= 0 <= ci[1], f"Bootstrap interval for Delta(Blend - GMP) must include 0, got [{ci[0]:.4f}, {ci[1]:.4f}]"
 
 
 def test_r3_calibration_target_missed_on_final_test():
@@ -182,9 +182,9 @@ def test_r8_test_set_partition_discipline():
     assert "listing_gain_pct" in df_p5.columns, "data/ipo_phase5_final_test.csv must contain standard schema columns"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  PHASE 6 GATE A6 TESTS
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 
 def test_s1_inclusion_criteria_no_excluded_in_master():
@@ -256,7 +256,7 @@ def test_s6_forward_prediction_calibrated_range():
         prob = float(row["pred_prob_gt10"])
         assert 0.0 <= prob <= 0.98, (
             f"FORWARD prediction for '{row['company']}' has P(gain>10%)={prob:.4f} "
-            f"which exceeds 0.98 — likely invalid or raw uncalibrated classifier"
+            f"which exceeds 0.98 -- likely invalid or raw uncalibrated classifier"
         )
 
 
@@ -303,9 +303,9 @@ def test_s6_hd_fire_is_mainboard():
         assert issue_size > 25.0, f"HD Fire Protect issue_size_cr={issue_size} too small for mainboard"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 #  PHASE 7 GATE A7 TESTS (T1 to T7)
-# ══════════════════════════════════════════════════════════════════════════════
+# ==============================================================================
 
 
 def test_t1_t3_phase6_errata_header_and_items():
