@@ -172,14 +172,17 @@ def get_last_cloud_run_time() -> str:
     except Exception:
         pass
 
-    lag_file = ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md"
-    if lag_file.exists():
-        try:
-            m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", lag_file.read_text(encoding="utf-8"))
-            if m:
-                return m.group(1)
-        except Exception:
-            pass
+    for status_path in (
+        ROOT_DIR / "phases" / "Phase 13" / "actions_status.md",
+        ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md",
+    ):
+        if status_path.exists():
+            try:
+                m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", status_path.read_text(encoding="utf-8"))
+                if m:
+                    return m.group(1)
+            except Exception:
+                pass
     return "Unknown"
 
 

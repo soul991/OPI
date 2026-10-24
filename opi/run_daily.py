@@ -167,6 +167,12 @@ def run_daily_forward_test(dry_run: bool = False):
 
             if l_date <= today_date:
                 print(f"  - {comp_name} listed on {l_date} <= today ({today_date}): outcome update pending.")
+                # Per data-source failure policy: log SKIPPED_BLOCKED_SOURCE if official exchange snapshot not present
+                if not dry_run:
+                    append_run_log(
+                        run_id, "ACTUALS", comp_name, "SKIPPED_BLOCKED_SOURCE",
+                        f"Official exchange snapshot required for {comp_name} (listing {l_date})"
+                    )
                 print(
                     "    Use scripts/update_actuals.py with official NSE/BSE URL or browser snapshot."
                 )

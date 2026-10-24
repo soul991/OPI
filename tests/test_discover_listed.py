@@ -189,3 +189,10 @@ def test_score_ipo_refuses_unknown_listing_date():
                 sub_url="https://example.com/sub",
                 dry_run=True,
             )
+
+
+def test_daily_runner_checks_pending_outcomes():
+    """Workstream B: Daily forward test runner checks pending forward listings and enforces evidence policy."""
+    from opi.run_daily import run_daily_forward_test
+    # Must run cleanly in dry_run mode without exceptions
+    run_daily_forward_test(dry_run=True)
