@@ -1,0 +1,188 @@
+{
+  "master_sha256": "87e3dc0ef8592f882fe927312d468ccf642c03228ab3f1da00731780ebc58ecc",
+  "model_sha256": "335dd32d3ab3127de378316d64690b1a9bd6c2e8377859671916b1347e9b9069",
+  "total_master_rows": 731,
+  "mega_issue_threshold_cr": 10000.0,
+  "features": {
+    "issue_price": {
+      "min": 11.0,
+      "max": 2165.0,
+      "p01": 26.0,
+      "p99": 1497.0,
+      "median": 247.0,
+      "count": 731,
+      "missing_count": 0
+    },
+    "issue_size_cr": {
+      "min": 3.6,
+      "max": 27870.16,
+      "p01": 29.5136,
+      "p99": 11528.7276,
+      "median": 571.96,
+      "count": 729,
+      "missing_count": 2
+    },
+    "fresh_issue_pct": {
+      "min": 0.0,
+      "max": 100.0,
+      "p01": 0.0,
+      "p99": 100.0,
+      "median": 60.0,
+      "count": 362,
+      "missing_count": 369
+    },
+    "ofs_pct": {
+      "min": 0.0,
+      "max": 100.0,
+      "p01": 0.0,
+      "p99": 100.0,
+      "median": 37.58,
+      "count": 334,
+      "missing_count": 397
+    },
+    "lot_size": {
+      "min": 5.0,
+      "max": 10205.0,
+      "p01": 8.52,
+      "p99": 600.0,
+      "median": 50.0,
+      "count": 653,
+      "missing_count": 78
+    },
+    "sub_qib": {
+      "min": 0.0,
+      "max": 4435511.0,
+      "p01": 0.0,
+      "p99": 298.5398,
+      "median": 15.62,
+      "count": 639,
+      "missing_count": 92
+    },
+    "sub_nii": {
+      "min": 0.0,
+      "max": 3326634.0,
+      "p01": 0.0652,
+      "p99": 631.5178,
+      "median": 15.73,
+      "count": 639,
+      "missing_count": 92
+    },
+    "sub_retail": {
+      "min": 0.0,
+      "max": 374.46,
+      "p01": 0.0972,
+      "p99": 179.6488,
+      "median": 5.29,
+      "count": 637,
+      "missing_count": 94
+    },
+    "sub_total": {
+      "min": 0.0,
+      "max": 18804290.0,
+      "p01": 0.8062,
+      "p99": 219.1391,
+      "median": 11.205,
+      "count": 728,
+      "missing_count": 3
+    },
+    "pe_ratio": {
+      "min": 5.53,
+      "max": 1340.16,
+      "p01": 8.9071,
+      "p99": 547.0255,
+      "median": 33.68,
+      "count": 294,
+      "missing_count": 437
+    },
+    "peer_median_pe": {
+      "min": 0.15,
+      "max": 950.31,
+      "p01": 9.9994,
+      "p99": 370.397,
+      "median": 38.5,
+      "count": 299,
+      "missing_count": 432
+    },
+    "roe": {
+      "min": -20968.75,
+      "max": 735.0148,
+      "p01": -74.9013,
+      "p99": 67.1276,
+      "median": 11.4636,
+      "count": 359,
+      "missing_count": 372
+    },
+    "roce": {
+      "min": NaN,
+      "max": NaN,
+      "p01": NaN,
+      "p99": NaN,
+      "median": NaN,
+      "count": 0,
+      "missing_count": 731
+    },
+    "debt_equity": {
+      "min": -0.07,
+      "max": 514.5417,
+      "p01": 0.0,
+      "p99": 73.64,
+      "median": 0.61,
+      "count": 379,
+      "missing_count": 352
+    },
+    "revenue_growth_pct": {
+      "min": NaN,
+      "max": NaN,
+      "p01": NaN,
+      "p99": NaN,
+      "median": NaN,
+      "count": 0,
+      "missing_count": 731
+    },
+    "pat_margin_pct": {
+      "min": -44.4682,
+      "max": 98.6165,
+      "p01": -39.0262,
+      "p99": 50.7549,
+      "median": 8.7154,
+      "count": 380,
+      "missing_count": 351
+    },
+    "gmp_pct": {
+      "min": -26.92,
+      "max": 95.0,
+      "p01": -5.0324,
+      "p99": 87.5819,
+      "median": 9.885,
+      "count": 342,
+      "missing_count": 389
+    },
+    "nifty_30d_return": {
+      "min": -16.29,
+      "max": 12.38,
+      "p01": -10.437,
+      "p99": 10.432,
+      "median": 0.76,
+      "count": 731,
+      "missing_count": 0
+    },
+    "india_vix": {
+      "min": 9.15,
+      "max": 49.75,
+      "p01": 10.06,
+      "p99": 33.26,
+      "median": 14.46,
+      "count": 731,
+      "missing_count": 0
+    },
+    "recent_ipo_avg_gain": {
+      "min": -17.69,
+      "max": 88.24,
+      "p01": -10.192,
+      "p99": 68.716,
+      "median": 12.52,
+      "count": 731,
+      "missing_count": 0
+    }
+  }
+}

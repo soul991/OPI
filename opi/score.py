@@ -19,6 +19,84 @@ if model_dir not in sys.path:
 DEFAULT_CONFORMAL_HALF_WIDTH_80 = 23.13
 
 
+def load_feature_ranges() -> Dict[str, Any]:
+    """Load pre-computed master feature training ranges (min, max, p01, p99)."""
+    ranges_path = ROOT_DIR / "model" / "feature_ranges.json"
+    if not ranges_path.exists():
+        return {}
+    with open(ranges_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def check_feature_ranges(
+    input_data: Union[Dict[str, Any], pd.DataFrame, pd.Series]
+) -> Tuple[list[str], str, bool]:
+    """Audit candidate features against historical training ranges.
+    
+    Returns:
+        (input_flags, confidence, display_probability)
+        - input_flags: list of detected boundary violations or missingness
+        - confidence: "LOW" if any out-of-range or mega-issue flag triggered, else "NORMAL"
+        - display_probability: False if confidence is LOW, True otherwise
+    """
+    ranges_meta = load_feature_ranges()
+    features_meta = ranges_meta.get("features", {})
+    flags: list[str] = []
+
+    def get_val(key: str) -> Any:
+        if isinstance(input_data, dict):
+            return input_data.get(key)
+        if isinstance(input_data, pd.Series):
+            return input_data.get(key)
+        if isinstance(input_data, pd.DataFrame):
+            if key in input_data.columns and len(input_data) > 0:
+                return input_data[key].iloc[0]
+        return None
+
+    # 1. Issue size checks (Mega-issue & training maximum)
+    issue_size = get_val("issue_size_cr")
+    if issue_size is not None and pd.notna(issue_size):
+        try:
+            val = float(issue_size)
+            max_size = features_meta.get("issue_size_cr", {}).get("max", 27870.16)
+            if val > max_size:
+                flags.append("ISSUE_SIZE_ABOVE_TRAIN_MAX")
+            if val > 10000.0:
+                flags.append("MEGA_ISSUE_GT_10000CR")
+        except (ValueError, TypeError):
+            pass
+    else:
+        flags.append("MISSING:issue_size_cr")
+
+    # 2. Missingness on fundamental / valuation metrics
+    for critical in ["pe_ratio", "peer_median_pe", "debt_equity"]:
+        val = get_val(critical)
+        if val is None or pd.isna(val) or str(val).strip() in ("", "None", "nan"):
+            flags.append(f"MISSING:{critical}")
+
+    # 3. Numeric bounds checks for all other features present in feature_ranges.json
+    for feat, meta in features_meta.items():
+        val = get_val(feat)
+        if val is not None and pd.notna(val) and str(val).strip() not in ("", "None", "nan"):
+            try:
+                num_val = float(val)
+                if num_val > meta["max"] and feat != "issue_size_cr":
+                    flags.append(f"{feat.upper()}_ABOVE_TRAIN_MAX")
+                elif num_val < meta["min"]:
+                    flags.append(f"{feat.upper()}_BELOW_TRAIN_MIN")
+            except (ValueError, TypeError):
+                pass
+
+    is_low = any(
+        ("ABOVE_TRAIN_MAX" in f) or ("MEGA_ISSUE" in f) or ("BELOW_TRAIN_MIN" in f)
+        for f in flags
+    )
+    confidence = "LOW" if is_low else "NORMAL"
+    display_probability = not is_low
+
+    return flags, confidence, display_probability
+
+
 def load_model_registry() -> Dict[str, Any]:
     """Load model registry configuration."""
     reg_path = ROOT_DIR / "model" / "registry.json"
@@ -159,6 +237,8 @@ def score_ipo(
         lower_bound = round(gain_pred - half_width, 2)
         upper_bound = round(gain_pred + half_width, 2)
         
+    input_flags, confidence, display_prob = check_feature_ranges(df)
+
     return {
         "company": str(df["company"].iloc[0]) if "company" in df.columns else "UNKNOWN",
         "predicted_gain_pct": round(gain_pred, 2),
@@ -169,5 +249,8 @@ def score_ipo(
         "blend_expected_return": blend_return,
         "conformal_interval_80": [lower_bound, upper_bound],
         "conformal_half_width_80": half_width,
-        "model_version": model_version
+        "model_version": model_version,
+        "input_flags": input_flags,
+        "confidence": confidence,
+        "display_probability": display_prob
     }

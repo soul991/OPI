@@ -182,14 +182,25 @@ with tab_analysis:
         with col2:
             st.metric("80% Conformal Interval", f"[{c_low:+.1f}%, {c_high:+.1f}%]")
         cal_min, cal_max = get_calibrated_probability_range()
+        conf = scored.get("confidence", "NORMAL")
+        disp_prob = scored.get("display_probability", True)
+        flags = scored.get("input_flags", [])
         with col3:
-            if cal_min <= p_gt10 <= cal_max:
+            if conf == "LOW" or not disp_prob:
+                st.metric("P(Listing Gain > 10%)", "not shown: out-of-range input", help=f"Safety guard: probability suppressed due to out-of-range inputs ({', '.join(flags)})")
+            elif cal_min <= p_gt10 <= cal_max:
                 st.metric("P(Listing Gain > 10%)", f"{p_gt10 * 100:.1f}%", help=f"Platt-calibrated probability (measured range: {cal_min*100:.1f}% - {cal_max*100:.1f}%)")
             else:
                 st.metric("P(Listing Gain > 10%)", "not shown: outside measured range", help=f"Value outside empirically calibrated range [{cal_min*100:.1f}%, {cal_max*100:.1f}%]")
         with col4:
             gmp_display = f"{gmp_val:+.2f}%" if gmp_val is not None else "Not Available"
             st.metric("Observed Final GMP", gmp_display)
+
+        if flags:
+            if conf == "LOW":
+                st.warning(f"⚠️ **Out-of-Range Safety Alert (Confidence: LOW)**: Input flags triggered: `{', '.join(flags)}`. Model probability is suppressed. Point estimate represents extreme extrapolation.")
+            else:
+                st.info(f"ℹ️ **Input Diagnostics**: Flags: `{', '.join(flags)}`.")
 
         st.info(f"**Applied Decision Rule**: `{rule}` (Model Version: `{scored['model_version']}`)")
 

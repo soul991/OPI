@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 import pandas as pd
 
+from opi.score import check_feature_ranges
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 DEFECTS_PATH = ROOT_DIR / "DEFECTS.md"
@@ -200,7 +202,8 @@ def generate_dashboard_data() -> Dict[str, Any]:
                 "gmp_pct": float(r["gmp_pct_at_scoring"]) if pd.notna(r.get("gmp_pct_at_scoring")) else None,
                 "actual_gain_pct": float(r["actual_gain_pct"]) if pd.notna(r.get("actual_gain_pct")) else None,
                 "notes": str(r.get("notes", "")),
-                "model_version": str(r.get("model_version", "v4.0.0-champion"))
+                "model_version": str(r.get("model_version", "v4.0.0-champion")),
+                "features_snapshot_json": str(r.get("features_snapshot_json", ""))
             })
         data["forward_rows"] = rows_list
         data["forward_chart"] = _forward_comparison_chart(rows_list)
@@ -239,18 +242,47 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         lower_bound = f"{r['pred_gain_pct'] - 23.13:+.2f}%" if r["pred_gain_pct"] is not None else "-"
         upper_bound = f"{r['pred_gain_pct'] + 23.13:+.2f}%" if r["pred_gain_pct"] is not None else "-"
         interval_str = f"[{lower_bound}, {upper_bound}]" if r["pred_gain_pct"] is not None else "-"
-        
-        # Thin inputs check
-        thin_inputs = "Yes (No GMP)" if "fusion cx" in r["company"].lower() else "No"
-        
+
+        # Check out-of-range safety flags and confidence
+        feats_dict = {}
+        if r.get("features_snapshot_json"):
+            try:
+                feats_dict = json.loads(r["features_snapshot_json"])
+            except Exception:
+                pass
+        flags, conf, disp_prob = check_feature_ranges(feats_dict)
+        is_low_conf = (conf == "LOW") or ("jio" in r["company"].lower() and "jio platforms" in r["company"].lower())
+
+        # Thin inputs and safety flags display
+        if is_low_conf:
+            flag_desc = "Mega-issue (>10k cr), out-of-range" if any("MEGA_ISSUE" in f or "ABOVE_TRAIN_MAX" in f for f in flags) else "Out-of-range input"
+            thin_inputs = f"LOW CONF ({flag_desc})"
+        elif "fusion cx" in r["company"].lower():
+            thin_inputs = "Yes (No GMP)"
+        else:
+            thin_inputs = "No"
+
+        # Probability display suppression for out-of-range inputs
+        if is_low_conf or not disp_prob:
+            prob_display = "not shown: out-of-range input (confidence LOW)"
+        elif r["pred_prob_gt10"] is not None:
+            if 0.091 <= r["pred_prob_gt10"] <= 0.882:
+                prob_display = f"{r['pred_prob_gt10']*100:.1f}%"
+            else:
+                prob_display = "not shown: outside measured range"
+        else:
+            prob_display = "-"
+
+        conf_badge = " <span style='background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;'>LOW CONF</span>" if is_low_conf else ""
+
         rows_html += f"""
         <tr>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{r['scored_at'][:19]}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{r['company']}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{r['company']}{conf_badge}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{r['listing_date']}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; color: {status_color}; font-weight: 600;">{r['status']}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{f"{r['pred_gain_pct']:+.2f}%" if r['pred_gain_pct'] is not None else "-"}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{(f"{r['pred_prob_gt10']*100:.1f}%" if (0.091 <= r['pred_prob_gt10'] <= 0.882) else "not shown: outside measured range") if r['pred_prob_gt10'] is not None else "-"}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{prob_display}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">{f"{r['gmp_pct']:+.2f}%" if r['gmp_pct'] is not None else "-"}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">{f"{r['actual_gain_pct']:+.2f}%" if r['actual_gain_pct'] is not None else "Pending"}</td>
             <td style="padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 12px; color: #4b5563;">{r['notes'][:80]}...</td>
@@ -266,7 +298,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             
             forward_accuracy_rows.append(
                 "<tr>"
-                f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(r['company'])}</td>"
+                f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(r['company'])}{conf_badge}</td>"
                 f"<td style='padding:8px;'>{html_lib.escape(r['listing_date'])}</td>"
                 f"<td style='padding:8px;'>{r['model_version']}</td>"
                 f"<td style='padding:8px;'>{pred_text}</td>"
