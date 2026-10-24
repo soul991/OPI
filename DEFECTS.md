@@ -63,5 +63,5 @@
 | D-057 | 12 | No alert when a scheduled run fails (runs #9/#10 were found only by manual inspection). | Medium | FIXED | 13 | tests/test_alerts.py::test_handle_failure_creates_new_issue_when_none_open |
 | D-058 | 12 | Schedule risks: runs start about 4.7 h late; GitHub may pause schedules after 60 days without repo activity. | Medium | FIXED | 13 | tests/test_watchdog.py::test_scheduled_run_freshness_fresh |
 | D-059 | 12 | Dependencies are not pinned; yfinance is unofficial and pandas 3.x already broke a script once (D-021). | Medium | FIXED | 13 | tests/test_ci.py::test_requirements_lock_and_ci_pinning |
-| D-060 | 12 | The n = 30 evaluation is not preregistered or automated; risk of ad-hoc claims later. | Medium | OPEN | 13 | `scripts/final_evaluation.py` + `preregistration_final_eval.md` committed before n reaches 30 |
+| D-060 | 12 | The n = 30 evaluation is not preregistered or automated; risk of ad-hoc claims later. | Medium | FIXED | 13 | tests/test_final_evaluation.py::test_full_evaluation_on_synthetic_fixture |
 | D-061 | 12 | No runbook for the user (rotate key, rerun, read alerts, what each file is). | Low | OPEN | 13 | `docs/RUNBOOK.md` exists and is checked by a test for required sections |
