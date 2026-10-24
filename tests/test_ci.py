@@ -185,3 +185,20 @@ def test_watchdog_and_canary_workflows_configured():
     assert "cron:" in c_text
     assert "pip install --upgrade -r requirements.txt" in c_text or "pip install -r requirements.txt" in c_text
     assert "pytest" in c_text
+
+
+def test_workflows_pin_runner_and_node24_actions():
+    """D-062: all workflows use a pinned runner image and Node-24 action versions."""
+    for wf in (ROOT_DIR / ".github" / "workflows").glob("*.yml"):
+        text = wf.read_text(encoding="utf-8")
+        assert "ubuntu-latest" not in text, f"{wf.name} must pin the runner image (ubuntu-24.04)"
+        assert "actions/checkout@v4" not in text and "actions/setup-python@v5" not in text, f"{wf.name} uses Node-20 actions"
+
+
+def test_ci_local_replicates_ci_order():
+    """D-063: scripts/ci_local.py runs the daily job, then pytest, then verify_all (same order as daily.yml)."""
+    text = (ROOT_DIR / "scripts" / "ci_local.py").read_text(encoding="utf-8")
+    assert text.index("opi.run_daily") < text.index('"pytest"') < text.index("verify_all.py")
+    daily = (ROOT_DIR / ".github" / "workflows" / "daily.yml").read_text(encoding="utf-8")
+    assert daily.index("opi.run_daily") < daily.index("pytest") < daily.index("verify_all.py")
+
