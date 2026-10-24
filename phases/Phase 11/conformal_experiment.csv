@@ -1,0 +1,4 @@
+Model,Total_Coverage_Pct,Total_Wilson_95,Tail_Coverage_Pct,Tail_Wilson_95,Mean_Width_pp,Target1_Met,Target2_Met,Target3_Met,Adopted
+Champion (Pooled Conformal),87.94,"[84.4%, 90.8%]",55.0,"[39.8%, 69.3%]",48.96,False,False,False,False
+Candidate 1 (Mondrian Conformal),85.68,"[81.9%, 88.8%]",57.5,"[42.2%, 71.5%]",47.21,False,False,False,False
+Candidate 2 (Quantile CQR),83.92,"[80.0%, 87.2%]",67.5,"[52.0%, 79.9%]",52.72,True,False,False,False
