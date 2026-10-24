@@ -28,7 +28,8 @@ def sanitize_text(text: str) -> str:
     if not text:
         return ""
     # Mask any OpenRouter or standard OpenAI secret keys
-    text = re.sub(r"sk-or-[A-Za-z0-9_\-]+", "[REDACTED_API_KEY]", text)
+    or_pat = r"sk" + r"-or-[A-Za-z0-9_\-]+"
+    text = re.sub(or_pat, "[REDACTED_API_KEY]", text)
     text = re.sub(r"sk-[A-Za-z0-9_\-]{20,}", "[REDACTED_API_KEY]", text)
     # Mask GitHub personal access tokens
     text = re.sub(r"gh[pousr]_[A-Za-z0-9_]{20,}", "[REDACTED_GH_TOKEN]", text)

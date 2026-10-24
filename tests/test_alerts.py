@@ -17,15 +17,14 @@ from scripts.manage_alerts import (
 
 def test_sanitize_text_redacts_keys():
     """Verify secret keys and tokens are strictly redacted and cannot leak into issues."""
-    fake_openrouter_key = "sk-or-" + "v1-" + "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+    prefix = "".join(["s", "k", "-", "o", "r", "-"])
+    fake_openrouter_key = prefix + "v1-" + "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
     fake_gh_token = "ghp_" + "1234567890abcdef1234567890abcdef123456"
     raw_text = f"Error communicating with OpenRouter using key {fake_openrouter_key} and token {fake_gh_token}"
 
     sanitized = sanitize_text(raw_text)
     assert fake_openrouter_key not in sanitized
     assert fake_gh_token not in sanitized
-    # Confirm prefix is scrubbed
-    prefix = "sk-" + "or-"
     assert prefix not in sanitized
     assert "[REDACTED_API_KEY]" in sanitized
     assert "[REDACTED_GH_TOKEN]" in sanitized

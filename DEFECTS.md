@@ -64,4 +64,4 @@
 | D-058 | 12 | Schedule risks: runs start about 4.7 h late; GitHub may pause schedules after 60 days without repo activity. | Medium | FIXED | 13 | tests/test_watchdog.py::test_scheduled_run_freshness_fresh |
 | D-059 | 12 | Dependencies are not pinned; yfinance is unofficial and pandas 3.x already broke a script once (D-021). | Medium | FIXED | 13 | tests/test_ci.py::test_requirements_lock_and_ci_pinning |
 | D-060 | 12 | The n = 30 evaluation is not preregistered or automated; risk of ad-hoc claims later. | Medium | FIXED | 13 | tests/test_final_evaluation.py::test_full_evaluation_on_synthetic_fixture |
-| D-061 | 12 | No runbook for the user (rotate key, rerun, read alerts, what each file is). | Low | OPEN | 13 | `docs/RUNBOOK.md` exists and is checked by a test for required sections |
+| D-061 | 12 | No runbook for the user (rotate key, rerun, read alerts, what each file is). | Low | FIXED | 13 | tests/test_docs.py::test_runbook_sections_and_headings |
