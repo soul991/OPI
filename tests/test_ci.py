@@ -128,5 +128,18 @@ def test_schedule_lag_recorded():
     assert "Mean Schedule Delay" in content
     assert "40084848056" in content
 
+def test_pages_published_and_guarded():
+    """D-050: GitHub Pages publishing verified with HTTP 200 check, freshness guard, and README link."""
+    verify_script = ROOT_DIR / "scripts" / "verify_pages.py"
+    assert verify_script.exists(), "scripts/verify_pages.py must exist"
 
+    check_file = ROOT_DIR / "phases" / "Phase 12" / "pages_check.txt"
+    assert check_file.exists(), "phases/Phase 12/pages_check.txt must exist"
+    content = check_file.read_text(encoding="utf-8")
+    assert "HTTP Status Code: 200" in content, "pages_check.txt must record HTTP 200"
+    assert "https://soul991.github.io/OPI/dashboard/" in content
+    assert "Verdict: PASS" in content
+
+    readme_file = ROOT_DIR / "README.md"
+    assert "https://soul991.github.io/OPI/dashboard/" in readme_file.read_text(encoding="utf-8")
 

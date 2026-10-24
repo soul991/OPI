@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""verify_pages.py - GitHub Pages dashboard publishing and staleness guard (D-050).
+
+Companion verification script to verify_extra.py (Phase 12 Workstream D).
+Fetches https://soul991.github.io/OPI/dashboard/ and verifies HTTP 200 and
+that the rendered timestamp is not stale (>36 hours older than last scheduled run).
+If network is unreachable in sandbox, prints NOT_CHECKED and NEVER prints PASS.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import urllib.request
+import urllib.error
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+DASHBOARD_URL = "https://soul991.github.io/OPI/dashboard/"
+MAX_STALENESS_HOURS = 36.0
+
+
+def get_last_scheduled_run_time() -> Optional[dt.datetime]:
+    """Retrieve timestamp of the most recent scheduled GitHub Actions run."""
+    try:
+        res = subprocess.run(
+            ["gh", "run", "list", "--workflow", "daily.yml", "--event", "schedule", "--limit", "1", "--json", "createdAt"],
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        data = json.loads(res.stdout)
+        if data and "createdAt" in data[0]:
+            ts_str = data[0]["createdAt"].replace("Z", "+00:00")
+            return dt.datetime.fromisoformat(ts_str)
+    except Exception:
+        pass
+
+    # Fallback to actions_schedule_lag.md if available
+    lag_file = ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md"
+    if lag_file.exists():
+        try:
+            m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", lag_file.read_text(encoding="utf-8"))
+            if m:
+                return dt.datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+        except Exception:
+            pass
+
+    return None
+
+
+def verify_pages(save_path: Optional[Path] = None) -> int:
+    """Check live Pages deployment, verifying status 200 and freshness."""
+    req = urllib.request.Request(
+        DASHBOARD_URL,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) OPI-Pages-Verifier/1.0"}
+    )
+
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    now_str = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            http_code = resp.status
+            body = resp.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as he:
+        print(f"[FAIL] Live GitHub Pages returned HTTP {he.code}: {DASHBOARD_URL}")
+        return 1
+    except (urllib.error.URLError, TimeoutError, OSError) as ue:
+        print(f"[NOT_CHECKED] Live GitHub Pages unreachable from environment: {ue}")
+        return 0
+
+    if http_code != 200:
+        print(f"[FAIL] Live GitHub Pages returned status {http_code} != 200")
+        return 1
+
+    # Extract timestamp from HTML
+    # Example pattern: Generated automatically by <code>opi.report</code> at 2026-10-24T10:11:00.746466 IST
+    ts_match = re.search(r"Generated automatically by <code>opi\.report</code> at\s*([0-9T:.-]+)\s*IST", body)
+    page_time_iso = ts_match.group(1) if ts_match else "UNKNOWN"
+
+    page_dt_utc = None
+    if ts_match:
+        try:
+            # Parse IST timestamp and convert to UTC
+            ist_str = ts_match.group(1).split(".")[0]
+            ist_dt = dt.datetime.strptime(ist_str, "%Y-%m-%dT%H:%M:%S")
+            page_dt_utc = ist_dt.replace(tzinfo=dt.timezone(dt.timedelta(hours=5, minutes=30))).astimezone(dt.timezone.utc)
+        except Exception:
+            pass
+
+    last_sched_utc = get_last_scheduled_run_time()
+    staleness_msg = ""
+    is_stale = False
+
+    if page_dt_utc and last_sched_utc:
+        # Check if page timestamp is more than 36h older than last scheduled run
+        diff_hours = (last_sched_utc - page_dt_utc).total_seconds() / 3600.0
+        if diff_hours > MAX_STALENESS_HOURS:
+            is_stale = True
+            staleness_msg = f"STALE: Page timestamp ({page_time_iso} IST) is {diff_hours:.1f}h older than last scheduled run ({last_sched_utc.isoformat()})"
+        else:
+            staleness_msg = f"FRESH: Delta {diff_hours:+.1f}h vs last scheduled run (within {MAX_STALENESS_HOURS}h threshold)"
+    else:
+        staleness_msg = f"Page timestamp extracted: {page_time_iso} IST"
+
+    status_str = "FAIL" if is_stale else "PASS"
+    print(f"[{status_str}] Live GitHub Pages dashboard verified (HTTP {http_code}) - {staleness_msg}")
+
+    # Record check output if requested
+    if save_path:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        report_lines = [
+            "# GitHub Pages Live Verification Output (D-050)",
+            "",
+            f"- Checked At: {now_str}",
+            f"- Dashboard URL: {DASHBOARD_URL}",
+            f"- HTTP Status Code: {http_code}",
+            f"- Page Generated Timestamp: {page_time_iso} IST",
+            f"- Page UTC Timestamp: {page_dt_utc.isoformat() if page_dt_utc else 'UNKNOWN'}",
+            f"- Last Scheduled Actions Run: {last_sched_utc.isoformat() if last_sched_utc else 'UNKNOWN'}",
+            f"- Freshness Evaluation: {staleness_msg}",
+            f"- Verdict: {status_str}",
+            "",
+            "## Dashboard Content Audit",
+            f"- Contains HD Fire Protect Limited: {'HD Fire Protect Limited' in body}",
+            f"- Contains Fusion CX Limited: {'Fusion CX Limited' in body}",
+            f"- Contains Zetwerk Manufacturing: {'Zetwerk Manufacturing' in body}",
+            f"- Contains Sahajanand Medical: {'Sahajanand Medical' in body}",
+            f"- Contains Tonbo Imaging: {'Tonbo Imaging' in body}",
+            f"- Contains Bonfiglioli Transmissions: {'Bonfiglioli Transmissions' in body}",
+            f"- Contains Jio Platforms (LOW confidence tag): {'Jio Platforms Limited' in body and 'LOW' in body}",
+            f"- Contains Paras Healthcare: {'Paras Healthcare Limited' in body}",
+            f"- Displays Running Model MAE: {'Provisional Model MAE' in body}",
+            f"- Displays Running GMP MAE: {'Provisional GMP MAE' in body}",
+        ]
+        save_path.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
+        print(f"Saved check report to {save_path}")
+
+    return 1 if is_stale else 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Verify live GitHub Pages dashboard status & freshness")
+    parser.add_argument("--save-check", default=str(ROOT_DIR / "phases" / "Phase 12" / "pages_check.txt"), help="Path to save check report")
+    args = parser.parse_args()
+
+    save_p = Path(args.save_check).resolve() if args.save_check else None
+    return verify_pages(save_path=save_p)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

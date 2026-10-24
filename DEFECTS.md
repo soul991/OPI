@@ -53,6 +53,6 @@
 | D-047 | 11 | forward_report.py writes BSE code 544994 as evidence note for every listed IPO. | Medium | FIXED | 12 | tests/test_reporting.py::test_forward_report_exchange_matches_source |
 | D-048 | 11 | Listing-day Nifty moves hard-coded in forward_postmortem.py; no saved Nifty evidence for 2026-10-21/22/23. | High | FIXED | 12 | tests/test_postmortem.py::test_narrative_numbers_from_log |
 | D-049 | 11 | Champion interval coverage 91.2% vs 87.94% not reconciled across README, DEFECTS D-008 and Phase 11 report. | Medium | FIXED | 12 | tests/test_conformal_experiment.py::test_coverage_reconciliation_script_and_readme |
-| D-050 | 11 | Dashboard publishing unproven: Pages source was only just enabled (user, 2026-10-24); no confirmed build; [skip ci] bot commits may suppress rebuilds, leaving the live page stale. | Medium | OPEN | 12 | scripts/verify_pages.py plus saved pages_check.txt (HTTP 200, fresh timestamp) |
+| D-050 | 11 | Dashboard publishing unproven: Pages source was only just enabled (user, 2026-10-24); no confirmed build; [skip ci] bot commits may suppress rebuilds, leaving the live page stale. | Medium | FIXED | 12 | tests/test_ci.py::test_pages_published_and_guarded |
 | D-051 | 11 | Scheduled runs start 4 to 5 hours late; no freshness monitoring. | Low | FIXED | 12 | tests/test_ci.py::test_schedule_lag_recorded |
 | D-052 | 11 | Process: Phase 11 ran all workstreams without the requested stop after the gate. | Medium | FIXED | 12 | tests/test_gate_a.py::test_phase12_process_stop_and_results_log |

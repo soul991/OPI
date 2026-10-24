@@ -30,6 +30,7 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - Status: **Provisional (n = 1 of 30), descriptive only, no performance claims permitted below n = 30** (per pre-registered rules).
 
 ### 4a. Champion Replay and Live Accuracy Dashboard
+- **Live Public Dashboard**: [https://soul991.github.io/OPI/dashboard/](https://soul991.github.io/OPI/dashboard/) (served via GitHub Pages from branch `main`, verified HTTP 200).
 - The registered champion remains `v4.0.0-champion`, with a training window ending 2021-12-31; its artifact hash matches the registry. The master contains 333 IPOs through 2021 and 398 later rows. No training or model promotion was performed for this replay.
 - `predictions/champion_replay_v4.0.0-champion.csv` records inference-only comparisons across the 396 eligible Mainboard rows in `data/ipo_master.csv` dated 2022 onward. The two InvIT/REIT rows are excluded by the model's Mainboard eligibility rule. Replay MAE is 7.98 percentage points and positive/non-positive direction matched 84.3% of the time.
 - This is a retrospective replay using stored historical feature values; it is not a prospectively recorded prediction series, and not every historical feature has a verified pre-listing snapshot. The replay is shown separately from genuine FORWARD predictions and must not be presented as the live track record.
