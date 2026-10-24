@@ -53,7 +53,7 @@ To rotate the key:
 1. Go to repository **Settings** > **Secrets and variables** > **Actions**.
 2. Locate `OPENROUTER_API_KEY`.
 3. Click the pencil icon (Edit) or update secret.
-4. Paste your new OpenRouter key (`sk-or-v1-...`) and save.
+4. Paste your new OpenRouter API key and save.
 5. **No code change, commit, or repository edit is required.**
 
 ---
