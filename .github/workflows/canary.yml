@@ -1,0 +1,54 @@
+name: Weekly Canary Dependency Build
+
+on:
+  schedule:
+    # Run weekly on Sunday at 03:00 UTC to test unpinned dependencies
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: canary-dependency-test
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  test-unpinned-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install unpinned dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade -r requirements.txt
+
+      - name: Run Test Suite against Latest Dependencies
+        run: |
+          python -m pytest -q
+
+      - name: Alert on Failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "canary.yml" --failed-step "Unpinned pytest execution" --reason "Canary build detected upstream dependency breakage"
+
+      - name: Close Open Alerts on Success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-success --run-id "${{ github.run_id }}" --workflow-name "canary.yml"

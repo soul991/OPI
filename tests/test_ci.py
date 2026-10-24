@@ -143,3 +143,45 @@ def test_pages_published_and_guarded():
     readme_file = ROOT_DIR / "README.md"
     assert "https://soul991.github.io/OPI/dashboard/" in readme_file.read_text(encoding="utf-8")
 
+
+
+def test_requirements_lock_and_ci_pinning():
+    """D-059: Pinned requirements.lock exists and workflows install from it."""
+    lock_file = ROOT_DIR / "requirements.lock"
+    assert lock_file.exists(), "requirements.lock must exist"
+    lock_text = lock_file.read_text(encoding="utf-8")
+    for pkg in ("pandas==", "numpy==", "scikit-learn==", "joblib==", "yfinance==", "pytest=="):
+        assert pkg in lock_text, f"{pkg} must be pinned in requirements.lock"
+
+    daily_file = ROOT_DIR / ".github" / "workflows" / "daily.yml"
+    assert "pip install -r requirements.lock" in daily_file.read_text(encoding="utf-8")
+
+    retrain_file = ROOT_DIR / ".github" / "workflows" / "monthly_retrain.yml"
+    assert "pip install -r requirements.lock" in retrain_file.read_text(encoding="utf-8")
+
+
+def test_failure_alert_and_force_fail_configured():
+    """D-057: daily.yml has issues: write permission, force_fail input, and alert steps."""
+    daily_file = ROOT_DIR / ".github" / "workflows" / "daily.yml"
+    text = daily_file.read_text(encoding="utf-8")
+    assert "issues: write" in text, "daily.yml must have issues: write permission"
+    assert "force_fail:" in text, "daily.yml must configure force_fail input for testing"
+    assert "scripts/manage_alerts.py --on-failure" in text, "daily.yml must call manage_alerts.py on failure"
+    assert "scripts/manage_alerts.py --on-success" in text, "daily.yml must call manage_alerts.py on success"
+
+
+def test_watchdog_and_canary_workflows_configured():
+    """D-058: Watchdog and weekly canary workflows exist with schedules and required steps."""
+    watchdog_file = ROOT_DIR / ".github" / "workflows" / "watchdog.yml"
+    assert watchdog_file.exists(), "watchdog.yml must exist"
+    w_text = watchdog_file.read_text(encoding="utf-8")
+    assert "cron:" in w_text
+    assert "scripts/watchdog.py" in w_text
+    assert "manage_alerts.py" in w_text
+
+    canary_file = ROOT_DIR / ".github" / "workflows" / "canary.yml"
+    assert canary_file.exists(), "canary.yml must exist"
+    c_text = canary_file.read_text(encoding="utf-8")
+    assert "cron:" in c_text
+    assert "pip install --upgrade -r requirements.txt" in c_text or "pip install -r requirements.txt" in c_text
+    assert "pytest" in c_text

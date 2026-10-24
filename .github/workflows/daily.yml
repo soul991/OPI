@@ -5,6 +5,12 @@ on:
     # Run twice daily: 06:00 UTC (11:30 IST) and 14:00 UTC (19:30 IST, post-bidding close)
     - cron: '0 6,14 * * *'
   workflow_dispatch:
+    inputs:
+      force_fail:
+        description: 'Force execution failure to test alerting (ignored on schedule)'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: daily-forward-test
@@ -12,6 +18,7 @@ concurrency:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   run-forward-test:
@@ -31,10 +38,16 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install dependencies from lockfile
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.lock
+
+      - name: Check Forced Failure Flag
+        if: "${{ github.event.inputs.force_fail == 'true' || github.event.inputs.force_fail == true }}"
+        run: |
+          echo "Forced failure requested via workflow_dispatch input."
+          exit 1
 
       - name: Verify or Retrain Model Binary
         run: |
@@ -66,3 +79,17 @@ jobs:
             git commit -m "chore(auto): daily forward test predictions and dashboard update [skip ci]"
             git push
           fi
+
+      - name: Alert on Failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "daily.yml"
+
+      - name: Close Open Alerts on Success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-success --run-id "${{ github.run_id }}" --workflow-name "daily.yml"

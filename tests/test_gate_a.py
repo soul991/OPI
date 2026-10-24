@@ -394,3 +394,24 @@ def test_phase12_process_stop_and_results_log():
     assert "phase12-gate-a" in text, "results_log.md must document phase12-gate-a commit"
     assert "resume" in text.lower() or "continue" in text.lower(), "results_log.md must document user approval"
 
+
+
+def test_gate_a13_macro_correction():
+    """D-054: Macro snapshot annotation data/corrections/macro_2026-10-23.md records true Oct 23 values."""
+    corr_file = os.path.join(ROOT_DIR, "data", "corrections", "macro_2026-10-23.md")
+    assert os.path.exists(corr_file), "data/corrections/macro_2026-10-23.md must exist"
+    with open(corr_file, "r", encoding="utf-8") as f:
+        text = f.read()
+    assert "2026-10-23" in text
+    assert "22,600.00" in text or "22600.00" in text
+    assert "16.86" in text
+
+
+def test_gate_a13_market_raw_decision():
+    """D-055: Decision document phases/Phase 13/market_raw_decision.md documents raw vs parsed nomenclature."""
+    dec_file = os.path.join(ROOT_DIR, "phases", "Phase 13", "market_raw_decision.md")
+    assert os.path.exists(dec_file), "phases/Phase 13/market_raw_decision.md must exist"
+    with open(dec_file, "r", encoding="utf-8") as f:
+        text = f.read()
+    assert "D-055" in text
+    assert "nomenclature" in text.lower() or "raw" in text.lower()

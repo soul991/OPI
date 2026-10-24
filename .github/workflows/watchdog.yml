@@ -1,0 +1,54 @@
+name: Watchdog Freshness & Provider Health
+
+on:
+  schedule:
+    # Run once daily at 10:00 UTC (offset from daily forward runs at 06:00 and 14:00 UTC)
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: watchdog-health
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  run-watchdog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies from lockfile
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock
+
+      - name: Execute Watchdog Health Check
+        run: |
+          python scripts/watchdog.py
+
+      - name: Alert on Failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml"
+
+      - name: Close Open Alerts on Success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/manage_alerts.py --on-success --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml"
