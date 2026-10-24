@@ -384,4 +384,13 @@ def test_windows_setup_in_readme():
     assert "Windows Setup" in content, "README must contain Windows Setup section"
     assert "pytest_ethereum" in content, "README must mention pytest_ethereum"
 
+def test_phase12_process_stop_and_results_log():
+    """D-052: Verify Gate A12 stop protocol and user approval recorded in results_log.md."""
+    res_log = os.path.join(ROOT_DIR, "phases", "Phase 12", "results_log.md")
+    assert os.path.exists(res_log), "phases/Phase 12/results_log.md must exist"
+    with open(res_log, "r", encoding="utf-8") as f:
+        text = f.read()
+    assert "D-052" in text, "results_log.md must reference D-052"
+    assert "phase12-gate-a" in text, "results_log.md must document phase12-gate-a commit"
+    assert "resume" in text.lower() or "continue" in text.lower(), "results_log.md must document user approval"
 

@@ -1,0 +1,11 @@
+{
+  "as_of_date": "2026-10-21",
+  "nifty_close": 22811.349609375,
+  "nifty_prev_close": 22888.94921875,
+  "nifty_day_return_pct": -0.34,
+  "india_vix": 15.68,
+  "source": "^NSEI via yfinance (public exchange data)",
+  "accessed_at": "2026-10-24T15:47:23.731269+00:00",
+  "sha256": "3c4dc8aecb86b53839b7ac402cfce5b78fa02d3f38af5d770c8f48b490b9e6ec",
+  "raw_file": "2026-10-21_nifty.raw"
+}
