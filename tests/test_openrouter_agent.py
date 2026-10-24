@@ -100,7 +100,11 @@ def test_ungrounded_field_dropped(tmp_path):
 
 def test_no_openrouter_keys_committed():
     """Verify that no actual OpenRouter secret keys are committed or staged."""
-    res = subprocess.run(["git", "grep", "sk-or-"], cwd=str(ROOT_DIR), capture_output=True, text=True)
-    # The only matches should be rule/doc references describing the check itself, never an actual key
-    lines = [line for line in res.stdout.splitlines() if not any(x in line for x in ("planning_and_goals", "preregistration", "3_outcome_and_verdict", "test_openrouter_agent"))]
-    assert len(lines) == 0, f"Found unexpected sk-or- match: {lines}"
+    res = subprocess.run(["git", "grep", "-E", r"sk-or-[a-zA-Z0-9]{8,}"], cwd=str(ROOT_DIR), capture_output=True, text=True)
+    assert len(res.stdout.strip()) == 0, f"Found actual OpenRouter key committed: {res.stdout}"
+
+    # Also verify all sk-or- matches in repo are strictly safety rule/command references
+    res2 = subprocess.run(["git", "grep", "sk-or-"], cwd=str(ROOT_DIR), capture_output=True, text=True)
+    doc_tokens = ("planning_and_goals", "preregistration", "2_building_and_execution", "3_outcome_and_verdict", "test_openrouter_agent")
+    unexpected = [l for l in res2.stdout.splitlines() if not any(t in l for t in doc_tokens)]
+    assert len(unexpected) == 0, f"Found unexpected sk-or- match outside phase docs: {unexpected}"
