@@ -219,11 +219,18 @@ def main() -> int:
     parser.add_argument("--run-id", default=os.environ.get("GITHUB_RUN_ID", ""), help="GitHub Actions run ID")
     parser.add_argument("--failed-step", default="", help="Step name that encountered failure")
     parser.add_argument("--reason", default="", help="Description or error code of failure")
+    parser.add_argument("--reason-file", default="", help="Text file whose SUMMARY section (or last 1500 chars) is used as the failure reason")
     parser.add_argument("--run-url", default="", help="URL to the GitHub Actions run")
     parser.add_argument("--repo", default="", help="GitHub repository (owner/repo)")
 
     args = parser.parse_args()
     repo = get_target_repo(args.repo)
+    if args.reason_file and not args.reason:
+        try:
+            txt = open(args.reason_file, encoding="utf-8", errors="replace").read()
+            args.reason = (txt[txt.index("SUMMARY"):] if "SUMMARY" in txt else txt)[-1500:]
+        except OSError:
+            pass
 
     if args.on_failure:
         return handle_failure(

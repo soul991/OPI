@@ -21,3 +21,4 @@ data/raw/
 .env.*
 !.env.example
 saved_pages/
+watchdog_output.txt

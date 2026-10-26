@@ -13,6 +13,7 @@ concurrency:
 permissions:
   contents: write
   issues: write
+  actions: read
 
 jobs:
   run-watchdog:
@@ -36,15 +37,18 @@ jobs:
           pip install -r requirements.lock
 
       - name: Execute Watchdog Health Check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/watchdog.py
+          set -o pipefail
+          python scripts/watchdog.py 2>&1 | tee watchdog_output.txt
 
       - name: Alert on Failure
         if: failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml"
+          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml" --reason-file watchdog_output.txt
 
       - name: Close Open Alerts on Success
         if: success()
