@@ -33,8 +33,11 @@ def check_scheduled_run_freshness(max_hours: float = MAX_STALENESS_HOURS) -> Tup
     """Check (a): last successful scheduled daily.yml run is younger than max_hours."""
     gh_bin = shutil.which("gh")
     run_time: Optional[dt.datetime] = None
+    problem = ""
 
-    if gh_bin:
+    if not gh_bin:
+        problem = "GitHub CLI 'gh' is not installed."
+    else:
         try:
             res = subprocess.run(
                 [
@@ -56,21 +59,20 @@ def check_scheduled_run_freshness(max_hours: float = MAX_STALENESS_HOURS) -> Tup
                 if data and "createdAt" in data[0]:
                     ts_str = data[0]["createdAt"].replace("Z", "+00:00")
                     run_time = dt.datetime.fromisoformat(ts_str)
-        except Exception:
-            pass
+                else:
+                    problem = "GitHub returned no successful scheduled daily.yml run."
+            else:
+                problem = f"gh exited with code {res.returncode}: {(res.stderr or '').strip()[:300]}"
+        except Exception as e:
+            problem = f"gh query failed: {e}"
 
+    # D-064: never fall back to a date stored in the repo. A monitor that guesses gives a false PASS
+    # (while the stored date is recent) and later a false FAIL. If GitHub cannot be queried, say so.
     if run_time is None:
-        # Fallback to recorded status in repo
-        status_file = ROOT_DIR / "phases" / "Phase 13" / "actions_status.md"
-        if not status_file.exists():
-            status_file = ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md"
-        if status_file.exists():
-            m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", status_file.read_text(encoding="utf-8"))
-            if m:
-                run_time = dt.datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
-
-    if run_time is None:
-        return False, "Could not determine last successful scheduled run time."
+        return False, (
+            f"Could not determine last successful scheduled run time ({problem}) "
+            "Check that the workflow sets GH_TOKEN and 'permissions: actions: read'."
+        )
 
     now_utc = dt.datetime.now(dt.timezone.utc)
     delta_hours = (now_utc - run_time).total_seconds() / 3600.0
