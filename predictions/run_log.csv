@@ -326,3 +326,25 @@ timestamp,run_id,action,company,status,details
 2026-10-28T17:30:20.903380+05:30,run_20261028_120019,ACTUALS,Jio Platforms Limited,SKIPPED_BLOCKED_SOURCE,Official exchange snapshot required for Jio Platforms Limited (listing 2026-10-28)
 2026-10-28T17:30:20.903879+05:30,run_20261028_120019,ACTUALS,Paras Healthcare Limited,SKIPPED_BLOCKED_SOURCE,Official exchange snapshot required for Paras Healthcare Limited (listing 2026-10-28)
 2026-10-28T17:30:21.676302+05:30,run_20261028_120019,FINISH,ALL,SUCCESS,
+2026-10-29T00:48:24.498934+05:30,run_20261028_191824,START,ALL,STARTED,dry_run=False
+2026-10-29T00:48:25.455601+05:30,run_20261028_191824,DISCOVERY,M.K.Sons Fine Jewels,SKIPPED_UNKNOWN_LISTING_DATE,Listing date missing or unknown; cannot score
+2026-10-29T00:48:25.497800+05:30,run_20261028_191824,DISCOVERY,BLS Polymers,SKIPPED_UNKNOWN_LISTING_DATE,Listing date missing or unknown; cannot score
+2026-10-29T00:48:25.540490+05:30,run_20261028_191824,DISCOVERY,SFC Environmental Technologies,SKIPPED_UNKNOWN_LISTING_DATE,Listing date missing or unknown; cannot score
+2026-10-29T00:48:25.583132+05:30,run_20261028_191824,INGEST,EAAA India Alternatives,SKIPPED_INSUFFICIENT_SOURCES,Overview or subscription URL missing
+2026-10-29T00:48:25.625220+05:30,run_20261028_191824,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.667431+05:30,run_20261028_191824,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.710382+05:30,run_20261028_191824,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.753070+05:30,run_20261028_191824,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.795658+05:30,run_20261028_191824,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.838805+05:30,run_20261028_191824,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.881272+05:30,run_20261028_191824,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.924265+05:30,run_20261028_191824,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:25.966730+05:30,run_20261028_191824,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:26.009187+05:30,run_20261028_191824,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:26.051847+05:30,run_20261028_191824,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:26.094549+05:30,run_20261028_191824,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:26.136677+05:30,run_20261028_191824,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-10-29T00:48:26.179048+05:30,run_20261028_191824,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
+2026-10-29T00:48:26.183634+05:30,run_20261028_191824,ACTUALS,Jio Platforms Limited,SKIPPED_BLOCKED_SOURCE,Official exchange snapshot required for Jio Platforms Limited (listing 2026-10-28)
+2026-10-29T00:48:26.184158+05:30,run_20261028_191824,ACTUALS,Paras Healthcare Limited,SKIPPED_BLOCKED_SOURCE,Official exchange snapshot required for Paras Healthcare Limited (listing 2026-10-28)
+2026-10-29T00:48:26.618259+05:30,run_20261028_191824,FINISH,ALL,SUCCESS,
