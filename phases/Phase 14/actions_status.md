@@ -43,4 +43,4 @@ Live query via `gh api repos/soul991/OPI/issues`:
 
 Live query via `gh secret list`:
 - `OPENROUTER_API_KEY`: Present (configured 2026-10-24T09:43:21Z).
-- Secret Sanitization Check: `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns 0 matches. Zero plain-text API secrets committed in repository files.
+- Secret Sanitization Check: OpenRouter secret key scan returns 0 matches. Zero plain-text API secrets committed in repository files.
