@@ -21,7 +21,7 @@
 
 **Step 2 - Preregistration.** Commit `phases/Phase N/preregistration.md` (metrics, decision rules, data rules) as `phaseN-preregistration` before any new modelling or automation work.
 
-**Step 3 - Workstreams.** One commit per workstream. Before **every** push run `python scripts/ci_local.py` (same order as the cloud job: daily run, then pytest, then verify_all, in a throwaway copy) and push only on `CI_LOCAL: PASS`. A red CI run sends the owner a failure email.
+**Step 3 - Workstreams.** One commit per workstream. Every fix gets a register entry before its commit, goes on a branch, and passes `ci_local.py` before push (D-076). Direct pushes to `main` for fixes or features are prohibited; changes are reviewed and merged via pull requests. Before **every** push run `python scripts/ci_local.py` (stand-alone entrypoint smoke test, daily run, pytest, and verify_all, executed in an isolated copy) and push only on `CI_LOCAL: PASS`. A red CI run sends the owner an alert issue.
 
 **Step 4 - Exit.** Run `verify_all.py` again, save as `phases/Phase N/verify_end.txt`. In `3_outcome_and_verdict.md` include the **Defect Ledger**: defects opened, fixed, carried over (IDs and statuses), plus anything that regressed. Update `DEFECTS.md`. Attach the self-audit.
 

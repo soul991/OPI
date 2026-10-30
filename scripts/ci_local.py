@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STEPS = [
+    ("entrypoints smoke test", [sys.executable, "tests/test_workflow_entrypoints.py"]),
     ("daily job", [sys.executable, "-m", "opi.run_daily"]),
     ("pytest", [sys.executable, "-m", "pytest", "-q"]),
     ("verify_all", [sys.executable, "scripts/verify_all.py"]),

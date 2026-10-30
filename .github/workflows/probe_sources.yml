@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
@@ -26,8 +26,23 @@ jobs:
 
       - name: Run Source Reachability Probe
         run: |
-          python scripts/probe_sources.py
+          python scripts/probe_sources.py --output "phases/Phase 15/source_probe_runner.md"
+          cat "phases/Phase 15/source_probe_runner.md" >> $GITHUB_STEP_SUMMARY
 
-      - name: Display probe output
+      - name: Upload probe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-probe-runner
+          path: phases/Phase 15/source_probe_runner.md
+
+      - name: Commit and Push Runner Probe
         run: |
-          cat "phases/Phase 14/source_probe.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "phases/Phase 15/source_probe_runner.md"
+          if git diff --staged --quiet; then
+            echo "No changes to source_probe_runner.md"
+          else
+            git commit -m "chore(probe): commit cloud runner probe output [skip ci]"
+            git push
+          fi
