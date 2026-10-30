@@ -20,6 +20,8 @@ import numpy as np
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 DEFAULT_LOG = ROOT_DIR / "predictions" / "prediction_log.csv"
 DEFAULT_OUTPUT = ROOT_DIR / "phases" / "Final Evaluation" / "report.md"
 TARGET_SAMPLE_SIZE = 30
@@ -240,7 +242,8 @@ def main() -> int:
         print(f"[ERROR] Prediction log {args.log} does not exist.", file=sys.stderr)
         return 1
 
-    df = pd.read_csv(args.log)
+    from opi.outcomes import get_effective_predictions_df
+    df = get_effective_predictions_df(log_path=args.log)
     listed = df[(df["status"] == "FORWARD") & (df["actual_gain_pct"].notna()) & (df["actual_gain_pct"].astype(str).str.strip() != "")].copy()
     n_listed = len(listed)
 

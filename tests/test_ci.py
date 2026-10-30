@@ -202,3 +202,14 @@ def test_ci_local_replicates_ci_order():
     daily = (ROOT_DIR / ".github" / "workflows" / "daily.yml").read_text(encoding="utf-8")
     assert daily.index("opi.run_daily") < daily.index("pytest") < daily.index("verify_all.py")
 
+
+
+def test_phase15_process_rule_defect_registration_and_branch_pr():
+    """D-076: PHASE_PROTOCOL.md mandates register entry, feature branch, PR and ci_local before push."""
+    protocol_text = (ROOT_DIR / "PHASE_PROTOCOL.md").read_text(encoding="utf-8")
+    assert "D-076" in protocol_text
+    assert "branch" in protocol_text.lower()
+    assert "pull request" in protocol_text.lower() or "pr" in protocol_text.lower()
+    assert "ci_local.py" in protocol_text
+    actions_status = (ROOT_DIR / "phases" / "Phase 15" / "actions_status.md").read_text(encoding="utf-8")
+    assert "D-076" in actions_status

@@ -1,0 +1,11 @@
+{
+  "company": "Paras Healthcare Limited",
+  "listing_date": "2026-10-28",
+  "source_role": "tier2b_primary",
+  "source_name": "Chittorgarh Listing Day Trading Information",
+  "source_url": "https://www.chittorgarh.com/ipo/paras-healthcare-ipo/2256/",
+  "accessed_at": "2026-10-30T20:22:13.886777+00:00",
+  "http_status": 200,
+  "content_sha256": "162b4ffeefb522ef241c9565c78cd4c0ff1c8f0a045fbbc85fe6ac3468c62c45",
+  "parsed_open_price": 720.0
+}

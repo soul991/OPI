@@ -186,4 +186,7 @@ def main(path="data/ipo_master.csv"):
     print("NOTE: Model was trained strictly on data/ipo_train.csv and has NOT seen data/ipo_holdout_test.csv.")
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] in ("--help", "-h"):
+        print("Usage: python model/train.py [input_csv]")
+        sys.exit(0)
     main(sys.argv[1] if len(sys.argv) > 1 else "data/ipo_master.csv")

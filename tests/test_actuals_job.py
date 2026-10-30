@@ -28,6 +28,7 @@ import pytest
 from opi.actuals import (
     ActualsEvidenceError,
     execute_two_tier_outcome_chain,
+    fetch_yfinance_first_session_open,
     is_listing_ready_for_actuals,
     record_actual_from_tier2,
 )
@@ -254,3 +255,102 @@ def test_two_tier_probe_committed():
     content = probe_md.read_text(encoding="utf-8")
     assert "403" in content
     assert "yfinance" in content
+
+
+# ==============================================================================
+# D-072 REGRESSION TESTS: Never record another day's price
+# ==============================================================================
+
+def test_yfinance_rejects_missing_listing_day_bar_paras_data():
+    """D-072: Paras Healthcare real two-bar history lacks 2026-10-28 bar.
+    Must return LISTING_DAY_BAR_MISSING and NOT fall back to 2026-10-29 bar (721.0).
+    """
+    paras_ev = ROOT / "data" / "evidence" / "actuals" / "2026-10-28_paras-healthcare-limited_fe823e2ba992.txt"
+    assert paras_ev.exists(), f"Paras evidence missing: {paras_ev}"
+    df = pd.read_json(paras_ev, orient="index")
+
+    val, err, raw = fetch_yfinance_first_session_open("PARAS.NS", date(2026, 10, 28), mock_history=df)
+    assert val is None, f"Expected None for missing listing-day bar, got {val}"
+    assert err == "LISTING_DAY_BAR_MISSING: first bar is 2026-10-29, listing date 2026-10-28"
+    assert raw is not None
+
+
+def test_yfinance_accepts_valid_listing_day_bar():
+    """D-072: When listing-day bar exists in history, open price is returned."""
+    mock_df = pd.DataFrame(
+        [{"Open": 720.0, "High": 730.0, "Low": 710.0, "Close": 725.0, "Volume": 50000}],
+        index=[pd.Timestamp("2026-10-28 00:00:00+05:30")]
+    )
+    val, err, raw = fetch_yfinance_first_session_open("PARAS.NS", date(2026, 10, 28), mock_history=mock_df)
+    assert val == 720.0
+    assert err is None
+    assert raw is not None
+
+
+def test_yfinance_timezone_edge_case_utc_rollover():
+    """D-072: A bar stamped 18:30Z the day before is 00:00 IST the next day."""
+    # 2026-10-27 18:30:00 UTC == 2026-10-28 00:00:00 IST
+    mock_df = pd.DataFrame(
+        [{"Open": 1358.0, "High": 1400.0, "Low": 1350.0, "Close": 1390.0, "Volume": 100000}],
+        index=[pd.Timestamp("2026-10-27 18:30:00+00:00")]
+    )
+    # Check target_date 2026-10-28 (IST match) -> passes
+    val_pass, err_pass, _ = fetch_yfinance_first_session_open("TEST.NS", date(2026, 10, 28), mock_history=mock_df)
+    assert val_pass == 1358.0
+    assert err_pass is None
+
+    # Check target_date 2026-10-27 (IST mismatch) -> rejected
+    val_fail, err_fail, _ = fetch_yfinance_first_session_open("TEST.NS", date(2026, 10, 27), mock_history=mock_df)
+    assert val_fail is None
+    assert err_fail == "LISTING_DAY_BAR_MISSING: first bar is 2026-10-28, listing date 2026-10-27"
+
+
+def test_yfinance_accepts_jio_saved_data():
+    """D-072: Jio Platforms real saved evidence has 2026-10-28 IST bar and passes."""
+    jio_ev = ROOT / "data" / "evidence" / "actuals" / "2026-10-28_jio-platforms-limited_679a4ce1c8e3.txt"
+    assert jio_ev.exists(), f"Jio evidence missing: {jio_ev}"
+    df = pd.read_json(jio_ev, orient="index")
+
+    val, err, raw = fetch_yfinance_first_session_open("JIO.NS", date(2026, 10, 28), mock_history=df)
+    assert val == 1358.0
+    assert err is None
+    assert raw is not None
+
+
+def test_tier2_returns_skipped_no_match_on_missing_bar(synthetic_env, monkeypatch):
+    """D-072: When primary source lacks listing-day bar, tier 2 returns SKIPPED_NO_MATCH."""
+    # History only has bar for 2026-10-29, but listing_date is 2026-10-28
+    mock_hist = pd.DataFrame(
+        [{"Open": 721.0, "High": 785.0, "Low": 720.0, "Close": 775.0, "Volume": 1000}],
+        index=[pd.Timestamp("2026-10-29 00:00:00+05:30")]
+    )
+    mock_sec_html = "<html><body><table><tr><td>Open</td><td>₹720.00</td></tr></table></body></html>"
+
+    monkeypatch.setattr("opi.actuals.ROOT_DIR", synthetic_env["root"])
+    monkeypatch.setattr("opi.log.ROOT_DIR", synthetic_env["root"])
+
+    res = execute_two_tier_outcome_chain(
+        company=synthetic_env["company"],
+        log_path=synthetic_env["log_path"],
+        current_dt=datetime(2026, 10, 30, 18, 0, tzinfo=IST),
+        mock_yfinance_history=mock_hist,
+        mock_second_source_text=mock_sec_html,
+        mock_nse_symbol="SYNTH",
+    )
+
+    assert res["status"] == "SKIPPED_NO_MATCH"
+    assert "LISTING_DAY_BAR_MISSING" in res["reason"]
+
+    # Prediction log must remain unpopulated
+    df = pd.read_csv(synthetic_env["log_path"], keep_default_na=False)
+    assert df.iloc[0]["actual_gain_pct"] == ""
+
+
+def test_runner_probe_committed_and_verified():
+    """D-074: phases/Phase 15/source_probe_runner.md produced by runner with Linux and run ID."""
+    probe_md = Path(__file__).resolve().parents[1] / "phases" / "Phase 15" / "source_probe_runner.md"
+    assert probe_md.exists(), "phases/Phase 15/source_probe_runner.md must exist"
+    content = probe_md.read_text(encoding="utf-8")
+    assert "linux" in content.lower()
+    assert "GitHub Actions run ID:" in content
+    assert "403" in content

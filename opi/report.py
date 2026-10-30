@@ -220,13 +220,15 @@ def generate_dashboard_data() -> Dict[str, Any]:
             pass
 
     if LOG_PATH.exists():
-        df = pd.read_csv(LOG_PATH)
+        from opi.outcomes import get_effective_predictions_df
+        df = get_effective_predictions_df(log_path=LOG_PATH)
         data["total_log_rows"] = len(df)
         f_df = df[df["status"] == "FORWARD"].copy()
         data["forward_rows_count"] = len(f_df)
         
-        listed = f_df[f_df["actual_gain_pct"].notna()]
-        pending = f_df[f_df["actual_gain_pct"].isna()]
+        f_df["_act_num"] = pd.to_numeric(f_df["actual_gain_pct"], errors="coerce")
+        listed = f_df[f_df["_act_num"].notna()]
+        pending = f_df[f_df["_act_num"].isna()]
         data["listed_forward_count"] = len(listed)
         data["pending_forward_count"] = len(pending)
         data["provisional"] = len(listed) < 30
@@ -245,15 +247,25 @@ def generate_dashboard_data() -> Dict[str, Any]:
 
         rows_list = []
         for _, r in df.iterrows():
+            act_raw = r.get("actual_gain_pct")
+            act_num = None
+            if pd.notna(act_raw) and str(act_raw).strip() != "" and str(act_raw).lower() != "nan":
+                try:
+                    act_num = float(act_raw)
+                except ValueError:
+                    act_num = None
             rows_list.append({
                 "scored_at": str(r.get("scored_at", "")),
                 "company": str(r.get("company", "")),
                 "listing_date": str(r.get("listing_date", "")),
                 "status": str(r.get("status", "")),
-                "pred_gain_pct": float(r["pred_gain_pct"]) if pd.notna(r.get("pred_gain_pct")) else None,
-                "pred_prob_gt10": float(r["pred_prob_gt10"]) if pd.notna(r.get("pred_prob_gt10")) else None,
-                "gmp_pct": float(r["gmp_pct_at_scoring"]) if pd.notna(r.get("gmp_pct_at_scoring")) else None,
-                "actual_gain_pct": float(r["actual_gain_pct"]) if pd.notna(r.get("actual_gain_pct")) else None,
+                "pred_gain_pct": float(r["pred_gain_pct"]) if pd.notna(r.get("pred_gain_pct")) and str(r.get("pred_gain_pct")).strip() != "" else None,
+                "pred_prob_gt10": float(r["pred_prob_gt10"]) if pd.notna(r.get("pred_prob_gt10")) and str(r.get("pred_prob_gt10")).strip() != "" else None,
+                "gmp_pct": float(r["gmp_pct_at_scoring"]) if pd.notna(r.get("gmp_pct_at_scoring")) and str(r.get("gmp_pct_at_scoring")).strip() != "" else None,
+                "actual_gain_pct": act_num,
+                "is_corrected": bool(r.get("is_corrected", False)),
+                "raw_actual_gain_pct": str(r.get("raw_actual_gain_pct", "")),
+                "effective_tier": str(r.get("effective_tier", "")),
                 "notes": str(r.get("notes", "")),
                 "model_version": str(r.get("model_version", "v4.0.0-champion")),
                 "features_snapshot_json": str(r.get("features_snapshot_json", ""))
@@ -262,13 +274,13 @@ def generate_dashboard_data() -> Dict[str, Any]:
         data["forward_chart"] = _forward_comparison_chart(rows_list)
 
         if len(listed) > 0:
-            act = listed["actual_gain_pct"].astype(float)
-            pred = listed["pred_gain_pct"].astype(float)
+            act = listed["_act_num"]
+            pred = pd.to_numeric(listed["pred_gain_pct"], errors="coerce")
             data["mae_model"] = round(float((pred - act).abs().mean()), 2)
-            has_gmp = listed[listed["gmp_pct_at_scoring"].notna()]
+            has_gmp = listed[listed["gmp_pct_at_scoring"].notna() & (listed["gmp_pct_at_scoring"] != "") & (listed["gmp_pct_at_scoring"] != "nan")].copy()
             if len(has_gmp) > 0:
-                gmp_act = has_gmp["actual_gain_pct"].astype(float)
-                gmp_val = has_gmp["gmp_pct_at_scoring"].astype(float)
+                gmp_act = has_gmp["_act_num"]
+                gmp_val = pd.to_numeric(has_gmp["gmp_pct_at_scoring"], errors="coerce")
                 data["mae_gmp"] = round(float((gmp_val - gmp_act).abs().mean()), 2)
 
     return data

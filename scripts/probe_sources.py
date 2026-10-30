@@ -334,7 +334,7 @@ def run_probe() -> str:
         "# Phase 14 Source Reachability & Viability Probe (D-068)",
         "",
         f"**Execution Timestamp**: {datetime.now(timezone.utc).isoformat()}  ",
-        f"**Environment**: Python {sys.version.split()[0]} on {sys.platform}  ",
+        f"**Environment**: Python {sys.version.split()[0]} on {sys.platform} (GitHub Actions run ID: {os.getenv('GITHUB_RUN_ID', 'local')})  ",
         "**Target Candidates**: Jio Platforms Limited, Paras Healthcare Limited (Listed 2026-10-28)  ",
         "",
         "## 1. Symbol Resolution Grounding (Code-Fetched)",
@@ -454,8 +454,19 @@ def run_probe() -> str:
 
 
 if __name__ == "__main__":
+    import argparse, os
+    parser = argparse.ArgumentParser(description="Probe outcome sources reachability and viability.")
+    parser.add_argument("--output", type=Path, default=None, help="Output markdown path")
+    args = parser.parse_args()
+
     output = run_probe()
-    out_file = ROOT / "phases" / "Phase 14" / "source_probe.md"
+    if args.output:
+        out_file = args.output
+    elif os.getenv("GITHUB_RUN_ID"):
+        out_file = ROOT / "phases" / "Phase 15" / "source_probe_runner.md"
+    else:
+        out_file = ROOT / "phases" / "Phase 14" / "source_probe.md"
+
     out_file.parent.mkdir(parents=True, exist_ok=True)
     out_file.write_text(output, encoding="utf-8")
     print(f"\nWritten probe report to: {out_file}")
