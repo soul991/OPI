@@ -483,25 +483,37 @@ def fetch_yfinance_first_session_open(
         try:
             import yfinance as yf
             ticker = yf.Ticker(symbol)
-            hist = ticker.history(period="10d")
+            hist = ticker.history(period="max")
         except Exception as exc:
             return None, f"yfinance fetch error: {exc}", None
 
     if hist.empty:
         return None, f"yfinance returned empty price history for {symbol}", None
 
+    hist_sorted = hist.sort_index(ascending=True)
     matched_open: Optional[float] = None
-    for idx, row in hist.iterrows():
-        idx_str = str(idx)[:10]
-        if idx_str == target_date.isoformat():
-            matched_open = float(row["Open"])
-            break
+    for idx, row in hist_sorted.iterrows():
+        try:
+            if hasattr(idx, "tz_convert"):
+                ts_ist = idx.tz_convert("Asia/Kolkata")
+            elif hasattr(idx, "tz_localize"):
+                ts_ist = idx.tz_localize("UTC").tz_convert("Asia/Kolkata")
+            else:
+                ts_ist = pd.to_datetime(idx)
+            if ts_ist.date() == target_date:
+                matched_open = float(row["Open"])
+                break
+        except Exception:
+            idx_str = str(idx)[:10]
+            if idx_str == target_date.isoformat():
+                matched_open = float(row["Open"])
+                break
 
-    if matched_open is None:
-        first_row = hist.iloc[0]
+    if matched_open is None and not hist_sorted.empty:
+        first_row = hist_sorted.iloc[0]
         matched_open = float(first_row["Open"])
 
-    raw_bytes = hist.to_json(orient="index", date_format="iso").encode("utf-8")
+    raw_bytes = hist_sorted.to_json(orient="index", date_format="iso").encode("utf-8")
     return matched_open, None, raw_bytes
 
 
