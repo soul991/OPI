@@ -491,7 +491,11 @@ def fetch_yfinance_first_session_open(
         return None, f"yfinance returned empty price history for {symbol}", None
 
     hist_sorted = hist.sort_index(ascending=True)
+    raw_bytes = hist_sorted.to_json(orient="index", date_format="iso").encode("utf-8")
+
     matched_open: Optional[float] = None
+    first_bar_date: Optional[date] = None
+
     for idx, row in hist_sorted.iterrows():
         try:
             if hasattr(idx, "tz_convert"):
@@ -499,21 +503,34 @@ def fetch_yfinance_first_session_open(
             elif hasattr(idx, "tz_localize"):
                 ts_ist = idx.tz_localize("UTC").tz_convert("Asia/Kolkata")
             else:
-                ts_ist = pd.to_datetime(idx)
-            if ts_ist.date() == target_date:
-                matched_open = float(row["Open"])
-                break
+                ts_obj = pd.to_datetime(idx)
+                if ts_obj.tzinfo is None:
+                    ts_ist = ts_obj.tz_localize("UTC").tz_convert("Asia/Kolkata")
+                else:
+                    ts_ist = ts_obj.tz_convert("Asia/Kolkata")
+            bar_date = ts_ist.date()
         except Exception:
             idx_str = str(idx)[:10]
-            if idx_str == target_date.isoformat():
-                matched_open = float(row["Open"])
-                break
+            try:
+                bar_date = date.fromisoformat(idx_str)
+            except Exception:
+                bar_date = None
 
-    if matched_open is None and not hist_sorted.empty:
-        first_row = hist_sorted.iloc[0]
-        matched_open = float(first_row["Open"])
+        if first_bar_date is None and bar_date is not None:
+            first_bar_date = bar_date
 
-    raw_bytes = hist_sorted.to_json(orient="index", date_format="iso").encode("utf-8")
+        if bar_date == target_date:
+            matched_open = float(row["Open"])
+            break
+
+    if matched_open is None:
+        first_date_str = first_bar_date.isoformat() if first_bar_date else "unknown"
+        return (
+            None,
+            f"LISTING_DAY_BAR_MISSING: first bar is {first_date_str}, listing date {target_date.isoformat()}",
+            raw_bytes,
+        )
+
     return matched_open, None, raw_bytes
 
 
@@ -591,8 +608,9 @@ def record_actual_from_tier2(
         ticker_sym, listing_date, mock_history=mock_yfinance_history
     )
     if yf_err or yf_open is None or yf_raw is None:
+        st = "SKIPPED_NO_MATCH" if yf_err and "LISTING_DAY_BAR_MISSING" in yf_err else "SKIPPED_FETCH_FAILED"
         return {
-            "status": "SKIPPED_FETCH_FAILED",
+            "status": st,
             "reason": f"Tier 2 primary source ({ticker_sym}) failed: {yf_err or 'unknown error'}",
         }
 
