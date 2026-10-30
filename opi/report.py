@@ -140,7 +140,7 @@ def _forward_comparison_chart(rows: List[Dict[str, Any]]) -> str:
 
 def parse_defects_summary() -> Dict[str, Any]:
     """Parse DEFECTS.md and return status counts."""
-    counts = {"OPEN": 0, "PARTIAL": 0, "FIXED": 0, "ACCEPTED": 0, "DEFERRED": 0, "TOTAL": 0}
+    counts = {"OPEN": 0, "PARTIAL": 0, "FIXED": 0, "ACCEPTED": 0, "DEFERRED": 0, "NOT FIXED": 0, "TOTAL": 0}
     if not DEFECTS_PATH.exists():
         return counts
     text = DEFECTS_PATH.read_text(encoding="utf-8")
@@ -148,7 +148,13 @@ def parse_defects_summary() -> Dict[str, Any]:
         if re.match(r"^\|\s*D-\d+", line):
             parts = [p.strip() for p in line.strip().strip("|").split("|")]
             if len(parts) >= 5:
-                status = parts[4].upper()
+                raw_status = parts[4].upper()
+                if raw_status.startswith("PARTIAL"):
+                    status = "PARTIAL"
+                elif raw_status == "NOT FIXED":
+                    status = "NOT FIXED"
+                else:
+                    status = raw_status
                 counts[status] = counts.get(status, 0) + 1
                 counts["TOTAL"] += 1
     return counts
@@ -404,9 +410,9 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 <div class="card-num">{n_listed} of 30</div>
             </div>
             <div class="card">
-                <div class="card-label">Open / Partial Defects</div>
-                <div class="card-num" style="color: {'#10b981' if (defects['OPEN'] + defects['PARTIAL']) == 0 else '#f59e0b'};">
-                    {defects['OPEN'] + defects['PARTIAL']}
+                <div class="card-label">Open / Partial / Not Fixed Defects</div>
+                <div class="card-num" style="color: {'#10b981' if (defects['OPEN'] + defects['PARTIAL'] + defects.get('NOT FIXED', 0)) == 0 else '#f59e0b'};">
+                    {defects['OPEN'] + defects['PARTIAL'] + defects.get('NOT FIXED', 0)}
                 </div>
             </div>
             <div class="card">
@@ -491,8 +497,8 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 Total Tracked Defects: <strong>{defects['TOTAL']}</strong> | 
                 Fixed: <strong>{defects['FIXED']}</strong> | 
                 Accepted: <strong>{defects['ACCEPTED']}</strong> | 
-                Deferred: <strong>{defects['DEFERRED']}</strong> | 
-                Open/Partial: <strong>{defects['OPEN'] + defects['PARTIAL']}</strong>
+                Deferred: <strong>{defects.get('DEFERRED', 0)}</strong> | 
+                Open/Partial/Not Fixed: <strong>{defects['OPEN'] + defects['PARTIAL'] + defects.get('NOT FIXED', 0)}</strong>
             </p>
         </div>
 
