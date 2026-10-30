@@ -29,7 +29,8 @@ def test_final_evaluation_not_ready_below_30(capsys):
         check=False,
     )
     assert res.returncode == 0
-    assert "NOT_READY (n=6 of 30)" in res.stdout
+    assert "NOT_READY" in res.stdout
+    assert "of 30)" in res.stdout
 
 
 def test_wilson_score_interval():

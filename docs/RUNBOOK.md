@@ -41,6 +41,7 @@ When an automated workflow fails, an issue titled `Daily run failed: <run_id>` o
 | `Watchdog run failed: <id>` (Scheduled Run Staleness) | No scheduled run succeeded in the last 36 hours. | Check GitHub Actions tab for disabled workflows or runner outage. Manually trigger `daily.yml`. |
 | `Watchdog run failed: <id>` (Dashboard Staleness) | The GitHub Pages dashboard rendered timestamp is older than 36 hours. | Verify GitHub Pages deployment under Settings > Pages. Manually dispatch `daily.yml` to trigger Pages rebuild. |
 | `Watchdog run failed: <id>` (OpenRouter Model Unavailability) | None of the free models in `config/research_models.json` are listed on OpenRouter. | Follow Section 6 to update the free model list. |
+| `Daily run failed: <id>` / `Watchdog run failed` (Missing Listing Outcomes) | One or more FORWARD rows have been listed for more than 2 calendar days without an actual listing outcome recorded. | Check whether the two-tier chain encountered `PENDING_REVIEW` (sources disagreed or second source missing). Inspect run logs or resolve manually using Section 5. |
 
 *Note: Open alert issues automatically close upon the next successful green scheduled run.*
 
@@ -64,13 +65,38 @@ If a scheduled cloud run failed or missed an IPO because of temporary site downt
 1. Go to the **Actions** tab on GitHub.
 2. Select **Daily Forward Test & Verification** in the left sidebar.
 3. Click the **Run workflow** dropdown button, select branch `main`, and click **Run workflow**.
-4. To record a listed IPO outcome manually when automated exchange access is blocked:
-   - Save the official BSE or NSE listing page from your desktop browser as HTML.
-   - Run:
-     ```bash
-     python scripts/update_actuals.py --company "<Exact Company Name>" --source-url "<Official URL>" --actual-listing-price <Price> --page-date <YYYY-MM-DD> --company-quote "<Excerpt>" --price-quote "<Excerpt>" --evidence-file "<Path to HTML>"
-     ```
-   - Commit the generated snapshot under `data/evidence/actuals/` and push.
+
+### Automated Two-Tier Listing Outcome Pipeline
+The daily job automatically records opening prices on listing day (after 16:00 IST or subsequent dates):
+- **Tier 1 (Official Exchanges)**: Direct scrape of NSE or BSE opening trade prints with HTML/JSON evidence capture.
+- **Tier 2 (Cloud Fallback with 1.0% Cross-Check)**: `yfinance` first-session open price validated against an independent second source (Chittorgarh listing results or exchange announcements) within a strict **1.0% agreement tolerance**:
+  $$\frac{|\text{Price}_{\text{Tier2}} - \text{Price}_{\text{SecondSource}}|}{\text{Price}_{\text{Tier2}}} \le 0.01$$
+
+### What `PENDING_REVIEW` Means
+If Tier 1 official exchange access is blocked (e.g. 403 Akamai WAF) AND Tier 2 either cannot retrieve an independent second source or the two prices disagree by more than 1.0%, the runner logs status `PENDING_REVIEW`.
+- **Zero-Corruption Principle**: Under `PENDING_REVIEW`, **nothing is written to `predictions/prediction_log.csv`**. The row remains pending to protect historical audit integrity.
+
+### The 2-Day Outcome Missing Alert (D-067)
+If an outcome remains unrecorded for more than **2 calendar days** post-listing, the end of the daily job and the watchdog check (d) automatically raise an alert naming each affected company and its last logged operational error.
+
+### Manual Outcome Recording Path
+When an automated fetch is blocked or in `PENDING_REVIEW`:
+1. Save the official BSE or NSE listing page or circular from your desktop browser as HTML.
+2. Run:
+   ```bash
+   python scripts/update_actuals.py --company "<Exact Company Name>" --source-url "<Official URL>" --actual-listing-price <Price> --page-date <YYYY-MM-DD> --company-quote "<Excerpt>" --price-quote "<Excerpt>" --evidence-file "<Path to HTML>"
+   ```
+3. Commit the generated evidence manifest and snapshot under `data/evidence/actuals/` and push.
+Alternatively, to trigger the two-tier automated chain manually for any specific company:
+```bash
+python scripts/update_actuals.py --auto --company "<Exact Company Name>"
+```
+
+### Why Zerodha Kite API is NOT Used
+Zerodha's Kite Connect API was evaluated and deliberately rejected:
+1. **Commercial Fee Requirement**: Kite requires a paid recurring subscription (₹2,000/month for API access), violating the project rule of zero paid dependencies.
+2. **Interactive 2FA / Session Expiration**: Kite mandates daily interactive user login and TOTP generation every morning. Autonomous, unattended headless GitHub Actions cloud runners cannot complete daily interactive 2FA logins.
+3. **Open Verifiability**: Kite market data is locked behind a private brokerage account. OPI's two-tier public exchange and cross-checked architecture uses exclusively open, freely reproducible public evidence.
 
 ---
 

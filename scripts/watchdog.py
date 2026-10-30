@@ -23,6 +23,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from scripts.manage_alerts import sanitize_text
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 MAX_STALENESS_HOURS = 36.0
@@ -154,6 +155,90 @@ def check_openrouter_free_models(models_json_path: Optional[Path] = None) -> Tup
     return True, f"OpenRouter models verified: {len(matching)} configured model(s) available ({matching})."
 
 
+def check_missing_outcomes(
+    log_path: Optional[Path] = None,
+    run_log_path: Optional[Path] = None,
+    current_date: Optional[dt.date] = None,
+    threshold_days: int = 2,
+) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    """Check (d): Flag any FORWARD row with listing_date > threshold_days ago lacking actual_gain_pct (D-067).
+
+    Returns (ok, message, overdue_items).
+    """
+    target_log = log_path or (ROOT_DIR / "predictions" / "prediction_log.csv")
+    target_run_log = run_log_path or (ROOT_DIR / "predictions" / "run_log.csv")
+
+    if not target_log.exists():
+        return True, "prediction_log.csv does not exist; no outcomes to check.", []
+
+    import pandas as pd
+    try:
+        df = pd.read_csv(target_log, keep_default_na=False)
+    except Exception as e:
+        return False, f"Failed to read prediction log: {e}", []
+
+    if "status" not in df.columns or "actual_gain_pct" not in df.columns:
+        return True, "prediction_log.csv missing status or actual_gain_pct columns.", []
+
+    fwd = df[df["status"].str.strip() == "FORWARD"].copy()
+    if fwd.empty:
+        return True, "No FORWARD rows found in prediction log.", []
+
+    today = current_date or dt.datetime.now(dt.timezone.utc).astimezone(dt.timezone(dt.timedelta(hours=5, minutes=30))).date()
+
+    # Load recent run_log entries to extract last logged operational reason per company
+    last_reasons: Dict[str, str] = {}
+    if target_run_log.exists():
+        try:
+            r_df = pd.read_csv(target_run_log, keep_default_na=False)
+            for _, r in r_df.iterrows():
+                co = str(r.get("company", "")).strip()
+                st = str(r.get("status", "")).strip()
+                det = str(r.get("details", "")).strip()
+                if co:
+                    last_reasons[co] = f"{st}: {det}" if det else st
+        except Exception:
+            pass
+
+    overdue: List[Dict[str, Any]] = []
+    for _, row in fwd.iterrows():
+        comp = str(row.get("company", "")).strip()
+        act = str(row.get("actual_gain_pct", "")).strip()
+        if act and act.lower() != "nan":
+            # Already recorded; ignore
+            continue
+
+        raw_ld = str(row.get("listing_date", "")).strip()[:10]
+        try:
+            ld = dt.datetime.strptime(raw_ld, "%Y-%m-%d").date()
+        except Exception:
+            continue
+
+        days_ago = (today - ld).days
+        if days_ago > threshold_days:
+            reason = last_reasons.get(comp, "No recorded fetch attempt in run_log.csv")
+            clean_reason = sanitize_text(reason)
+            overdue.append({
+                "company": comp,
+                "listing_date": raw_ld,
+                "days_overdue": days_ago,
+                "last_reason": clean_reason,
+            })
+
+    if overdue:
+        summary_lines = [
+            f"Overdue listing outcome(s) missing (> {threshold_days} days since listing):",
+        ]
+        for o in overdue:
+            summary_lines.append(
+                f"  - {o['company']} (listed {o['listing_date']}, {o['days_overdue']} days ago): {o['last_reason']}"
+            )
+        msg = "\n".join(summary_lines)
+        return False, sanitize_text(msg), overdue
+
+    return True, f"All forward listings within {threshold_days}-day threshold or outcomes recorded.", []
+
+
 def execute_keepalive_if_needed(dry_run: bool = False) -> Tuple[bool, str]:
     """Check keepalive: commit timestamp to predictions/heartbeat.txt if no commit in 30 days."""
     try:
@@ -239,6 +324,13 @@ def run_watchdog(
         print(f"  {msg_c}\n")
         if not ok_c:
             failures.append(f"OpenRouter Model Unavailability: {msg_c}")
+
+    # Check (d): Missing listing outcomes (>2 days post-listing)
+    ok_d, msg_d, overdue_d = check_missing_outcomes()
+    print(f"Check (d) [Missing Listing Outcomes]: {'PASS' if ok_d else 'FAIL'}")
+    print(f"  {msg_d}\n")
+    if not ok_d:
+        failures.append(f"Missing Listing Outcomes: {msg_d}")
 
     # Keepalive check
     ok_k, msg_k = execute_keepalive_if_needed(dry_run=dry_run)
