@@ -344,3 +344,13 @@ def test_tier2_returns_skipped_no_match_on_missing_bar(synthetic_env, monkeypatc
     # Prediction log must remain unpopulated
     df = pd.read_csv(synthetic_env["log_path"], keep_default_na=False)
     assert df.iloc[0]["actual_gain_pct"] == ""
+
+
+def test_runner_probe_committed_and_verified():
+    """D-074: phases/Phase 15/source_probe_runner.md produced by runner with Linux and run ID."""
+    probe_md = Path(__file__).resolve().parents[1] / "phases" / "Phase 15" / "source_probe_runner.md"
+    assert probe_md.exists(), "phases/Phase 15/source_probe_runner.md must exist"
+    content = probe_md.read_text(encoding="utf-8")
+    assert "linux" in content.lower()
+    assert "GitHub Actions run ID:" in content
+    assert "403" in content
