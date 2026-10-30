@@ -214,7 +214,25 @@ def run_daily_forward_test(dry_run: bool = False):
         append_run_log(run_id, "FINISH", "ALL", "SUCCESS")
     else:
         print("\n[Step 3] [DRY RUN] Dashboard update skipped in dry-run mode.")
+    # 4. Check for overdue unrecorded listing outcomes (D-067)
+    print("\n[Step 4] Checking for overdue unrecorded listing outcomes (D-067)...")
+    from scripts.watchdog import check_missing_outcomes
+    ok_d, msg_d, overdue = check_missing_outcomes(log_path=log_path)
+    print(f"  {msg_d}")
+    if not ok_d:
+        for item in overdue:
+            if not dry_run:
+                append_run_log(
+                    run_id, "ALERT", item["company"], "MISSING_OUTCOME_ALERT",
+                    f"Listed {item['listing_date']} ({item['days_overdue']}d ago) missing outcome: {item['last_reason']}"
+                )
+        if not dry_run:
+            raise RuntimeError(f"Overdue listing outcomes missing: {msg_d}")
+        else:
+            print(f"  [DRY RUN] Would fail with missing outcomes error:\n{msg_d}")
+
     print(f"\n{'='*78}\n")
+
 
 
 def main():

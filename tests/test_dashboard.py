@@ -60,3 +60,15 @@ def test_render_dashboard_html_executes():
     """D-056: Verify render_dashboard_html runs cleanly and updates timestamp."""
     out = render_dashboard_html()
     assert out.exists()
+
+def test_dashboard_shows_listed_outcome_pending_count_and_names():
+    """D-070: Dashboard Completed Listings card and stats paragraph show 'listed, outcome pending: K' with company names."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists(), "dashboard/index.html must exist"
+    content = dash_path.read_text(encoding="utf-8")
+    
+    assert "listed, outcome pending:" in content, "Dashboard must show 'listed, outcome pending:'"
+    m_card = re.search(r"listed, outcome pending:\s*(\d+)", content)
+    assert m_card is not None
+

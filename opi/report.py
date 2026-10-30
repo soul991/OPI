@@ -201,6 +201,8 @@ def generate_dashboard_data() -> Dict[str, Any]:
         "forward_rows_count": 0,
         "listed_forward_count": 0,
         "pending_forward_count": 0,
+        "listed_outcome_pending_count": 0,
+        "listed_outcome_pending_names": [],
         "forward_rows": [],
         "defects_summary": parse_defects_summary(),
         "provisional": True,
@@ -228,6 +230,18 @@ def generate_dashboard_data() -> Dict[str, Any]:
         data["listed_forward_count"] = len(listed)
         data["pending_forward_count"] = len(pending)
         data["provisional"] = len(listed) < 30
+
+        today_val = date.today()
+        listed_pending_names = []
+        for _, pr in pending.iterrows():
+            ld_str = str(pr.get("listing_date", "")).strip()[:10]
+            try:
+                if ld_str and datetime.strptime(ld_str, "%Y-%m-%d").date() <= today_val:
+                    listed_pending_names.append(str(pr.get("company", "")).strip())
+            except Exception:
+                pass
+        data["listed_outcome_pending_count"] = len(listed_pending_names)
+        data["listed_outcome_pending_names"] = listed_pending_names
 
         rows_list = []
         for _, r in df.iterrows():
@@ -408,6 +422,9 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             <div class="card">
                 <div class="card-label">Completed Listings</div>
                 <div class="card-num">{n_listed} of 30</div>
+                <div style="font-size: 13px; color: {'#d97706' if d.get('listed_outcome_pending_count', 0) > 0 else '#6b7280'}; margin-top: 6px;">
+                    listed, outcome pending: {d.get('listed_outcome_pending_count', 0)}{f" ({', '.join(d.get('listed_outcome_pending_names', []))})" if d.get('listed_outcome_pending_count', 0) > 0 else ""}
+                </div>
             </div>
             <div class="card">
                 <div class="card-label">Open / Partial / Not Fixed Defects</div>
@@ -454,7 +471,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 </tbody></table>
             </div>
             <p class="stats" style="margin-top: 14px;">
-                Completed outcomes: <strong>{n_listed} of 30</strong> · Pending: <strong>{d['pending_forward_count']}</strong> · 
+                Completed outcomes: <strong>{n_listed} of 30</strong> · listed, outcome pending: <strong>{d.get('listed_outcome_pending_count', 0)}</strong>{f" ({', '.join(d.get('listed_outcome_pending_names', []))})" if d.get('listed_outcome_pending_count', 0) > 0 else ""} · Total pending: <strong>{d['pending_forward_count']}</strong> · 
                 Provisional Model MAE: <strong>{f"{d.get('mae_model'):.2f} pp" if d.get('mae_model') is not None else "—"}</strong> · 
                 Provisional GMP MAE: <strong>{f"{d.get('mae_gmp'):.2f} pp" if d.get('mae_gmp') is not None else "—"}</strong>
             </p>

@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from scripts.watchdog import (
+    check_missing_outcomes,
     check_scheduled_run_freshness,
     check_dashboard_freshness,
     check_openrouter_free_models,
@@ -207,3 +208,78 @@ def test_alert_reason_file_is_used(tmp_path):
         assert ma.main() == 0
     assert "Scheduled Run Staleness: example reason" in captured["reason"]
     assert "noise" not in captured["reason"]
+
+def test_missing_outcomes_threshold_boundary(tmp_path):
+    """D-067: Threshold boundary check - exactly 2 days passes, 3 days fails."""
+    log_csv = tmp_path / "synthetic_log.csv"
+    run_log_csv = tmp_path / "synthetic_run_log.csv"
+
+    # Synthetic log with one FORWARD row listed on 2026-10-28 lacking actual_gain_pct
+    log_csv.write_text(
+        "company,listing_date,status,pred_gain_pct,actual_gain_pct\n"
+        "Boundary Tech Limited,2026-10-28,FORWARD,15.0,\n",
+        encoding="utf-8"
+    )
+    run_log_csv.write_text(
+        "timestamp,run_id,action,company,status,details\n"
+        "2026-10-28T18:00:00+05:30,run_1,ACTUALS,Boundary Tech Limited,SKIPPED_FETCH_FAILED,403 Forbidden\n",
+        encoding="utf-8"
+    )
+
+    # Day 0: 2026-10-28 (0 days) -> PASS
+    ok0, _, overdue0 = check_missing_outcomes(log_path=log_csv, run_log_path=run_log_csv, current_date=dt.date(2026, 10, 28))
+    assert ok0 is True
+    assert len(overdue0) == 0
+
+    # Day 2: 2026-10-30 (exactly 2 days) -> PASS
+    ok2, _, overdue2 = check_missing_outcomes(log_path=log_csv, run_log_path=run_log_csv, current_date=dt.date(2026, 10, 30))
+    assert ok2 is True
+    assert len(overdue2) == 0
+
+    # Day 3: 2026-10-31 (3 days) -> FAIL
+    ok3, msg3, overdue3 = check_missing_outcomes(log_path=log_csv, run_log_path=run_log_csv, current_date=dt.date(2026, 10, 31))
+    assert ok3 is False
+    assert len(overdue3) == 1
+    assert overdue3[0]["company"] == "Boundary Tech Limited"
+    assert overdue3[0]["days_overdue"] == 3
+    assert "Boundary Tech Limited" in msg3
+    assert "403 Forbidden" in msg3
+
+
+def test_missing_outcomes_recorded_rows_ignored(tmp_path):
+    """D-067: Completed forward rows with outcomes recorded are ignored regardless of age."""
+    log_csv = tmp_path / "synthetic_log.csv"
+    log_csv.write_text(
+        "company,listing_date,status,pred_gain_pct,actual_gain_pct\n"
+        "Old Completed Corp,2026-09-01,FORWARD,20.0,22.5\n",
+        encoding="utf-8"
+    )
+    ok, _, overdue = check_missing_outcomes(log_path=log_csv, current_date=dt.date(2026, 10, 30))
+    assert ok is True
+    assert len(overdue) == 0
+
+
+def test_missing_outcomes_alert_names_company_and_no_key_material(tmp_path):
+    """D-067: Alert message contains company name and sanitizes any sensitive API token."""
+    log_csv = tmp_path / "synthetic_log.csv"
+    run_log_csv = tmp_path / "synthetic_run_log.csv"
+
+    log_csv.write_text(
+        "company,listing_date,status,pred_gain_pct,actual_gain_pct\n"
+        "Sensitive Data Corp,2026-10-20,FORWARD,10.0,\n",
+        encoding="utf-8"
+    )
+    mock_key = "sk" + "-or-v1-abcdef0123456789abcdef0123456789"
+    run_log_csv.write_text(
+        f"timestamp,run_id,action,company,status,details\n"
+        f"2026-10-21T18:00:00+05:30,run_2,ACTUALS,Sensitive Data Corp,SKIPPED_ERROR,Auth failed with {mock_key}\n",
+        encoding="utf-8"
+    )
+
+    ok, msg, overdue = check_missing_outcomes(log_path=log_csv, run_log_path=run_log_csv, current_date=dt.date(2026, 10, 30))
+    assert ok is False
+    assert len(overdue) == 1
+    assert "Sensitive Data Corp" in msg
+    assert "sk" + "-or-" not in msg
+    assert "[REDACTED_API_KEY]" in msg
+
