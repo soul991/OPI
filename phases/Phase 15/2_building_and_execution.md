@@ -1,67 +1,123 @@
-# Phase 15: Building & Execution Log (Gate A15)
+# Phase 15: Building & Execution Log
 
-> Follows [`RULES.md`](../../RULES.md) and [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md). Quantitative research decision aid only, not financial advice.  
-> **Status at Gate A15**: Gate A15 Complete (G1–G5 verified). Workstreams A, B, and C paused awaiting user "continue" instruction.
-
----
-
-## 1. Pipeline Architecture & Data Flow
-
-Phase 15 conducts Gate A15 re-verification of Phase 14, seeds defects D-072 through D-076, diagnoses the wrong-day outcome recorded for Paras Healthcare Limited, prepares the append-only corrections engine and Tier 2b multi-source fetcher, and designs entry-point workflow smoke tests:
-- **Control & Verification Suites**: `scripts/verify_all.py` and `scripts/verify_extra.py` (read-only, unmodified).
-- **Gate A15 Re-verification**: Audit of 10 claims from Phase 14 outcome and verdict (seed 15) in `phases/Phase 15/prior_phase_recheck.csv`, 5 headline number recomputations via `scripts/recompute_gate_a15.py`, and verification of the two new prospective outcomes (Jio Platforms and Paras Healthcare).
-- **Defects Seeded**: Seeded D-072 through D-076 in `DEFECTS.md` covering:
-  - D-072: Tier 2 wrong-session price fallback (Paras 2026-10-29 bar used instead of 2026-10-28).
-  - D-073: Audited append-only correction mechanism (`predictions/outcome_corrections.csv`) preserving byte-identical prediction log.
-  - D-074: Measurement of cloud runner reachability to exchanges and aggregators (`source_probe_runner.md`).
-  - D-075: Workflow entry-point standalone smoke test catching missing environment paths / import regressions (as in run 41090951686, issue #6).
-  - D-076: Governance rule preventing direct commits to `main` without defect registration, branches, and PRs.
-- **Local CI Automation (`scripts/ci_local.py`)**: Runs daily pipeline simulation, pytest suite, and verification suites in a clean throwaway copy before pushing.
-- **Actions Health & Secrets Verification (G3, G5)**: Audited via `gh run list`, `gh api repos/soul991/OPI/issues`, and `gh secret list`.
+> Follows [`RULES.md`](../../RULES.md) and [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md). This project is a quantitative research decision aid, not financial advice.  
+> **Final Status**: All Phase 15 deliverables complete across Gate A15, Workstreams A, B, and C, pull request workflow (PR #7 merged), and cloud post-merge verification.
 
 ---
 
-## 2. Scripts Created / Modified
-- `DEFECTS.md`: Seeded defects D-072 through D-076 as `OPEN`.
-- `scripts/recompute_gate_a15.py`: Script to recompute 5 headline numbers and evaluate 10 sampled claims (seed 15) from Phase 14.
-- `phases/Phase 15/verify_start.txt`: Baseline output of `scripts/verify_all.py` at phase start.
-- `phases/Phase 15/verify_extra_start.txt`: Baseline output of `scripts/verify_extra.py` at phase start.
-- `phases/Phase 15/prior_phase_recheck.csv`: 10 sampled claims (seed 15), 5 headline recomputations, and outcome trading session verification.
-- `phases/Phase 15/actions_status.md`: Audit log of GitHub Actions scheduled runs, closed issue #6, commit history mapping since `phase14-gate-a`, and secret presence.
+## 1. Summary of Workstreams & Milestones
+
+Phase 15 resolves outcome recording inaccuracies, establishes audited append-only corrections, closes the runner probe gap, and eliminates execution divergence between local development and cloud workflows:
+
+1. **Gate A15 Re-Verification & Preregistration**:
+   - Initial test suites captured:
+     - `phases/Phase 15/verify_start.txt`: 68 pass, 0 warn, 0 fail.
+     - `phases/Phase 15/verify_extra_start.txt`: 7 pass, 0 warn, 0 fail.
+     - `scripts/ci_local.py`: `CI_LOCAL: PASS`.
+   - Gate audits completed:
+     - G1: 10 sampled Phase 14 claims verified with seed 15 in `phases/Phase 15/prior_phase_recheck.csv`, 5 headline recomputations, and saved trading-day bar analysis for Jio and Paras.
+     - G2: Defect regression tests verified; unverified runner probe identified on D-068.
+     - G3: Scheduled runs and closed Issue #6 documented in `phases/Phase 15/actions_status.md`. All 15 commits since `phase14-gate-a` mapped to defect IDs, identifying commits `06ff884` and `9dd1b7d` as process defects (D-076).
+     - G4: Paras Healthcare trading bars printed side-by-side with Chittorgarh quote page, proving the log recorded the 2026-10-29 session bar rather than listing-day 2026-10-28.
+     - G5: Secret hygiene confirmed (`gh secret list` and `git grep sk-or-` clean).
+   - Gate A committed on `main` (`phase15-gate-a`, commit `da1ce53`).
+   - Preregistration committed on `main` (`phase15-preregistration`, commit `fe6f83a`).
+   - Feature branch `feat/phase15-workstreams` created.
+
+2. **Workstream A: Enforce Listing-Day Date Equality (D-072)**:
+   - Modified `fetch_yfinance_first_session_open` in `opi/actuals.py`:
+     - Converted timestamps to `Asia/Kolkata`.
+     - Required exact bar date equality to `listing_date`.
+     - Deleted the `iloc[0]` fallback. Returns `(None, "LISTING_DAY_BAR_MISSING: first bar is <date>, listing date <date>", raw_bytes)`.
+     - The Tier 2 caller returns `SKIPPED_NO_MATCH` and never records another day's price.
+   - Added 5 unit tests in `tests/test_actuals_job.py`: Paras two-bar failure, valid bar pass, UTC midnight rollover (`18:30Z` previous day is next IST day), Jio data pass, and `SKIPPED_NO_MATCH` status.
+   - Committed on branch: `phase15-workstream-a: enforce listing-day date equality in yfinance (D-072)` (`bf57012`).
+
+3. **Workstream B: Audited Append-Only Corrections Engine & Paras Correction (D-073)**:
+   - Committed `phases/Phase 15/preregistration_amendment.md` specifying the Tier 2b multi-source verification protocol (relative tolerance $\le 1.0\%$ across two independent code-fetched pages, neither Yahoo Finance).
+   - Implemented audited corrections framework in `opi/outcomes.py`:
+     - `effective_outcome(row)`: Dynamically merges the latest correction from `predictions/outcome_corrections.csv` without modifying `predictions/prediction_log.csv`.
+     - `get_effective_predictions_df()`: Returns the full dataset with effective values and `outcome_source_effective`.
+     - `record_outcome_correction()`: Appends audited records to `predictions/outcome_corrections.csv`.
+     - `fetch_tier2b_independent_sources()`: Automated fetcher for Chittorgarh and Groww.
+   - Applied Paras Healthcare correction via `scripts/apply_paras_correction.py`:
+     - Chittorgarh Quote: ₹720.00
+     - Groww Research: ₹720.00
+     - Relative divergence: 0.00% ($\le 1.0\%$).
+     - Saved evidence: `data/evidence/actuals/2026-10-28_paras-healthcare-limited_chittorgarh_tier2b.*` and `..._groww_tier2b.*`.
+     - Raw log (+4.04%) preserved; effective outcome updated to +3.90% (₹720.00).
+     - Verified `predictions/prediction_log.csv` is 100% byte-identical (`git diff` clean).
+   - Updated reporting pipeline (`opi/report.py`, `scripts/forward_report.py`, `scripts/final_evaluation.py`) to query outcomes through `get_effective_predictions_df()`.
+   - Added unit tests in `tests/test_outcomes_corrections.py`.
+   - Committed on branch: `phase15-workstream-b: append-only outcome corrections engine, Tier 2b protocol, and Paras correction (D-073)` (`278f80d`).
+
+4. **Workstream C: Cloud Runner Probe & Workflow Smoke Testing (D-074, D-075, D-076)**:
+   - Updated `.github/workflows/probe_sources.yml` and `scripts/probe_sources.py` to write `phases/Phase 15/source_probe_runner.md` from the runner with OS, Python version, and `GITHUB_RUN_ID`.
+   - Created standalone workflow smoke test in `tests/test_workflow_entrypoints.py`:
+     - Dynamically parses all `.github/workflows/*.yml`.
+     - Runs each Python entrypoint with `--help` and `PYTHONPATH` unset.
+     - Proved that pre-fix `scripts/watchdog.py` (`06ff884`) fails with `ModuleNotFoundError: No module named 'scripts'` while current code passes.
+   - Integrated entrypoints smoke test into `scripts/ci_local.py` as Step 1.
+   - Updated `PHASE_PROTOCOL.md` to require defect registration, feature branch, PR, and `ci_local.py` before push (D-076).
+   - Committed on branch: `phase15-workstream-c: workflow entrypoints smoke test, runner probe config, and protocol rules (D-075, D-076)` (`7fa8d15`).
+   - Dispatched cloud runner probe (`gh workflow run probe_sources.yml --ref feat/phase15-workstreams`, run `41128632410`). The runner completed on Ubuntu Linux (`Python 3.12.15 on linux`) and committed `phases/Phase 15/source_probe_runner.md` directly.
+   - Added regression test `tests/test_actuals_job.py::test_runner_probe_committed_and_verified` and marked D-074 `FIXED`.
+   - Committed on branch: `phase15-workstream-c: mark D-074 fixed with runner probe test` (`79869f6`).
+
+5. **Pull Request & Cloud Verification**:
+   - Opened PR #7: `Phase 15: Correct Paras outcome, listing-day enforcement, runner parity, and workflow smoke tests`.
+   - Merged PR #7 into `main` via `gh pr merge 7 --merge` (commit `eca59d2`).
+   - Checked out `main` and pulled latest merge.
+   - Dispatched workflows on `main`:
+     - `daily.yml`: Run `41129785639` (Success, 1m56s).
+     - `watchdog.yml`: Run `41129797926` (Success, 33s).
+   - Pulled bot commit from scheduled run (`predictions/run_log.csv` and `dashboard/index.html`).
 
 ---
 
-## 3. Data Purification & Engineering Steps
-- Recomputed all 5 headline metrics directly from `predictions/prediction_log.csv`, `data/ipo_master.csv`, and `DEFECTS.md`.
-- Evaluated trading sessions for Jio Platforms Limited and Paras Healthcare Limited from saved evidence in `data/evidence/actuals/`:
-  - Jio Platforms: Earliest bar timestamp `2026-10-27T18:30:00.000Z` (+05:30 IST) corresponds to `2026-10-28 00:00:00 IST` (correct listing session).
-  - Paras Healthcare: Earliest bar timestamp `2026-10-28T18:30:00.000Z` (+05:30 IST) corresponds to `2026-10-29 00:00:00 IST` (wrong session; day after listing).
-- Confirmed zero modifications to `predictions/prediction_log.csv`.
-- Confirmed zero secret keys (`sk-or-`) committed across the entire repository.
+## 2. Scripts & Workflows Created / Modified
+
+- `opi/actuals.py`: Enforced bar date equality in `fetch_yfinance_first_session_open`; deleted `iloc[0]` fallback; returns `LISTING_DAY_BAR_MISSING`.
+- `opi/outcomes.py`: Implemented append-only corrections logic (`effective_outcome`, `get_effective_predictions_df`, `record_outcome_correction`, `fetch_tier2b_independent_sources`).
+- `predictions/outcome_corrections.csv`: Append-only audited corrections store.
+- `scripts/apply_paras_correction.py`: Code-fetched multi-source fetcher and verification script for Paras Healthcare.
+- `scripts/recompute_phase15.py`: Computes headline numbers from effective outcomes.
+- `scripts/forward_report.py`: Integrated `get_effective_predictions_df()` and added `Tier` column to markdown table.
+- `scripts/final_evaluation.py`: Updated to use `get_effective_predictions_df()`.
+- `opi/report.py`: Updated dashboard generation to use `get_effective_predictions_df()`.
+- `.github/workflows/probe_sources.yml`: Configured permissions, step summary, artifact upload, and bot commit.
+- `scripts/probe_sources.py`: Added `--output` CLI argument and GitHub Actions run ID detection.
+- `phases/Phase 15/source_probe_runner.md`: Cloud runner empirical probe report produced by GitHub Actions run `41128632410`.
+- `tests/test_workflow_entrypoints.py`: Smoke test parsing all GitHub workflows and proving pre-fix failure on `watchdog.py`.
+- `scripts/ci_local.py`: Integrated entrypoint smoke test as Step 1.
+- `PHASE_PROTOCOL.md`: Added rule requiring defect registration, branch, PR, and `ci_local.py` pre-push check (D-076).
+- `DEFECTS.md`: Seeded D-072 through D-076; marked D-072, D-073, D-074, D-075, D-076 as `FIXED`.
+- `tests/test_actuals_job.py`: Added 5 regression tests for D-072 and 1 test for D-074 runner probe.
+- `tests/test_outcomes_corrections.py`: Added 5 unit tests for D-073.
+- `tests/test_ci.py`: Added `test_phase15_process_rule_defect_registration_and_branch_pr` for D-076.
+- `dashboard/index.html`: Refreshed with effective outcomes and defect counts.
 
 ---
 
-## 4. Exact Terminal Commands Executed
-```bash
-# 1. Dependency verification and baseline verification runs
-python -m pip install -r requirements.lock
-python scripts/verify_all.py > "phases/Phase 15/verify_start.txt"
-python scripts/verify_extra.py
-python scripts/ci_local.py
+## 3. Evidence Artifacts & Recomputation Reference
 
-# 2. Gate A15 recomputations and audits
-python scripts/recompute_gate_a15.py
-pytest -v tests/test_reporting.py::test_phase11_postmortem_has_errata tests/test_gate_a.py::test_gate_a13_macro_correction tests/test_gate_a.py::test_gate_a13_market_raw_decision tests/test_dashboard.py::test_dashboard_shows_last_cloud_run tests/test_alerts.py::test_handle_failure_creates_new_issue_when_none_open tests/test_watchdog.py::test_scheduled_run_freshness_fresh tests/test_ci.py::test_requirements_lock_and_ci_pinning tests/test_final_evaluation.py::test_full_evaluation_on_synthetic_fixture tests/test_docs.py::test_runbook_sections_and_headings tests/test_ci.py::test_workflows_pin_runner_and_node24_actions tests/test_ci.py::test_ci_local_replicates_ci_order tests/test_watchdog.py::test_check_a_never_falls_back_to_a_stored_date tests/test_watchdog.py::test_alert_reason_file_is_used tests/test_actuals_job.py::test_tier2_success_with_agreeing_second_source tests/test_watchdog.py::test_missing_outcomes_threshold_boundary tests/test_actuals_job.py::test_two_tier_probe_committed tests/test_actuals_job.py::test_is_listing_ready_for_actuals_market_hours_rule tests/test_dashboard.py::test_dashboard_shows_listed_outcome_pending_count_and_names
-gh run list --event schedule -L 12
-gh api "repos/soul991/OPI/issues?state=all"
-gh secret list
-git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"
+All recomputed metrics are produced deterministically by `scripts/recompute_phase15.py`:
+
+```text
+======================================================================
+  PHASE 15 RECOMPUTED HEADLINE METRICS (EFFECTIVE OUTCOMES)
+======================================================================
+Listed Forward IPOs (n)           : 8
+Model MAE (n=8)                     : 5.9913 pp (5.99 pp)
+GMP MAE (n=7)                       : 6.1471 pp (6.15 pp)
+Model MAE on GMP subset (n=7)        : 6.6743 pp (6.67 pp)
+Model MAE excluding Bonfiglioli (n=7): 3.8329 pp (3.83 pp)
+----------------------------------------------------------------------
+Paras Healthcare Actual (raw)     : +4.04%
+Paras Healthcare Actual (eff)     : +3.90%
+Paras Healthcare Model Error Before: 6.60 pp
+Paras Healthcare Model Error After : 6.46 pp
+Paras Healthcare GMP Error Before  : 2.45 pp
+Paras Healthcare GMP Error After   : 2.31 pp
+======================================================================
 ```
-
----
-
-## 5. Artifacts and Generated Data Files
-- `phases/Phase 15/verify_start.txt`: Baseline `verify_all.py` output.
-- `phases/Phase 15/verify_extra_start.txt`: Baseline `verify_extra.py` output.
-- `phases/Phase 15/prior_phase_recheck.csv`: 10 sampled claims (seed 15), 5 headline recomputations, and outcome trading session verification.
-- `phases/Phase 15/actions_status.md`: Audit of secret presence, last 10 scheduled runs, issue #6 closure, and commit history defect mapping.

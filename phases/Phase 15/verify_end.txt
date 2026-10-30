@@ -1,0 +1,72 @@
+﻿[PASS] no absolute/local paths in docs or code                                              
+[PASS] pytest suite passes                                                                  199 passed, 1 skipped, 1 warning in 55.15s
+[PASS] no duplicate (company, listing_date)                                                 0 duplicates
+[PASS] listing_gain_pct matches prices                                                      0 mismatches
+[PASS] label_good matches gain                                                              0 mismatches
+[PASS] date order open<=close<=listing                                                      0 rows
+[PASS] no extreme listing/issue price ratios (FPO-type errors)                              
+[PASS] gmp_pct in plausible range                                                           0 rows
+[PASS] every excluded row has a source URL                                                  0 without URL
+[PASS] every GMP value has URL, page date, access date                                      0 rows incomplete
+[PASS] every sourced GMP row exists in master                                               0 unmatched
+[PASS] GMP as_of_date not after last bidding day (no leakage)                               0 rows
+[PASS] source page dated before listing                                                     0 rows dated on/after listing
+[PASS] second-source check credible (Phase 7)                                               
+[PASS] second-source check credible (Phase 8)                                               
+[PASS] snapshot file for every sourced GMP row (<listing_date>_<company-slug>.*)            0 of 0 missing
+[PASS] log statuses valid                                                                   0 invalid
+[PASS] FORWARD rows logged                                                                  8 rows
+[PASS] FORWARD rows scored before listing                                                   0 rows
+[PASS] FORWARD rows scored after bidding closed (final subscription)                        
+[PASS] FORWARD rows use final (not day-1/live) subscription                                 
+[PASS] probabilities within [0,1]                                                           
+[PASS] no duplicate FORWARD rows                                                            0
+[PASS] FORWARD scored_at matches first commit time (no backdating)                          
+[PASS] no actuals for unlisted IPOs                                                         
+[PASS] FORWARD feature snapshots carry source URLs                                          0 rows with only site names
+[PASS] final test rows <= FORWARD rows with actuals                                         0 rows vs 8
+[PASS] Phase 1: three required files                                                        
+[PASS] Phase 2: three required files                                                        
+[PASS] Phase 3: three required files                                                        
+[PASS] Phase 4: three required files                                                        
+[PASS] Phase 5: three required files                                                        
+[PASS] Phase 6: three required files                                                        
+[PASS] Phase 7: three required files                                                        
+[PASS] Phase 8: three required files                                                        
+[PASS] Phase 9: three required files                                                        
+[PASS] Phase 10: three required files                                                       
+[PASS] Phase 11: three required files                                                       
+[PASS] Phase 12: three required files                                                       
+[PASS] Phase 13: three required files                                                       
+[PASS] Phase 14: three required files                                                       
+[PASS] Phase 15: three required files                                                       
+[PASS] defect register parsed                                                               76 defects, 2 open/partial
+[PASS] every FIXED defect has an existing regression test                                   
+[PASS] Phase 15 verdict 'None unfixed' consistent with defect register                      
+[PASS] Phase 6: gate + preregistration committed before other work                          
+[PASS] Phase 7: gate + preregistration committed before other work                          
+[PASS] Phase 8: gate + preregistration committed before other work                          
+[PASS] Phase 9: gate + preregistration committed before other work                          
+[PASS] Phase 10: gate + preregistration committed before other work                         
+[PASS] Phase 11: gate + preregistration committed before other work                         
+[PASS] Phase 12: gate + preregistration committed before other work                         
+[PASS] Phase 13: gate + preregistration committed before other work                         
+[PASS] Phase 14: gate + preregistration committed before other work                         
+[PASS] Phase 15: gate + preregistration committed before other work                         
+[PASS] Phase 7 headline metrics recompute from raw predictions                              
+[PASS] CI can obtain the model (tracked artifact or training step)                          
+[PASS] earlier-phase artifacts unchanged since phase15-gate-a (errata may only add lines)   
+[PASS] extreme GMP values (>100% or <-30%) have a snapshot or are NOT_RECORDED              
+[PASS] no mock research runs in data/research_runs                                          
+[PASS] no mock evidence files under data/evidence/                                          
+[PASS] grounding: HD Fire Protect Limited inputs appear in saved snapshots                  4 snapshot files
+[PASS] grounding: Fusion CX Limited inputs appear in saved snapshots                        4 snapshot files
+[PASS] grounding: Zetwerk Manufacturing Business Limited inputs appear in saved snapshots   5 snapshot files
+[PASS] grounding: Sahajanand Medical Technologies Limited inputs appear in saved snapshots  5 snapshot files
+[PASS] grounding: Tonbo Imaging India Limited inputs appear in saved snapshots              5 snapshot files
+[PASS] grounding: Bonfiglioli Transmissions Limited inputs appear in saved snapshots        5 snapshot files
+[PASS] grounding: Jio Platforms Limited inputs appear in saved snapshots                    5 snapshot files
+[PASS] grounding: Paras Healthcare Limited inputs appear in saved snapshots                 9 snapshot files
+[PASS] pytest passes on a fresh clone (no untracked/ignored files)                          199 passed, 1 skipped, 2 warnings in 70.90s (0:01:10)
+
+SUMMARY: 70 pass, 0 warn, 0 fail
