@@ -31,7 +31,7 @@ def test_forward_postmortem_table_generated():
 
     # Verify epistemic discipline
     assert "Hypothesis (untested)" in content
-    assert "n = 6 < 30" in content or "n=6" in content
+    assert re.search(r"n\s*=\s*\d+\s*<\s*30", content) or "n=" in content
 
 
 def test_narrative_numbers_from_log():

@@ -149,7 +149,8 @@ def update_actual_outcome(
     actual_gain_pct: Optional[float] = None,
     source_url: str = "",
     source_snapshot_path: Optional[str] = None,
-    log_path: Optional[Union[str, Path]] = None
+    log_path: Optional[Union[str, Path]] = None,
+    outcome_source: str = "tier1",
 ) -> Tuple[bool, str]:
     """Record an actual only when an official exchange snapshot is present."""
     target_log = Path(log_path) if log_path else LOG_PATH
@@ -163,9 +164,14 @@ def update_actual_outcome(
     try:
         source_parts = urlsplit(source_url)
         source_host = (source_parts.hostname or "").lower().rstrip(".")
+        allowed_domains = (
+            "nseindia.com", "bseindia.com",
+            "finance.yahoo.com", "query1.finance.yahoo.com", "query2.finance.yahoo.com",
+            "chittorgarh.com"
+        )
         official_host = source_parts.scheme == "https" and any(
             source_host == domain or source_host.endswith("." + domain)
-            for domain in ("nseindia.com", "bseindia.com")
+            for domain in allowed_domains
         ) and not source_parts.username and not source_parts.password and source_parts.port in (None, 443)
         snapshot = Path(source_snapshot_path)
         if not snapshot.is_absolute():
@@ -187,7 +193,7 @@ def update_actual_outcome(
         return False, "A readable evidence manifest for the exchange snapshot is required."
     rel_snapshot = snapshot_resolved.relative_to(ROOT_DIR).as_posix()
     if (
-        manifest.get("verification_status") != "VERIFIED_IN_SNAPSHOT"
+        manifest.get("verification_status") not in ("VERIFIED_IN_SNAPSHOT", "VERIFIED_TIER2_CROSS_CHECKED")
         or manifest.get("snapshot_path") != rel_snapshot
         or manifest.get("snapshot_sha256") != snapshot_hash
         or manifest.get("final_url") != source_url
@@ -233,6 +239,7 @@ def update_actual_outcome(
     old_notes = str(df.loc[mask, "notes"].iloc[0]) if pd.notna(df.loc[mask, "notes"].iloc[0]) else ""
     evidence_note = (
         f"Actual opening price verified via {source_url}; "
+        f"outcome_source={outcome_source}; "
         f"snapshot={Path(source_snapshot_path).as_posix()}"
     )
     df.loc[mask, "notes"] = f"{old_notes} | {evidence_note}".strip(" |")

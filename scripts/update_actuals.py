@@ -18,7 +18,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from opi.actuals import ActualsEvidenceError, record_actual_from_exchange
+from opi.actuals import ActualsEvidenceError, record_actual_from_exchange, execute_two_tier_outcome_chain
 from opi.log import IST
 from opi.report import render_dashboard_html
 
@@ -72,6 +72,11 @@ def main() -> int:
         "--price-quote",
         help="Exact page excerpt that labels the opening/listing price and includes its value",
     )
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Attempt automated recording via two-tier source chain (Tier 1 Exchange -> Tier 2 yfinance + cross-check)",
+    )
     args = parser.parse_args()
 
     evidence_args = (
@@ -83,10 +88,28 @@ def main() -> int:
     )
     if not args.company and not any(evidence_args) and not args.evidence_file:
         return show_pending(args.log)
+
+    if args.auto and args.company:
+        print(f"Executing automated two-tier outcome recording for '{args.company}'...")
+        res = execute_two_tier_outcome_chain(company=args.company, log_path=args.log)
+        status = res.get("status")
+        if status == "RECORDED":
+            print("Actual outcome recorded successfully via automated chain.")
+            print(f"Company: {args.company}")
+            print(f"Tier used: {res.get('tier')}")
+            print(f"Official opening price: INR {res.get('official_opening_price'):.2f}")
+            print(f"Computed listing gain: {res.get('actual_gain_pct'):+.2f}%")
+            dash = render_dashboard_html()
+            print(f"Dashboard refreshed: {dash}")
+            return 0
+        else:
+            print(f"Automated recording ended with status {status}: {res.get('reason')}", file=sys.stderr)
+            return 1
+
     if not args.company or not all(evidence_args):
         parser.error(
-            "recording requires --company, --source-url, --actual-listing-price, --page-date, "
-            "--company-quote, and --price-quote together"
+            "manual recording requires --company, --source-url, --actual-listing-price, --page-date, "
+            "--company-quote, and --price-quote together (or use --auto with --company)"
         )
 
     try:
