@@ -23,9 +23,14 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from scripts.manage_alerts import sanitize_text
-
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+try:
+    from scripts.manage_alerts import sanitize_text
+except ModuleNotFoundError:
+    from manage_alerts import sanitize_text
 MAX_STALENESS_HOURS = 36.0
 KEEPALIVE_DAYS_THRESHOLD = 30.0
 

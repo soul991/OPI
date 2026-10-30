@@ -11,9 +11,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 from scripts.forward_postmortem import generate_postmortem
 
 
-def test_forward_postmortem_table_generated():
+def test_forward_postmortem_table_generated(tmp_path):
     """D-041: forward_postmortem.md must be generated and contain all required audit fields."""
-    content = generate_postmortem()
+    content = generate_postmortem(output_path=tmp_path / "forward_postmortem.md")
     out_file = ROOT_DIR / "phases" / "Phase 12" / "forward_postmortem.md"
     assert out_file.exists(), "phases/Phase 12/forward_postmortem.md must exist"
 

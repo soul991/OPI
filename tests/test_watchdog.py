@@ -283,3 +283,21 @@ def test_missing_outcomes_alert_names_company_and_no_key_material(tmp_path):
     assert "sk" + "-or-" not in msg
     assert "[REDACTED_API_KEY]" in msg
 
+
+
+def test_watchdog_script_standalone_execution():
+    """Verify scripts/watchdog.py can be invoked directly as a script without PYTHONPATH set."""
+    import os
+    import subprocess
+    import sys
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    res = subprocess.run(
+        [sys.executable, str(ROOT_DIR / "scripts" / "watchdog.py"), "--help"],
+        cwd=str(ROOT_DIR),
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert res.returncode == 0
+    assert "watchdog.py" in res.stdout or "usage:" in res.stdout

@@ -39,6 +39,7 @@ jobs:
       - name: Execute Watchdog Health Check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PYTHONPATH: .
         run: |
           set -o pipefail
           python scripts/watchdog.py 2>&1 | tee watchdog_output.txt
