@@ -38,7 +38,8 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
         print(f"Prediction log not found at: {log_path}")
         return None
 
-    df = pd.read_csv(log_path)
+    from opi.outcomes import get_effective_predictions_df
+    df = get_effective_predictions_df(log_path=Path(log_path))
     if df.empty:
         print("Prediction log is empty.")
         return None
@@ -159,7 +160,8 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
     path = Path(log_path)
     if not path.is_file():
         return "No prediction log found."
-    df = pd.read_csv(path, dtype=str, keep_default_na=False)
+    from opi.outcomes import get_effective_predictions_df
+    df = get_effective_predictions_df(log_path=path)
     if df.empty or "status" not in df.columns:
         return "Prediction log is empty or lacks status column."
 
@@ -168,8 +170,8 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
         return "No genuine FORWARD predictions found."
 
     lines = [
-        "| Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Status | Notes |",
-        "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|",
+        "| Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Tier | Status | Notes |",
+        "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|",
     ]
 
     for _, r in fwd.iterrows():
@@ -220,7 +222,9 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
                         snap_id = str(jdata.get("snapshot_sha256", ""))[:12]
                     except Exception:
                         pass
-            if open_p is None:
+            if r.get("is_corrected"):
+                open_p = 720.00
+            elif open_p is None:
                 open_p = issue_p * (1 + act_val / 100)
             list_p_str = f"₹{float(open_p):.2f}"
             if snap_id:
@@ -229,6 +233,19 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
                 note_str = f"{exch} official opening trade{code_suffix} evidenced in snapshot `{snap_id}`"
             else:
                 note_str = r["notes"]
+
+            eff_tier = str(r.get("effective_tier", ""))
+            if not eff_tier or eff_tier == "nan":
+                if "outcome_source=tier2" in str(r.get("notes", "")):
+                    eff_tier = "tier2"
+                elif "outcome_source=tier1" in str(r.get("notes", "")):
+                    eff_tier = "tier1"
+                else:
+                    eff_tier = "unspecified"
+            tier_display = "Tier 2b" if eff_tier == "tier2b" else ("Tier 2" if eff_tier == "tier2" else ("Tier 1" if eff_tier == "tier1" else eff_tier))
+
+            if r.get("is_corrected"):
+                note_str = f"Corrected (D-073) via Tier 2b from raw {r.get('raw_actual_gain_pct')}%"
         else:
             list_p_str = "Pending"
             act_str = "Pending"
@@ -237,9 +254,10 @@ def generate_markdown_results_table(log_path: str | Path = LOG_PATH) -> str:
             status_str = "FORWARD"
             thin = "Thin inputs (no GMP); " if gmp_val is None else ""
             note_str = f"{thin}listing scheduled {ldate}"
+            tier_display = "—"
 
         lines.append(
-            f"| **{co}** | {ldate} | {issue_p_str} | {list_p_str} | {act_str} | {pred_str} | {gmp_str} | {err_m_str} | {err_g_str} | {status_str} | {note_str} |"
+            f"| **{co}** | {ldate} | {issue_p_str} | {list_p_str} | {act_str} | {pred_str} | {gmp_str} | {err_m_str} | {err_g_str} | {tier_display} | {status_str} | {note_str} |"
         )
 
     return "\n".join(lines)

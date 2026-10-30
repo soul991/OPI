@@ -1,0 +1,2 @@
+company,listing_date,field,old_value,new_value,reason,evidence_path,tier,corrected_at
+Paras Healthcare Limited,2026-10-28,actual_gain_pct,4.04,3.90,"Tier 2 primary source (yfinance) fell back to 2026-10-29 bar (721.00); corrected via Tier 2b independent dual-source verification (Chittorgarh + Groww, 720.00, +3.90%)",data/evidence/actuals/2026-10-28_paras-healthcare-limited_chittorgarh_tier2b.json,tier2b,2026-10-30T20:22:13.901688+00:00
