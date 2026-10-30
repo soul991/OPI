@@ -1,0 +1,22 @@
+claim_id,claim_text,file_checked,audit_result,evidence_notes
+C-01,"Claim (IPO): Jio Platforms Issue ₹1119.00, Official Open ₹1358.00, Gain +21.36%, Model Pred +22.14%, Error 0.78 pp",predictions/prediction_log.csv,VERIFIED,"Table in Section 3 and Section 6 reports Jio Platforms issue ₹1119.00, open ₹1358.00, gain +21.36%, model error 0.78 pp, GMP error 0.98 pp; verified in log and snapshot 679a4ce1c8e3"
+C-02,"Claim (IPO): Paras Healthcare Issue ₹693.00, Official Open ₹721.00, Gain +4.04%, Model Pred -2.56%, Error 6.60 pp",predictions/prediction_log.csv,VERIFIED_RECORDED_BUT_WRONG_DAY,"Table in Section 3 and Section 6 reports Paras issue ₹693.00, open ₹721.00, gain +4.04%, model error 6.60 pp; verified that log holds 4.04% from 2026-10-29 bar (Defect A / D-072)"
+C-03,"Claim (IPO): Fusion CX Issue ₹289.00, Listing ₹305.00, Gain +5.54%, Model Est +4.33%, Error 1.21 pp",predictions/prediction_log.csv,VERIFIED,"Table in Section 3 reports Fusion CX issue ₹289.00, listing ₹305.00, gain +5.54%, model estimate +4.33%; verified in prediction_log.csv"
+C-04,"Claim (IPO): HD Fire Protect Issue ₹271.00, Listing ₹334.40, Gain +23.39%, Model Est +26.12%, Error 2.73 pp",predictions/prediction_log.csv,VERIFIED,"Table in Section 3 reports HD Fire issue ₹271.00, listing ₹334.40, gain +23.39%, model estimate +26.12%; verified in prediction_log.csv"
+C-05,"Claim (IPO): Tonbo Imaging Issue ₹700.00, Listing ₹1160.00, Gain +65.71%, Model Est +74.70%, Error 8.99 pp",predictions/prediction_log.csv,VERIFIED,"Table in Section 3 reports Tonbo issue ₹700.00, listing ₹1160.00, gain +65.71%, model error 8.99 pp; verified in log"
+C-06,"Claim (IPO): Sahajanand Medical Tech Issue ₹344.00, Listing ₹371.15, Gain +7.89%, Model Est +8.32%, Error 0.43 pp",predictions/prediction_log.csv,VERIFIED,"Table in Section 3 reports SMT issue ₹344.00, listing ₹371.15, actual gain +7.89%, model estimate +8.32%; verified in log"
+C-07,Claim (file X contains Y): data/evidence/actuals/2026-10-28_paras-healthcare-limited_fe823e2ba992.json contains outcome_source tier2 and yfinance_open 721.0,data/evidence/actuals/2026-10-28_paras-healthcare-limited_fe823e2ba992.json,VERIFIED,"Manifest contains 'outcome_source': 'tier2' and 'yfinance_open': 721.0, second_source_open: 720.0; verified on disk"
+C-08,Claim (file X contains Y): phases/Phase 14/source_probe.md contains 'Python 3.12.10 on win32',phases/Phase 14/source_probe.md,VERIFIED,Line 4 of source_probe.md states '**Environment**: Python 3.12.10 on win32'; proves probe was run on win32 rather than cloud runner (D-068 / D-074)
+C-09,Claim (file X contains Y): data/evidence/actuals/2026-10-28_jio-platforms-limited_679a4ce1c8e3.json contains outcome_source tier2 and yfinance_open 1358.0,data/evidence/actuals/2026-10-28_jio-platforms-limited_679a4ce1c8e3.json,VERIFIED,"Manifest contains 'outcome_source': 'tier2' and 'yfinance_open': 1358.0, second_source_open: 1358.0; verified on disk"
+C-10,Claim (file X contains Y): DEFECTS.md contains D-068 with test tests/test_actuals_job.py::test_two_tier_probe_committed,DEFECTS.md,VERIFIED,Row D-068 in DEFECTS.md lists test tests/test_actuals_job.py::test_two_tier_probe_committed; verified in file
+
+headline_id,metric_name,verdict_claimed,recomputed_raw,status
+H-01,Overall Prospective Model MAE (n=8 listed),6.01 pp,6.0088 pp,PASS (matches rounded 6.01 pp)
+H-02,GMP Subset Raw GMP MAE (n=7 with GMP),6.17 pp,6.1671 pp,PASS (matches rounded 6.17 pp)
+H-03,GMP Subset Model MAE (n=7 with GMP),6.69 pp,6.6943 pp,PASS (matches rounded 6.69 pp)
+H-04,"Model MAE Ex-Outlier Shock (n=7, no Bonfiglioli)",3.85 pp,3.8529 pp,PASS (matches rounded 3.85 pp)
+H-05,Master Dataset Row Count (ipo_master.csv),731 rows,731 rows,PASS (matches 731 rows)
+
+outcome_id,company,listing_date,evidence_file,saved_bar_timestamp,ist_trading_day,price_used,issue_price,recomputed_gain,day_assessment
+O-01,Jio Platforms Limited,2026-10-28,data/evidence/actuals/2026-10-28_jio-platforms-limited_679a4ce1c8e3.txt,2026-10-27T18:30:00.000Z,2026-10-28 (IST),1358.00,1119.00,+21.36%,"CORRECT_SESSION: Bar is 2026-10-28 IST, matching listing date."
+O-02,Paras Healthcare Limited,2026-10-28,data/evidence/actuals/2026-10-28_paras-healthcare-limited_fe823e2ba992.txt,2026-10-28T18:30:00.000Z,2026-10-29 (IST),721.00,693.00,+4.04%,WRONG_SESSION: Bar is 2026-10-29 IST (day AFTER listing). Listing price was 720.00 (+3.90%).
