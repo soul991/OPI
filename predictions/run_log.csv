@@ -514,3 +514,23 @@ timestamp,run_id,action,company,status,details
 2026-10-31T23:38:32.178254+05:30,run_20261031_180829,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
 2026-10-31T23:38:32.218836+05:30,run_20261031_180829,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
 2026-10-31T23:38:32.816509+05:30,run_20261031_180829,FINISH,ALL,SUCCESS,
+2026-11-01T18:05:16.732654+05:30,run_20261101_123516,START,ALL,STARTED,dry_run=False
+2026-11-01T18:05:18.453439+05:30,run_20261101_123516,INGEST,M.K.Sons Fine Jewels,SKIPPED_INSUFFICIENT_SOURCES,Overview or subscription URL missing
+2026-11-01T18:05:18.494893+05:30,run_20261101_123516,INGEST,BLS Polymers,SKIPPED_INSUFFICIENT_SOURCES,Overview or subscription URL missing
+2026-11-01T18:05:18.536896+05:30,run_20261101_123516,INGEST,SFC Environmental Technologies,SKIPPED_INSUFFICIENT_SOURCES,Overview or subscription URL missing
+2026-11-01T18:05:18.578992+05:30,run_20261101_123516,INGEST,EAAA India Alternatives,SKIPPED_INSUFFICIENT_SOURCES,Overview or subscription URL missing
+2026-11-01T18:05:18.621240+05:30,run_20261101_123516,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.663510+05:30,run_20261101_123516,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.705481+05:30,run_20261101_123516,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.748231+05:30,run_20261101_123516,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.789744+05:30,run_20261101_123516,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.831389+05:30,run_20261101_123516,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.872598+05:30,run_20261101_123516,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.914365+05:30,run_20261101_123516,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:18.958359+05:30,run_20261101_123516,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:19.001020+05:30,run_20261101_123516,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:19.042645+05:30,run_20261101_123516,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:19.084406+05:30,run_20261101_123516,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:19.126428+05:30,run_20261101_123516,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-01T18:05:19.168430+05:30,run_20261101_123516,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
+2026-11-01T18:05:19.931715+05:30,run_20261101_123516,FINISH,ALL,SUCCESS,
