@@ -130,6 +130,30 @@ def parse_listing_date_from_overview_html(html_text: str) -> Optional[date]:
     return None
 
 
+def derive_subscription_url(overview_url: Optional[str]) -> Optional[str]:
+    """Derive Chittorgarh subscription URL from overview URL.
+
+    Transforms /ipo/<slug>/<id>/ into /ipo_subscription/<slug>/<id>/.
+    Returns None if overview_url cannot be parsed.
+    """
+    if not overview_url or not isinstance(overview_url, str):
+        return None
+    url = overview_url.strip()
+    if not url:
+        return None
+    if url.startswith("/"):
+        url = f"https://www.chittorgarh.com{url}"
+    m = re.search(r"/ipo/([^/?#]+)/(\d+)/?", url)
+    if not m:
+        return None
+    slug, ipo_id = m.group(1), m.group(2)
+    return re.sub(
+        r"/ipo/" + re.escape(slug) + r"/" + re.escape(ipo_id) + r"/?",
+        f"/ipo_subscription/{slug}/{ipo_id}/",
+        url,
+    )
+
+
 def confirm_listing_date_from_overview(overview_url: str, timeout: int = 5) -> Optional[date]:
     """Try to extract listing date from overview page HTML or local evidence snapshot."""
     if not overview_url:
@@ -261,6 +285,7 @@ def parse_discovery_html(
             else:
                 status = "UNKNOWN_LISTING_DATE"
 
+        sub_url = derive_subscription_url(full_url)
         candidates.append({
             "company": company,
             "open_date": str(o_date),
@@ -268,6 +293,7 @@ def parse_discovery_html(
             "listing_date": str(l_date) if l_date else "",
             "status": status,
             "overview_url": full_url,
+            "sub_url": sub_url or "",
             "type": "Mainboard",
             "issue_price": issue_price_str,
             "issue_size_cr": issue_size_str,
@@ -340,6 +366,7 @@ def parse_discovery_html(
                 else:
                     status = "UNKNOWN_LISTING_DATE"
 
+            sub_url = derive_subscription_url(url)
             candidates.append({
                 "company": comp,
                 "open_date": str(open_dt),
@@ -347,6 +374,7 @@ def parse_discovery_html(
                 "listing_date": l_date_str,
                 "status": status,
                 "overview_url": url,
+                "sub_url": sub_url or "",
                 "type": "Mainboard",
                 "issue_price": "",
                 "issue_size_cr": "",
