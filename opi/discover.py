@@ -141,17 +141,27 @@ def derive_subscription_url(overview_url: Optional[str]) -> Optional[str]:
     url = overview_url.strip()
     if not url:
         return None
-    if url.startswith("/"):
+    if url.startswith("//"):
+        url = f"https:{url}"
+    elif url.startswith("/"):
         url = f"https://www.chittorgarh.com{url}"
-    m = re.search(r"/ipo/([^/?#]+)/(\d+)/?", url)
+    elif url.startswith("www."):
+        url = f"https://{url}"
+
+    m = re.search(r"/ipo/([^/?#]+)/([^/?#]+)/?", url, flags=re.IGNORECASE)
     if not m:
         return None
     slug, ipo_id = m.group(1), m.group(2)
+    if "." in ipo_id:
+        return None
     return re.sub(
         r"/ipo/" + re.escape(slug) + r"/" + re.escape(ipo_id) + r"/?",
         f"/ipo_subscription/{slug}/{ipo_id}/",
         url,
+        count=1,
+        flags=re.IGNORECASE,
     )
+
 
 
 def confirm_listing_date_from_overview(overview_url: str, timeout: int = 5) -> Optional[date]:

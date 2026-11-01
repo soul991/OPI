@@ -73,3 +73,40 @@ def test_derive_subscription_url_from_overview_url():
     jio_cand = next(c for c in candidates if c["company"] == "Jio Platforms Limited")
     assert jio_cand["sub_url"] == "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3095/"
 
+
+def test_derive_subscription_url_edge_cases():
+    """D-078: Test protocol-relative, schemeless, case-insensitivity, alphanumeric IDs, and count=1."""
+    from opi.discover import derive_subscription_url
+
+    # Protocol-relative URL
+    assert derive_subscription_url("//www.chittorgarh.com/ipo/jio-platforms-ipo/3152/") == (
+        "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/"
+    )
+
+    # Schemeless www URL
+    assert derive_subscription_url("www.chittorgarh.com/ipo/jio-platforms-ipo/3152/") == (
+        "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/"
+    )
+
+    # Uppercase path
+    assert derive_subscription_url("https://www.chittorgarh.com/IPO/jio-platforms-ipo/3152/") == (
+        "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/"
+    )
+
+    # Alphanumeric ID
+    assert derive_subscription_url("https://www.chittorgarh.com/ipo/test-slug/3152b/") == (
+        "https://www.chittorgarh.com/ipo_subscription/test-slug/3152b/"
+    )
+
+    # Query param containing identical path should not be replaced twice (count=1)
+    url_with_param = "https://www.chittorgarh.com/ipo/jio-platforms-ipo/3152/?ref=/ipo/jio-platforms-ipo/3152/"
+    expected_with_param = "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/?ref=/ipo/jio-platforms-ipo/3152/"
+    assert derive_subscription_url(url_with_param) == expected_with_param
+
+    # Files with extensions should return None
+    assert derive_subscription_url("https://www.chittorgarh.com/ipo/general/faq.html") is None
+
+    # Already-subscription URLs should return None
+    assert derive_subscription_url("https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/") is None
+
+
