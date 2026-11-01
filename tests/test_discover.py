@@ -38,3 +38,38 @@ def test_discovers_closed_unlisted_mainboard_ipos_from_fixture():
 
     sah = next(c for c in candidates if c["company"] == "Sahajanand Medical Technologies Limited")
     assert sah["status"] == "CLOSED_UNLISTED"
+
+
+def test_derive_subscription_url_from_overview_url():
+    """D-077: Verify derivation of Chittorgarh subscription URL from overview URL using Jio's real URLs."""
+    from opi.discover import derive_subscription_url, discover_ipos
+
+    # Jio Platforms real URLs from repo evidence and historical prediction log
+    jio_overview = "https://www.chittorgarh.com/ipo/jio-platforms-ipo/3152/"
+    expected_jio_sub = "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/"
+
+    # Verify standard absolute URL transformation
+    assert derive_subscription_url(jio_overview) == expected_jio_sub
+
+    # Verify URL without trailing slash
+    assert derive_subscription_url("https://www.chittorgarh.com/ipo/jio-platforms-ipo/3152") == expected_jio_sub
+
+    # Verify relative URL transformation
+    assert derive_subscription_url("/ipo/jio-platforms-ipo/3152/") == expected_jio_sub
+    assert derive_subscription_url("/ipo/jio-platforms-ipo/3152") == expected_jio_sub
+
+    # Verify other real IPO URLs from discovery candidates
+    mksons_overview = "https://www.chittorgarh.com/ipo/mksons-fine-jewels-ipo/3100/"
+    assert derive_subscription_url(mksons_overview) == "https://www.chittorgarh.com/ipo_subscription/mksons-fine-jewels-ipo/3100/"
+
+    # Verify non-matching and empty inputs return None
+    assert derive_subscription_url("") is None
+    assert derive_subscription_url(None) is None
+    assert derive_subscription_url("https://www.chittorgarh.com/ipo_dashboard.asp") is None
+
+    # Verify discovery output populates sub_url for candidate IPOs
+    fixture_path = ROOT / "tests" / "fixtures" / "discovery_page.html"
+    candidates = discover_ipos(source_html=fixture_path.read_text(encoding="utf-8"), as_of_date="2026-10-21")
+    jio_cand = next(c for c in candidates if c["company"] == "Jio Platforms Limited")
+    assert jio_cand["sub_url"] == "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3095/"
+

@@ -80,3 +80,5 @@
 | D-074 | 14 | D-068 was marked FIXED from a probe run on win32, not on a runner; runner reachability to NSE, BSE, yfinance and Chittorgarh has no committed evidence. | Medium | FIXED | 15 | tests/test_actuals_job.py::test_runner_probe_committed_and_verified |
 | D-075 | 14 | Watchdog failed on the runner (run 41090951686, issue #6) because scripts/watchdog.py imported scripts.manage_alerts; tests and ci_local.py did not launch scripts the way workflows do. Fixed in 9dd1b7d without a register entry. | Medium | FIXED | 15 | tests/test_workflow_entrypoints.py::test_workflow_entrypoints_smoke |
 | D-076 | 15 | Process: fixes were pushed to main without a defect id, a branch or a PR. | Low | FIXED | 15 | tests/test_ci.py::test_phase15_process_rule_defect_registration_and_branch_pr |
+| D-077 | 10 | opi/discover.py never sets sub_url, causing run_daily.py to skip every CLOSED_UNLISTED IPO with SKIPPED_INSUFFICIENT_SOURCES. | High | FIXED | - | tests/test_discover.py::test_derive_subscription_url_from_overview_url |
+
