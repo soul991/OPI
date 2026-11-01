@@ -1,0 +1,9 @@
+{
+  "as_of_date": "2026-10-28",
+  "nifty_close": 22698.849609375,
+  "nifty_30d_ago_close": 22780.25,
+  "nifty_30d_return": -0.36,
+  "india_vix": 16.25,
+  "recent_ipo_avg_gain": 17.22,
+  "source": "yfinance"
+}

@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-30",
+  "source": "yfinance",
+  "source_type": "unofficial",
+  "confidence": "medium",
+  "accessed_at": "2026-11-01T17:01:29.186692",
+  "sha256": "58322f6028b912cb0c551a773a4e8262d84566c5d39a23a03563714d0026b56b",
+  "raw_file": "2026-10-30_market_macro.raw"
+}
