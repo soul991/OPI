@@ -116,10 +116,18 @@ Generated directly via `python scripts/forward_report.py --markdown`:
 - `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns strictly 0 matches across the repository.
 
 ### G6: Audit of Four 2026-11-01 Forward IPOs (D-084)
-- **M.K.Sons Fine Jewels**: Bidding closed 2026-10-30; scored 2026-11-01T22:31:30 IST; scheduled listing 2026-11-04 (scored BEFORE listing). Issue price ₹162, issue size ₹275 Cr, subscription total 5.09x (QIB 1.84x, NII 14.12x, RII 3.08x). HTML snapshots saved and grounded in `data/evidence/subscription/` and `data/evidence/research/`. GMP is missing (`None`) due to D-081. Status: **OK (missing GMP noted under D-081)**.
-- **BLS Polymers**: Bidding closed 2026-10-29; scored 2026-11-01T22:31:31 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹150, issue size ₹255 Cr, subscription total 241.22x (QIB 200.25x, NII 559.20x, RII 128.36x). High demand leads to predicted gain of +53.28% and P(>10%)=0.8887. HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
-- **SFC Environmental Technologies**: Bidding closed 2026-10-29; scored 2026-11-01T22:31:32 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹330, issue size ₹668 Cr, subscription total 9.47x (QIB 18.81x, NII 12.81x, RII 2.71x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
-- **EAAA India Alternatives**: Bidding closed 2026-10-28; scored 2026-11-01T22:31:33 IST; scheduled listing 2026-11-02 (scored BEFORE listing). Issue price ₹1665, issue size ₹1200 Cr, subscription total 5.51x (QIB 13.80x, NII 4.81x, RII 1.08x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
+
+#### M.K.Sons Fine Jewels
+- Bidding closed 2026-10-30; scored 2026-11-01T22:31:30 IST; scheduled listing 2026-11-04 (scored BEFORE listing). Issue price ₹162, issue size ₹275 Cr, subscription Total 5.09x (QIB 1.84x, NII 14.12x, Retail 3.08x). HTML snapshots saved and grounded in `data/evidence/subscription/` and `data/evidence/research/`. GMP is missing (`None`) due to D-081. Status: **OK (missing GMP noted under D-081)**.
+
+#### BLS Polymers
+- Bidding closed 2026-10-29; scored 2026-11-01T22:31:31 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹150, issue size ₹255 Cr, subscription Total 241.22x (QIB 200.25x, NII 559.2x, Retail 128.36x). High demand leads to predicted gain of +53.28% and P(>10%)=0.8887. HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
+
+#### SFC Environmental Technologies
+- Bidding closed 2026-10-29; scored 2026-11-01T22:31:32 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹330, issue size ₹668 Cr, subscription Total 9.47x (QIB 18.81x, NII 12.81x, Retail 2.71x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
+
+#### EAAA India Alternatives
+- Bidding closed 2026-10-28; scored 2026-11-01T22:31:33 IST; scheduled listing 2026-11-02 (scored BEFORE listing). Issue price ₹1665, issue size ₹1200 Cr, subscription Total 5.51x (QIB 13.8x, NII 4.81x, Retail 1.08x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
 
 ### G7: Bombay Coated & Special Steels Limited Status
 - Dates read directly from Chittorgarh overview page (`https://www.chittorgarh.com/ipo/bombay-coated-and-special-steels-ipo/2671/`) using project discovery code:

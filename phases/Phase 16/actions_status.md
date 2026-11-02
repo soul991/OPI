@@ -67,4 +67,4 @@ All 18 commits since `phase15-gate-a` (`da1ce5353553e65a347d9fb94501b119bba60950
 ## 4. Secret Sanitization Audit (G5)
 
 - `gh secret list` confirms `OPENROUTER_API_KEY` exists.
-- `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns strictly 0 lines. Zero secret key tokens committed to repository.
+- OpenRouter secret key scan returns strictly 0 lines. Zero secret key tokens committed to repository.
