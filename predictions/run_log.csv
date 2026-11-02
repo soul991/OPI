@@ -567,3 +567,26 @@ timestamp,run_id,action,company,status,details
 2026-11-02T00:13:41.438455+05:30,run_20261101_184340,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
 2026-11-02T00:13:41.454612+05:30,run_20261101_184340,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
 2026-11-02T00:13:41.985501+05:30,run_20261101_184340,FINISH,ALL,SUCCESS,
+2026-11-02T20:22:48.244599+05:30,run_20261102_145248,START,ALL,STARTED,dry_run=False
+2026-11-02T20:23:47.752780+05:30,run_20261102_145250,RESEARCH_AGENT,Bombay Coated & Special Steels,FAILED,"error=2 validation errors for IPOCandidateSchema
+issue_price.value
+  Input should be a valid number, unabl"
+2026-11-02T20:23:51.575505+05:30,run_20261102_145248,DISCOVERY,EAAA India Alternatives,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.596743+05:30,run_20261102_145248,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.618109+05:30,run_20261102_145248,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.639463+05:30,run_20261102_145248,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.661195+05:30,run_20261102_145248,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.682710+05:30,run_20261102_145248,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.704191+05:30,run_20261102_145248,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.725871+05:30,run_20261102_145248,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.747196+05:30,run_20261102_145248,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.768427+05:30,run_20261102_145248,DISCOVERY,Nityas Gems & Jewellery,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.789691+05:30,run_20261102_145248,DISCOVERY,Vishal Nirmiti,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.810932+05:30,run_20261102_145248,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.832127+05:30,run_20261102_145248,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.853343+05:30,run_20261102_145248,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.874806+05:30,run_20261102_145248,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.896086+05:30,run_20261102_145248,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-02T20:23:51.917779+05:30,run_20261102_145248,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
+2026-11-02T20:23:52.214574+05:30,run_20261102_145248,ACTUALS,EAAA India Alternatives,SKIPPED_NO_MATCH,Could not resolve NSE/BSE symbols for EAAA India Alternatives
+2026-11-02T20:23:53.864339+05:30,run_20261102_145248,FINISH,ALL,SUCCESS,
