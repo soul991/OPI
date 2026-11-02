@@ -199,7 +199,7 @@ def check_phases_and_defects():
     rows = parse_defects()
     if rows is None:
         return
-    openish = [r for r in rows if r["status"] in ("OPEN", "PARTIAL")]
+       openish = [r for r in rows if r["status"] in ("OPEN", "PARTIAL", "NOT FIXED")]
     add("PASS", "defect register parsed", f"{len(rows)} defects, {len(openish)} open/partial")
     bad = []
     for r in rows:
