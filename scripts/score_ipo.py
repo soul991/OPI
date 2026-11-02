@@ -123,6 +123,13 @@ def score_and_log_ipo(
         raise ValueError(f"SKIPPED_UNKNOWN_LISTING_DATE: {msg}")
 
     # 1. Deterministic Ingestion & Grounding
+    if not gmp_url:
+        try:
+            from opi.gmp import discover_gmp_url
+            gmp_url = discover_gmp_url(company, allow_network=True)
+        except Exception:
+            pass
+
     parsed = ingest_ipo_data(
         company=company,
         listing_date=listing_date,

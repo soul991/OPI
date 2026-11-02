@@ -129,6 +129,12 @@ def run_daily_forward_test(dry_run: bool = False):
             overview_url = cand.get("overview_url")
             sub_url = cand.get("sub_url")
             gmp_url = cand.get("gmp_url")
+            if not gmp_url:
+                try:
+                    from opi.gmp import discover_gmp_url
+                    gmp_url = discover_gmp_url(company, allow_network=True)
+                except Exception:
+                    pass
 
             if not overview_url or not sub_url:
                 print(f"  Insufficient evidence URLs for automated scoring of {company}. Marking SKIPPED_INSUFFICIENT_SOURCES.")

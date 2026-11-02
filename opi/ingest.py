@@ -102,13 +102,14 @@ def parse_chittorgarh_subscription(html_text: str) -> Dict[str, float]:
 
 
 def parse_investorgain_gmp(html_text: str, close_date: str) -> Tuple[Optional[float], Optional[str]]:
-    """Select table row for the last bidding day evening (e.g. 19-Oct 23:37), never top row blindly."""
+    """Select table row for the last bidding day evening (e.g. 19-Oct 23:37 or 2-Nov 17:37), never top row blindly."""
     soup = BeautifulSoup(html_text, "html.parser")
     try:
         dt = datetime.strptime(close_date, "%Y-%m-%d")
-        close_prefix = dt.strftime("%d-%b").lower()  # e.g. "19-oct"
+        month_abbr = dt.strftime("%b").lower()
+        close_prefixes = [dt.strftime("%d-%b").lower(), f"{dt.day}-{month_abbr}"]
     except Exception:
-        close_prefix = ""
+        close_prefixes = []
 
     matched_gmp: Optional[float] = None
     matched_as_of: Optional[str] = None
@@ -119,7 +120,7 @@ def parse_investorgain_gmp(html_text: str, close_date: str) -> Tuple[Optional[fl
             continue
         date_cell = cells[0].lower()
         # Look for the row matching the last bidding day
-        if close_prefix and close_prefix in date_cell:
+        if any(p in date_cell for p in close_prefixes):
             gmp_cell = cells[1]
             m = re.search(r"\(([-+]?\d*\.?\d+)\s*%\)", gmp_cell)
             if m:

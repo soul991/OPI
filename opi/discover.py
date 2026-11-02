@@ -366,6 +366,10 @@ def parse_discovery_html(
             norm_c = normalize_company_name(comp)
             if not l_date_str and norm_c in logged_lookup and logged_lookup[norm_c].get("listing_date"):
                 l_date_str = logged_lookup[norm_c]["listing_date"]
+            if not l_date_str and confirm_overview:
+                conf_l_date = confirm_listing_date_from_overview(url)
+                if conf_l_date:
+                    l_date_str = str(conf_l_date)
 
             is_closed = False
             if ref_date < open_dt:
@@ -400,15 +404,7 @@ def parse_discovery_html(
                     except Exception:
                         status = "UNKNOWN_LISTING_DATE"
                 else:
-                    conf_l_date = confirm_listing_date_from_overview(url) if confirm_overview else None
-                    if conf_l_date:
-                        l_date_str = str(conf_l_date)
-                        if ref_date >= conf_l_date:
-                            status = "LISTED"
-                        else:
-                            status = "CLOSED_UNLISTED"
-                    else:
-                        status = "UNKNOWN_LISTING_DATE"
+                    status = "UNKNOWN_LISTING_DATE"
 
             sub_url = derive_subscription_url(url)
             cand_obj = {
@@ -429,9 +425,19 @@ def parse_discovery_html(
                     candidates[idx]["sub_url"] = sub_url
                 if not candidates[idx].get("listing_date") and l_date_str:
                     candidates[idx]["listing_date"] = l_date_str
+                if candidates[idx].get("status") in ("BIDDING_OPEN", "UPCOMING", "UNKNOWN_LISTING_DATE") and status == "CLOSED_UNLISTED":
+                    candidates[idx]["status"] = status
             else:
                 seen_companies[norm_c] = len(candidates)
                 candidates.append(cand_obj)
+
+    try:
+        from opi.gmp import discover_gmp_url
+        for cand in candidates:
+            if not cand.get("gmp_url"):
+                cand["gmp_url"] = discover_gmp_url(cand["company"], allow_network=True) or ""
+    except Exception:
+        pass
 
     return candidates
 
