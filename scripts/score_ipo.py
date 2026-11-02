@@ -23,7 +23,7 @@ import pandas as pd
 import yfinance as yf
 
 from opi.discover import is_company_in_master, get_today_ist
-from opi.ingest import ingest_ipo_data, save_raw_market_data, IngestionError
+from opi.ingest import ingest_ipo_data, save_raw_market_data, IngestionError, slugify
 from opi.score import score_ipo
 from opi.log import append_prediction_log, append_run_log, get_write_timestamp
 from opi.report import render_dashboard_html
@@ -169,6 +169,64 @@ def score_and_log_ipo(
         "india_vix": vix_val,
         "recent_ipo_avg_gain": recent_avg,
     }
+
+    # 3.5 Grounded Research Agent for Missing Fields (D-082)
+    missing_fields = [k for k in ["gmp_pct", "pe_ratio", "peer_median_pe", "debt_equity", "fresh_issue_pct", "ofs_pct"] if features.get(k) is None]
+    if missing_fields:
+        try:
+            from opi.research_agent import execute_research_run
+            is_test = os.getenv("OPI_ENV") == "test"
+            has_key = bool(os.getenv("OPENROUTER_API_KEY") or os.getenv("GEMINI_API_KEY"))
+
+            if has_key or is_test:
+                print(f"  Invoking research agent for missing fields: {missing_fields}...")
+                agent_sources = {}
+                if overview_url:
+                    overview_target = ROOT_DIR / "data" / "evidence" / "research" / f"{listing_date}_{slugify(company)}.html"
+                    if overview_target.exists():
+                        agent_sources[overview_url] = overview_target.read_text(encoding="utf-8", errors="replace")
+                if sub_url:
+                    sub_target = ROOT_DIR / "data" / "evidence" / "subscription" / f"{listing_date}_{slugify(company)}.html"
+                    if sub_target.exists():
+                        agent_sources[sub_url] = sub_target.read_text(encoding="utf-8", errors="replace")
+
+                prov_name = "mock" if (is_test and not has_key) else os.getenv("OPI_LLM_PROVIDER", "openrouter")
+                schema = execute_research_run(
+                    company_name=company,
+                    provider_name=prov_name,
+                    html_fixtures=agent_sources if agent_sources else None,
+                )
+
+                metrics = schema.grounding_metrics()
+                notes_str = schema.notes or ""
+                model_used = "unknown"
+                if "model: " in notes_str:
+                    model_used = notes_str.split("model: ")[-1].rstrip(")")
+                elif prov_name == "mock":
+                    model_used = "mock"
+
+                stats_detail = (
+                    f"provider={prov_name};model={model_used};requests=1;"
+                    f"proposed={metrics['populated_fields']};grounded={metrics['verified_fields']};"
+                    f"grounding_rate={metrics['grounding_rate_pct']}"
+                )
+                if not dry_run:
+                    append_run_log(run_id, "RESEARCH_AGENT", company, "STATS", stats_detail)
+                print(f"  [Research Agent] {stats_detail}")
+
+                grounded_feats = schema.to_model_features()
+                dumped = schema.model_dump()
+                for k in missing_fields:
+                    if grounded_feats.get(k) is not None and dumped.get(k, {}).get("grounding_status") == "VERIFIED_IN_SNAPSHOT":
+                        features[k] = grounded_feats[k]
+                        print(f"  [Research Agent Grounded] {k} = {features[k]}")
+            else:
+                if not dry_run:
+                    append_run_log(run_id, "RESEARCH_AGENT", company, "SKIPPED_NO_KEY", "No API key configured")
+        except Exception as ag_err:
+            print(f"  [Research Agent Warning] Failed: {ag_err}")
+            if not dry_run:
+                append_run_log(run_id, "RESEARCH_AGENT", company, "FAILED", f"error={str(ag_err)[:100]}")
 
     # 4. Score with Champion Model
     res = score_ipo(features)
