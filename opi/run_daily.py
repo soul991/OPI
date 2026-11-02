@@ -129,6 +129,12 @@ def run_daily_forward_test(dry_run: bool = False):
             overview_url = cand.get("overview_url")
             sub_url = cand.get("sub_url")
             gmp_url = cand.get("gmp_url")
+            if not gmp_url:
+                try:
+                    from opi.gmp import discover_gmp_url
+                    gmp_url = discover_gmp_url(company, allow_network=True)
+                except Exception:
+                    pass
 
             if not overview_url or not sub_url:
                 print(f"  Insufficient evidence URLs for automated scoring of {company}. Marking SKIPPED_INSUFFICIENT_SOURCES.")
@@ -207,10 +213,12 @@ def run_daily_forward_test(dry_run: bool = False):
                     outcome_res.get("reason", "Unknown outcome result")
                 )
 
-    # 3. Regenerate dashboard
+    # 3. Regenerate dashboard and pre-listing predictions list (D-079)
     if not dry_run:
         dashboard_path = render_dashboard_html()
+        from opi.report import PRE_LISTING_MD_PATH
         print(f"\n[Step 3] Dashboard updated at: {dashboard_path}")
+        print(f"         Pre-listing predictions list updated at: {PRE_LISTING_MD_PATH}")
         append_run_log(run_id, "FINISH", "ALL", "SUCCESS")
     else:
         print("\n[Step 3] [DRY RUN] Dashboard update skipped in dry-run mode.")
@@ -230,6 +238,23 @@ def run_daily_forward_test(dry_run: bool = False):
             raise RuntimeError(f"Overdue listing outcomes missing: {msg_d}")
         else:
             print(f"  [DRY RUN] Would fail with missing outcomes error:\n{msg_d}")
+
+    # 5. Check for unlogged closing IPO coverage (D-080)
+    print("\n[Step 5] Checking for unlogged closing IPO coverage (D-080)...")
+    from scripts.watchdog import check_unlogged_closing_ipos
+    ok_e, msg_e, urgent_e = check_unlogged_closing_ipos(candidates=discovered, log_path=log_path)
+    print(f"  {msg_e}")
+    if not ok_e:
+        for item in urgent_e:
+            if not dry_run:
+                append_run_log(
+                    run_id, "ALERT", item["company"], "COVERAGE_ALERT",
+                    item["message"]
+                )
+        if not dry_run:
+            raise RuntimeError(f"Unlogged closing IPOs near listing: {msg_e}")
+        else:
+            print(f"  [DRY RUN] Would fail with coverage alert:\n{msg_e}")
 
     print(f"\n{'='*78}\n")
 

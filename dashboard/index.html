@@ -46,12 +46,15 @@
             <div class="card">
                 <div class="card-label">Logged Predictions</div>
                 <div class="card-num">12</div>
+                <div style="font-size: 13px; color: #6b7280; margin-top: 6px;">
+                    missed forward: 0
+                </div>
             </div>
             <div class="card">
                 <div class="card-label">Completed Listings</div>
                 <div class="card-num">8 of 30</div>
-                <div style="font-size: 13px; color: #6b7280; margin-top: 6px;">
-                    listed, outcome pending: 0
+                <div style="font-size: 13px; color: #d97706; margin-top: 6px;">
+                    listed, outcome pending: 1 (EAAA India Alternatives)
                 </div>
             </div>
             <div class="card">
@@ -99,10 +102,47 @@
                 </tbody></table>
             </div>
             <p class="stats" style="margin-top: 14px;">
-                Completed outcomes: <strong>8 of 30</strong> · listed, outcome pending: <strong>0</strong> · Total pending: <strong>4</strong> · 
+                Completed outcomes: <strong>8 of 30</strong> · listed, outcome pending: <strong>1</strong> (EAAA India Alternatives) · Total pending: <strong>4</strong> · 
                 Provisional Model MAE: <strong>5.99 pp</strong> · 
                 Provisional GMP MAE: <strong>6.15 pp</strong>
             </p>
+        </div>
+
+        
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 18px;">Pre-listing predictions (awaiting listing)</h2>
+            <p class="stats">Forward predictions logged post-bidding close with verified final subscriptions, awaiting market listing.</p>
+            <div style="overflow-x: auto; margin-top: 16px;">
+                <table><thead><tr>
+                    <th>Company</th>
+                    <th>Bidding Dates</th>
+                    <th>Listing Date</th>
+                    <th>Days to Listing</th>
+                    <th>Model Estimate</th>
+                    <th>Probability (&gt;10%)</th>
+                    <th>80% Interval</th>
+                    <th>GMP at Scoring</th>
+                    <th>Confidence</th>
+                    <th>Scored At (IST)</th>
+                    <th>Notes</th>
+                </tr></thead><tbody>
+                    <tr><td style='padding:8px;font-weight:600;'>M.K.Sons Fine Jewels</td><td style='padding:8px;'>2026-10-30 to 2026-10-30</td><td style='padding:8px;'>2026-11-04</td><td style='padding:8px;text-align:center;'>2</td><td style='padding:8px;font-weight:600;color:#2563eb;'>+4.37%</td><td style='padding:8px;'>40.8%</td><td style='padding:8px;font-size:12px;color:#4b5563;'>[-18.76%, +27.50%]</td><td style='padding:8px;color:#6b7280;'>NO_GMP</td><td style='padding:8px;'><span style='background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>STANDARD</span></td><td style='padding:8px;font-size:12px;'>2026-11-01T22:31:30</td><td style='padding:8px;font-size:12px;color:#4b5563;'>model-only regime</td></tr><tr><td style='padding:8px;font-weight:600;'>BLS Polymers</td><td style='padding:8px;'>2026-10-29 to 2026-10-29</td><td style='padding:8px;'>2026-11-03</td><td style='padding:8px;text-align:center;'>1</td><td style='padding:8px;font-weight:600;color:#2563eb;'>+53.28%</td><td style='padding:8px;'>not shown: outside measured range</td><td style='padding:8px;font-size:12px;color:#4b5563;'>[+30.15%, +76.41%]</td><td style='padding:8px;color:#6b7280;'>NO_GMP</td><td style='padding:8px;'><span style='background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>STANDARD</span></td><td style='padding:8px;font-size:12px;'>2026-11-01T22:31:31</td><td style='padding:8px;font-size:12px;color:#4b5563;'>model-only regime</td></tr><tr><td style='padding:8px;font-weight:600;'>SFC Environmental Technologies</td><td style='padding:8px;'>2026-10-29 to 2026-10-29</td><td style='padding:8px;'>2026-11-03</td><td style='padding:8px;text-align:center;'>1</td><td style='padding:8px;font-weight:600;color:#2563eb;'>+5.49%</td><td style='padding:8px;'>37.6%</td><td style='padding:8px;font-size:12px;color:#4b5563;'>[-17.64%, +28.62%]</td><td style='padding:8px;color:#6b7280;'>NO_GMP</td><td style='padding:8px;'><span style='background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>STANDARD</span></td><td style='padding:8px;font-size:12px;'>2026-11-01T22:31:32</td><td style='padding:8px;font-size:12px;color:#4b5563;'>model-only regime</td></tr><tr><td style='padding:8px;font-weight:600;'>EAAA India Alternatives</td><td style='padding:8px;'>2026-10-28 to 2026-10-28</td><td style='padding:8px;'>2026-11-02</td><td style='padding:8px;text-align:center;'>0</td><td style='padding:8px;font-weight:600;color:#2563eb;'>+5.35%</td><td style='padding:8px;'>36.4%</td><td style='padding:8px;font-size:12px;color:#4b5563;'>[-17.78%, +28.48%]</td><td style='padding:8px;color:#6b7280;'>NO_GMP</td><td style='padding:8px;'><span style='background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>STANDARD</span></td><td style='padding:8px;font-size:12px;'>2026-11-01T22:31:33</td><td style='padding:8px;font-size:12px;color:#4b5563;'>model-only regime</td></tr>
+                </tbody></table>
+            </div>
+
+            <h3 style="margin-top: 24px; font-size: 15px; color: #374151;">Bidding open, scored after close</h3>
+            <p class="stats">Discovered active Mainboard IPOs. Predictions are computed strictly after bidding concludes with final subscription figures.</p>
+            <div style="overflow-x: auto; margin-top: 12px;">
+                <table><thead><tr>
+                    <th>Company</th>
+                    <th>Bidding Window</th>
+                    <th>Expected Listing</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr></thead><tbody>
+                    <tr><td colspan="5" style="padding:16px;text-align:center;color:#6b7280">No IPOs currently in bidding open status.</td></tr>
+                </tbody></table>
+            </div>
         </div>
 
         <div class="section">
@@ -355,8 +395,8 @@
         <div class="section">
             <h2 style="margin-top: 0; font-size: 18px;">Repository & Defect Health</h2>
             <p style="font-size: 14px; color: #374151;">
-                Total Tracked Defects: <strong>78</strong> | 
-                Fixed: <strong>69</strong> | 
+                Total Tracked Defects: <strong>84</strong> | 
+                Fixed: <strong>75</strong> | 
                 Accepted: <strong>6</strong> | 
                 Deferred: <strong>0</strong> | 
                 Open/Partial/Not Fixed: <strong>3</strong>
@@ -364,7 +404,7 @@
         </div>
 
         <div class="footer">
-            Generated automatically by <code>opi.report</code> at 2026-11-01T18:44:12.846471 IST · Last cloud run: <strong>2026-11-01T18:43:13Z</strong>.<br>
+            Generated automatically by <code>opi.report</code> at 2026-11-02T18:48:18.857907 IST · Last cloud run: <strong>2026-11-01T18:43:13Z</strong>.<br>
             Strictly append-only audit provenance. Relative repository links only.
         </div>
     </div>

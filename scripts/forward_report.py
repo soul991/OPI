@@ -27,7 +27,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from opi.report import parse_defects_summary
+from opi.report import parse_defects_summary, render_pre_listing_markdown
 
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 
@@ -70,7 +70,16 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
     print(f"Excluded INVALID Rows      : {invalid_count} (status starting with INVALID*)")
     if other_count > 0:
         print(f"Excluded Other Rows        : {other_count} (status unverified/unknown)")
+    missed_path = ROOT_DIR / "predictions" / "missed_forward.csv"
+    missed_count = 0
+    if missed_path.exists():
+        try:
+            m_df = pd.read_csv(missed_path)
+            missed_count = len(m_df)
+        except Exception:
+            pass
     print(f"Genuine FORWARD Rows       : {n_forward} (status == 'FORWARD')")
+    print(f"Missed FORWARD Rows        : {missed_count} (recorded in predictions/missed_forward.csv)")
     defects = parse_defects_summary()
     print(f"Tracked Defects Health     : {defects['TOTAL']} total ({defects['FIXED']} fixed, {defects['ACCEPTED']} accepted, {defects['DEFERRED']} deferred, {defects['OPEN'] + defects['PARTIAL']} open/partial)")
     print("-" * 86)
@@ -272,8 +281,11 @@ def main():
     parser = argparse.ArgumentParser(description="Report forward prediction performance for OPI.")
     parser.add_argument("--log", type=str, default=str(LOG_PATH), help="Path to prediction log CSV")
     parser.add_argument("--markdown", action="store_true", help="Print the results table in Markdown format")
+    parser.add_argument("--pre-listing", action="store_true", help="Print pre-listing predictions table in Markdown format")
     args = parser.parse_args()
-    if args.markdown:
+    if args.pre_listing:
+        print(render_pre_listing_markdown(log_path=Path(args.log)))
+    elif args.markdown:
         print(generate_markdown_results_table(args.log))
     else:
         generate_forward_report(args.log)
