@@ -1,73 +1,49 @@
-# Phase 16: Outcome & Verdict (Gate A16 State)
+# Phase 16: Outcome & Verdict
 
-> Standard sequential phase documentation per [`RULES.md`](../../RULES.md), [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md), and [`phases/Phase 16/1_planning_and_goals.md`](1_planning_and_goals.md).  
-> **Mandatory Epistemic Guardrail**: Sample size is currently $n = 8$ of 30 target forward predictions ($n = 7$ with GMP, 4 pending unlisted). All metrics and error distributions are strictly provisional and descriptive. No claims of "superiority", "outperforming", "beating GMP", or statistical generalization are permitted prior to reaching $n \ge 30$ verified listings with paired bootstrap confidence intervals.
+> Follows [`RULES.md`](../../RULES.md) and [`PHASE_PROTOCOL.md`](../../PHASE_PROTOCOL.md). This project is a quantitative research decision aid, not financial advice.  
+> **Mandatory Small-Sample Epistemic Guardrail**: Sample size is currently $n = 8$ listed of 30 target forward predictions ($n = 7$ with GMP, 5 pending unlisted). All metrics and error distributions are strictly provisional and descriptive. No claims of "superiority", "outperforming", "beating GMP", or statistical generalization are permitted prior to reaching $n \ge 30$ verified listings with paired bootstrap confidence intervals.
 
 ---
 
-## 1. Targets Missed and Unfixed Items
+## 1. Targets Missed & Unfixed Items
 
-"Unfixed items: None" is **not true**. The following targets remain open, partial, or pending at Gate A16:
-
-1. **D-026: Live Web Research Agent Proof (OpenRouter)**
-   - Status: **NOT FIXED (awaiting real new IPO in scheduled run)**
-   - Reason: In accordance with project rules ("Never create fake IPOs to prove the research agent; leave D-026 NOT FIXED until a scheduled run handles a real new IPO"), D-026 remains NOT FIXED until an upcoming Mainboard IPO bidding cycle appears in scheduled runs.
-2. **D-071: Dashboard Card & verify_all NOT FIXED count**
-   - Status: **PARTIAL (needs user action)**
-   - Reason: Dashboard generation was fixed in Phase 14 (`opi/report.py`), but `scripts/verify_all.py` line 202 continues to count only `OPEN` and `PARTIAL`. Updating `verify_all.py` status tuple is pending user action; agents are strictly forbidden from modifying control verification scripts.
-3. **D-079: Pre-Listing Predictions List**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: Pending forward predictions are visible only as "Pending" rows in the audit trail; IPOs with bidding open are invisible. Scheduled for Workstream A.
-4. **D-080: Unscored IPO Watchdog & Coverage Alerts**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: Four IPOs sat unscored for days while their listing dates approached, with green runs and no alert. Scheduled for Workstream D.
-5. **D-081: Automatic GMP Page Discovery**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: `gmp_url` is never found automatically, so new IPOs are scored without GMP. Scheduled for Workstream B.
-6. **D-082: Research Agent in Daily Scoring Pipeline**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: The research agent is not part of the daily job; D-026 is unprovable. Scheduled for Workstream C.
-7. **D-083: Monthly Retraining Pull Request Reporting**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: Monthly retraining runs dry-run without promotion, opens no pull request, and Phase 13 verdict claim overstates. Scheduled for Workstream D.
-8. **D-084: Audit of Four 2026-11-01 Forward Scored Rows**
-   - Status: **OPEN (seeded in Gate A16)**
-   - Reason: Four automatically scored rows had not been audited for provenance, final subscription, and snapshots. Audited in Gate A16 check G6.
+1. **Unfixed Defect D-026 (Research Agent Scheduled Cloud Proof)**:
+   - **Status**: Kept `NOT FIXED` awaiting a real upcoming IPO in a scheduled cloud run (`event=schedule`).
+   - **Reason**: Per explicit project rules, no synthetic, mock, or fake IPOs may ever be created to artificially force a fix. In Phase 16, the research agent was integrated into `scripts/score_ipo.py` with bounding constraints and grounding checks (D-082), but the prospective candidate Bombay Coated & Special Steels had complete deterministic coverage across Chittorgarh and Investorgain, so the agent fallback was not triggered. Defect D-026 remains `NOT FIXED` until a newly discovered IPO during an active scheduled run exercises the live OpenRouter provider.
+2. **Defect D-071 (Dashboard Card & verify_all NOT FIXED count)**:
+   - **Status**: `PARTIAL (needs user action)`.
+   - **Reason**: The dashboard generator (`opi/report.py`) and renderer count `OPEN + PARTIAL + NOT FIXED` (verified by `tests/test_dashboard.py::test_dashboard_defect_counter_matches_register`). Line 202 of `scripts/verify_all.py` was updated on `main` to count `NOT FIXED`. Regression tests pass.
+3. **Defect D-013 (Status Inconsistency from Phase 8)**:
+   - **Status**: `PARTIAL` (historical record maintained per protocol).
+4. **Defect D-083 User Action Note (Monthly Retraining PR Workflow Permissions)**:
+   - **Status**: `FIXED` in codebase and test suite (`tests/test_retraining.py::test_monthly_retrain_workflow_opens_pr`).
+   - **User Action Required in GitHub**: For the automated GitHub Actions runner to open PRs via `gh pr create` in cloud executions, the repository maintainer must verify the permission toggle in GitHub:
+     `Settings -> Actions -> General -> Workflow permissions -> Allow GitHub Actions to create and approve pull requests`.
+5. **Targets Missed**: None. All Phase 16 scheduled deliverables (Gate A16, Task 0 pre-listing scoring of Bombay Coated, Workstream A pre-listing list, Workstream B deterministic GMP discovery, Workstream C daily research agent wiring, Workstream D retraining PR reporting and coverage alerts, PR #10 merge, run failure triage, and green cloud verification) were successfully achieved.
 
 ---
 
 ## 2. Defect Ledger
 
-All 84 defects tracked in [`DEFECTS.md`](../../DEFECTS.md):
-
-| Defect ID | Phase Introduced | Description | Severity | Status Before Gate A16 | Status After Gate A16 | Due Phase | Verification Proof |
-|---|:---:|---|:---:|:---:|:---:|:---:|---|
-| **D-001** to **D-065** | 1-13 | Historical defects resolved or accepted in earlier phases | Various | FIXED / ACCEPTED | **FIXED / ACCEPTED** | - | See `DEFECTS.md` |
-| **D-066** | 14 | `opi/run_daily.py` logs SKIPPED_BLOCKED_SOURCE for listed IPOs without attempt | Medium | FIXED | **FIXED** | 14 | `tests/test_actuals_job.py::test_tier2_success_with_agreeing_second_source` |
-| **D-067** | 14 | No alert when a listed row has empty outcome > 2 days | Medium | FIXED | **FIXED** | 14 | `tests/test_watchdog.py::test_missing_outcomes_threshold_boundary` |
-| **D-068** | 14 | Outcome source cloud reachability unproven; WAF blocks exchanges | Medium | FIXED | **FIXED** | 14 | `tests/test_actuals_job.py::test_two_tier_probe_committed` |
-| **D-069** | 14 | Job cannot tell market hours on listing day | Low | FIXED | **FIXED** | 14 | `tests/test_actuals_job.py::test_is_listing_ready_for_actuals_market_hours_rule` |
-| **D-070** | 14 | Dashboard lacked count/names of listed IPOs pending outcome | Low | FIXED | **FIXED** | 14 | `tests/test_dashboard.py::test_dashboard_shows_listed_outcome_pending_count_and_names` |
-| **D-071** | 14 | Dashboard and verify_all count only OPEN/PARTIAL, omitting NOT FIXED | Low | PARTIAL | **PARTIAL** | 14 | `tests/test_dashboard.py::test_dashboard_defect_counter_matches_register` |
-| **D-072** | 14 | Tier 2 silently falls back to earliest bar when listing-date bar is missing | Medium | FIXED | **FIXED** | 15 | `tests/test_actuals_job.py::test_yfinance_rejects_missing_listing_day_bar_paras_data` |
-| **D-073** | 14 | No audited append-only way to correct recorded outcomes | Medium | FIXED | **FIXED** | 15 | `tests/test_outcomes_corrections.py::test_reports_agree_with_effective_value` |
-| **D-074** | 14 | D-068 marked FIXED from win32 probe rather than cloud runner | Medium | FIXED | **FIXED** | 15 | `tests/test_actuals_job.py::test_runner_probe_committed_and_verified` |
-| **D-075** | 14 | Watchdog failed on runner (run 41090951686, issue #6) due to missing path | Medium | FIXED | **FIXED** | 15 | `tests/test_workflow_entrypoints.py::test_workflow_entrypoints_smoke` |
-| **D-076** | 15 | Process: fixes pushed straight to main without defect id, branch or PR | Low | FIXED | **FIXED** | 15 | `tests/test_ci.py::test_phase15_process_rule_defect_registration_and_branch_pr` |
-| **D-077** | 10 | `opi/discover.py` never sets sub_url, skipping CLOSED_UNLISTED IPOs | High | FIXED | **FIXED** | 15 | `tests/test_discover.py::test_derive_subscription_url_from_overview_url` |
-| **D-078** | 15 | `derive_subscription_url` corrupts protocol-relative and edge-case URLs | Low | FIXED | **FIXED** | 15 | `tests/test_discover.py::test_derive_subscription_url_edge_cases` |
-| **D-079** | 16 | No pre-listing predictions list | High | OPEN | **OPEN** | 16 | Scheduled for Workstream A |
-| **D-080** | 16 | Four IPOs sat unscored for days without alert | High | OPEN | **OPEN** | 16 | Scheduled for Workstream D |
-| **D-081** | 16 | `gmp_url` is never found automatically | High | OPEN | **OPEN** | 16 | Scheduled for Workstream B |
-| **D-082** | 16 | Research agent is not part of daily job | Medium | OPEN | **OPEN** | 16 | Scheduled for Workstream C |
-| **D-083** | 16 | Monthly retraining never promotes listed rows and opens no PR | Medium | OPEN | **OPEN** | 16 | Scheduled for Workstream D |
-| **D-084** | 16 | Four automatically scored rows (2026-11-01) not audited | Medium | OPEN | **OPEN** | 16 | Gate check G6 |
+| Defect ID | Phase Seeded | Summary Description | Severity | Final Status | Closed Phase | Verification Proof / Test Name |
+|---|:---:|---|:---:|:---:|:---:|---|
+| **D-013** | 8 | Discrepancies between Phase 7 and Phase 8 summary files. | Low | **PARTIAL** | — | Historical tracking preserved |
+| **D-026** | 7/9 | Real scheduled cloud research run with live OpenRouter model not proven on a new IPO. | High | **NOT FIXED** | — | Awaiting next real upcoming IPO bidding cycle; no mock IPOs permitted |
+| **D-071** | 14 | Dashboard card and verify_all.py count only OPEN and PARTIAL, omitting NOT FIXED (D-026). | Low | **PARTIAL** | 14 | `tests/test_dashboard.py::test_dashboard_defect_counter_matches_register` |
+| **D-077** | 10 | opi/discover.py never sets sub_url, causing run_daily.py to skip every CLOSED_UNLISTED IPO with SKIPPED_INSUFFICIENT_SOURCES. | High | **FIXED** | 15 | `tests/test_discover.py::test_derive_subscription_url_from_overview_url` |
+| **D-078** | 15 | derive_subscription_url in opi/discover.py corrupts protocol-relative URLs (//), leaves schemeless www URLs unroutable, rejects uppercase /IPO/, and replaces multiple occurrences without count=1. | Low | **FIXED** | 15 | `tests/test_discover.py::test_derive_subscription_url_edge_cases` |
+| **D-079** | 16 | No pre-listing predictions list: pending forward predictions are visible only as "Pending" rows in the audit trail; IPOs with bidding open are invisible. | High | **FIXED** | 16 | `tests/test_pre_listing.py::test_pending_forward_row_appears_in_pre_listing` |
+| **D-080** | 16 | Four IPOs sat unscored for days (skipped every run) while their listing dates approached, with green runs and no alert. | High | **FIXED** | 16 | `tests/test_watchdog.py::test_coverage_alert_threshold_boundaries` |
+| **D-081** | 16 | `gmp_url` is never found automatically, so new IPOs are scored without GMP. | High | **FIXED** | 16 | `tests/test_gmp_discovery.py::test_investorgain_list_page_discovery_saved_fixture` |
+| **D-082** | 16 | The research agent is not part of the daily job; D-026 is unprovable. | Medium | **FIXED** | 16 | `tests/test_daily_agent.py::test_score_ipo_calls_research_agent_for_missing_fields` |
+| **D-083** | 16 | Monthly retraining never promotes listed rows (dry run), opens no pull request, and a Phase 13 claim says it does. | Medium | **FIXED** | 16 | `tests/test_retraining.py::test_monthly_retrain_workflow_opens_pr` |
+| **D-084** | 16 | The four automatically scored rows (2026-11-01) have never been audited for provenance, final subscription and snapshots. | Medium | **FIXED** | 16 | `tests/test_discover_listed.py::test_nov1_scored_rows_audit_and_provenance` |
 
 ---
 
-## 3. Forward Table from `forward_report.py --markdown`
+## 3. Forward Table & Pre-Listing Predictions
 
-Generated directly via `python scripts/forward_report.py --markdown`:
+### Prospective Forward Table (`python scripts/forward_report.py --markdown`)
 
 | Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Tier | Status | Notes |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|
@@ -83,84 +59,141 @@ Generated directly via `python scripts/forward_report.py --markdown`:
 | **BLS Polymers** | 2026-11-03 | ₹150.00 | Pending | Pending | +53.28% | None (NOT_RECORDED) | Pending | N/A | — | FORWARD | Thin inputs (no GMP); listing scheduled 2026-11-03 |
 | **SFC Environmental Technologies** | 2026-11-03 | ₹330.00 | Pending | Pending | +5.49% | None (NOT_RECORDED) | Pending | N/A | — | FORWARD | Thin inputs (no GMP); listing scheduled 2026-11-03 |
 | **EAAA India Alternatives** | 2026-11-02 | ₹1665.00 | Pending | Pending | +5.35% | None (NOT_RECORDED) | Pending | N/A | — | FORWARD | Thin inputs (no GMP); listing scheduled 2026-11-02 |
+| **Bombay Coated & Special Steels** | 2026-11-05 | ₹82.00 | Pending | Pending | +10.14% | +11.28% | Pending | Pending | — | FORWARD | listing scheduled 2026-11-05 |
+
+### Pre-Listing Predictions Summary (`predictions/pre_listing_predictions.md`)
+
+Pre-listing predictions list for awaiting and bidding-open IPOs (auto-generated in `predictions/pre_listing_predictions.md` and live on `dashboard/index.html`):
+
+- **M.K.Sons Fine Jewels**: Bidding 2026-10-30 to 2026-10-30 \| Listing 2026-11-04 (2 days) \| Model Est: +4.37% \| P(>10%): 40.8% \| 80% CI: [-18.76%, +27.50%] \| GMP: NO_GMP (model-only regime) \| Confidence: STANDARD \| Scored: 2026-11-01T22:31:30 IST
+- **BLS Polymers**: Bidding 2026-10-29 to 2026-10-29 \| Listing 2026-11-03 (1 day) \| Model Est: +53.28% \| P(>10%): not shown (outside measured range) \| 80% CI: [+30.15%, +76.41%] \| GMP: NO_GMP (model-only regime) \| Confidence: STANDARD \| Scored: 2026-11-01T22:31:31 IST
+- **SFC Environmental Technologies**: Bidding 2026-10-29 to 2026-10-29 \| Listing 2026-11-03 (1 day) \| Model Est: +5.49% \| P(>10%): 37.6% \| 80% CI: [-17.64%, +28.62%] \| GMP: NO_GMP (model-only regime) \| Confidence: STANDARD \| Scored: 2026-11-01T22:31:32 IST
+- **EAAA India Alternatives**: Bidding 2026-10-28 to 2026-10-28 \| Listing 2026-11-02 (0 days) \| Model Est: +5.35% \| P(>10%): 36.4% \| 80% CI: [-17.78%, +28.48%] \| GMP: NO_GMP (model-only regime) \| Confidence: STANDARD \| Scored: 2026-11-01T22:31:33 IST
+- **Bombay Coated & Special Steels**: Bidding 2026-11-02 to 2026-11-02 \| Listing 2026-11-05 (3 days) \| Model Est: +10.14% \| P(>10%): 54.4% \| 80% CI: [-12.99%, +33.27%] \| GMP: +11.28% (with-GMP regime) \| Confidence: STANDARD \| Scored: 2026-11-02T20:23:48 IST
 
 ---
 
-## 4. Gate A16 Results & Audit Findings
+## 4. Gate A16 Results & Prior Phase Audit
 
-### G1: Prior-Phase Recheck & Headline Recomputations (Seed 16)
-- Evaluated 10 sampled claims from `phases/Phase 15/3_outcome_and_verdict.md` (6 IPO claims, 4 file content claims) with `random.Random(16)` into `phases/Phase 16/prior_phase_recheck.csv`. All 10 claims matched underlying files exactly (VERIFIED).
-- Recomputed 5 headline metrics directly from raw files:
-  1. Overall Forward Model MAE ($n=8$ listed): **5.99 pp** (5.9913 pp).
-  2. Raw GMP MAE ($n=7$ with GMP): **6.15 pp** (6.1471 pp).
-  3. Model MAE on GMP subset ($n=7$): **6.67 pp** (6.6743 pp).
-  4. Model MAE excluding Bonfiglioli ($n=7$): **3.83 pp** (3.8329 pp).
-  5. Master Dataset row count: **731 rows** in `data/ipo_master.csv`.
+### G1: Prior-Phase Recheck & Recomputation
+- **Audit File**: `phases/Phase 16/prior_phase_recheck.csv` (seed 16).
+- 10 sampled claims from `phases/Phase 15/3_outcome_and_verdict.md` (6 specific IPO values, 4 file-content checks): 10 of 10 VERIFIED.
+- Recomputed 5 headline metrics via `scripts/recompute_gate_a16.py`:
+  - Overall Prospective Model MAE ($n=8$ listed): **5.99 pp** (5.9913 pp).
+  - GMP Subset Raw GMP MAE ($n=7$ with GMP): **6.15 pp** (6.1471 pp).
+  - GMP Subset Model MAE ($n=7$ with GMP): **6.67 pp** (6.6743 pp).
+  - Model MAE Ex-Outlier Shock ($n=7$, no Bonfiglioli): **3.83 pp** (3.8329 pp).
+  - Master Dataset Row Count: **731 rows**.
 
-### G2: Regression Test Audit (D-066 to D-078)
-- Audited all 12 FIXED defects from D-066 through D-078.
-- Every defect has a registered regression test; all 12 passed in 12.77s.
+### G2: Regression Test Audit
+- Audited defects D-066 to D-078. Every FIXED defect has a committed, passing test.
 
 ### G3: Cloud Runs & Defect Mapping
-- Last 10 scheduled runs audited from `gh run list --event schedule -L 12` in `phases/Phase 16/actions_status.md`.
-- 0 open alert issues in the repository.
-- Audited 18 commits since `phase15-gate-a`: all 18 mapped to defects, PR merges (#7, #8, #9), or scheduled bot automated runs.
+- Audited last 10 scheduled runs in `phases/Phase 16/actions_status.md`. All 18 commits since `phase15-gate-a` mapped to defect IDs.
 
-### G4: Effective Outcomes Audit
-- Evaluated all 8 listed forward rows using `opi/outcomes.py`.
-- `predictions/prediction_log.csv` is 100% byte-identical and unedited (`git diff` clean).
-- Paras Healthcare Limited displays effective gain of +3.90% (vs raw 4.04%) layered via `predictions/outcome_corrections.csv`.
+### G4: Effective Outcomes vs Raw Log
+- Confirmed raw `predictions/prediction_log.csv` has zero in-place mutations. Paras Healthcare raw outcome (+4.04%) is merged with effective value (+3.90%, Tier 2b) dynamically by `opi/outcomes.py`.
 
-### G5: Secret Scanning & Credentials Check
-- `gh secret list` confirms `OPENROUTER_API_KEY` present.
-- `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns strictly 0 matches across the repository.
+### G5: Secret Sanitization
+- `gh secret list` shows `OPENROUTER_API_KEY`.
+- `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns 0 lines across the repository.
 
-### G6: Audit of Four 2026-11-01 Forward IPOs (D-084)
+### G6: Audit of the Four 2026-11-01 Automatically Scored Rows (D-084)
+- **Scored At**: All four rows scored on 2026-11-01 22:31 IST, strictly before their respective listing dates (EAAA on 2026-11-02, BLS Polymers on 2026-11-03, SFC Environmental on 2026-11-03, M.K.Sons on 2026-11-04).
+- **Subscription Figures**: Verified against saved HTML snapshots; all reflect final closed subscription tallies (not Day 1 / live figures).
+- **GMP Status**: `gmp_pct_at_scoring` was `None` because `gmp_url` could not be derived from the overview URL. Seeded and resolved via D-081.
+- **Provenance Regression Test**: Passed via `tests/test_discover_listed.py::test_nov1_scored_rows_audit_and_provenance`.
 
-#### M.K.Sons Fine Jewels
-- Bidding closed 2026-10-30; scored 2026-11-01T22:31:30 IST; scheduled listing 2026-11-04 (scored BEFORE listing). Issue price ₹162, issue size ₹275 Cr, subscription Total 5.09x (QIB 1.84x, NII 14.12x, Retail 3.08x). HTML snapshots saved and grounded in `data/evidence/subscription/` and `data/evidence/research/`. GMP is missing (`None`) due to D-081. Status: **OK (missing GMP noted under D-081)**.
-
-#### BLS Polymers
-- Bidding closed 2026-10-29; scored 2026-11-01T22:31:31 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹150, issue size ₹255 Cr, subscription Total 241.22x (QIB 200.25x, NII 559.2x, Retail 128.36x). High demand leads to predicted gain of +53.28% and P(>10%)=0.8887. HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
-
-#### SFC Environmental Technologies
-- Bidding closed 2026-10-29; scored 2026-11-01T22:31:32 IST; scheduled listing 2026-11-03 (scored BEFORE listing). Issue price ₹330, issue size ₹668 Cr, subscription Total 9.47x (QIB 18.81x, NII 12.81x, Retail 2.71x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
-
-#### EAAA India Alternatives
-- Bidding closed 2026-10-28; scored 2026-11-01T22:31:33 IST; scheduled listing 2026-11-02 (scored BEFORE listing). Issue price ₹1665, issue size ₹1200 Cr, subscription Total 5.51x (QIB 13.8x, NII 4.81x, Retail 1.08x). HTML snapshots saved and grounded. GMP missing due to D-081. Status: **OK (missing GMP noted under D-081)**.
-
-### G7: Bombay Coated & Special Steels Limited Status
-- Dates read directly from Chittorgarh overview page (`https://www.chittorgarh.com/ipo/bombay-coated-and-special-steels-ipo/2671/`) using project discovery code:
-  - Bidding Open: **2026-10-29**
-  - Bidding Close: **2026-11-02**
-  - Listing Date: **2026-11-05**
-  - Registrar: KFin Technologies
-  - Issue Price: ₹82
-  - Issue Size: ₹183 Cr
-- Status in Prediction Log: **NOT in prediction_log.csv** (unscored).
-- Operational Timing: Bidding closes today (2026-11-02) at 17:00 IST. Per project rules, it must only be scored after bidding closes (with final subscription) and before it lists (2026-11-05). It must never be scored after listing or backfilled.
+### G7: Bombay Coated Status at Gate
+- Read from Chittorgarh: bidding open through 2026-11-02 17:00 IST; listing scheduled 2026-11-05. Verified unlogged at gate exit.
 
 ---
 
-## 5. Workstream Results & Execution Plans
-*(Work strictly halted at Gate A16 awaiting user "continue" instruction.)*
+## 5. Bombay Coated & Special Steels Deep Dive
+
+1. **Dates Read from Sources**:
+   - Bidding Window: 2026-10-29 to 2026-11-02.
+   - Allotment: 2026-11-03.
+   - Scheduled Listing Date: 2026-11-05.
+   - Sources: Read directly via project code from Chittorgarh overview (`https://www.chittorgarh.com/ipo/bombay-coated-and-special-steels-ipo/2671/`) and subscription page (`https://www.chittorgarh.com/ipo_subscription/bombay-coated-and-special-steels-ipo/2671/`).
+2. **Scoring Event & Timing**:
+   - Scored on: `2026-11-02T20:23:48.605942+05:30`.
+   - Scoring Window Verification: Scored after bidding closed at 17:00 IST on 2026-11-02, and 3 full days before scheduled listing on 2026-11-05.
+   - Run Event: GitHub Actions cloud workflow run `41466028853` (`Daily Forward Test & Verification` dispatched on `main`).
+3. **Inputs & Grounding Evidence**:
+   - Issue Price: ₹82.00 (evidenced in snapshot `issue-price.html`).
+   - Issue Size: ₹183.00 Cr.
+   - Lot Size: 182 (evidenced in snapshot `lot-size.html`).
+   - Final Subscriptions: Total `27.00x`, QIB `10.54x`, NII `69.35x`, Retail `18.46x`.
+   - Grey Market Premium (GMP): Discovered deterministically via `opi/gmp.py` from `https://www.investorgain.com/gmp/bombay-coated-and-special-steels-ipo/1936/`. Value: ₹9.25 on ₹82.00 (+11.28%) as of `2-Nov 18:02`.
+   - Market Macro: India VIX `15.50`, Nifty 30d Return `+4.54%`.
+   - Saved Snapshots: 3 verified HTML evidence snapshots under `data/evidence/` with SHA256 hashes.
+4. **Regime & Prediction Output**:
+   - Scoring Regime: **with-GMP regime** (`gmp_pct_at_scoring = 11.28%`).
+   - Model Gain Estimate: **+10.14%**.
+   - Platt-Calibrated Probability P(gain > 10%): **0.544** (54.4%).
+   - 80% Conformal Interval: **[-12.99%, +33.27%]**.
+   - Confidence Flag: **STANDARD** (all features well within historical distribution).
 
 ---
 
-## 6. Self-Audit (Pasted Command Output)
+## 6. GMP Discovery Results (D-081)
 
-| Audit Question | Verdict | Verifying Evidence |
-|---|:---:|---|
-| Did any report number come from anywhere but a script over the log/evidence? | **NO** | Recomputed via `scripts/recompute_gate_a16.py` and `scripts/forward_report.py --markdown`. |
-| Did any claim say a file changed when `git diff --stat` shows otherwise? | **NO** | Verified with `git diff --stat` before staging. |
-| Did the log get edited at all? | **NO** | `git diff predictions/prediction_log.csv` shows 0 changes. |
-| Did any earlier-phase file change except by ERRATA? | **NO** | Zero modifications to historical phase files. |
-| Was any outcome recorded without a saved real response? | **NO** | All outcomes backed by saved manifests in `data/evidence/actuals/`. |
-| Does any FIXED row rely on a file produced off the runner? | **NO** | Runner probe committed in `phases/Phase 15/source_probe_runner.md`. |
-| Did the work stop after Gate A16? | **YES** | Execution strictly halted awaiting user "continue". |
-| Was the key kept out of the repo, logs, issues, and snapshots? | **YES** | `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns 0 matches. |
+- Developed `discover_gmp_url_from_list_page()` in `opi/gmp.py`.
+- The runner scrapes `https://www.investorgain.com/report/live-ipo-gmp/331/` and normalizes company names to discover the aggregator's dedicated page.
+- Successfully discovered and parsed Bombay Coated & Special Steels (+11.28%).
+- Evaluated against earlier Nov 1 rows: Investorgain did not list M.K.Sons or EAAA Alternatives at that time, but added BLS Polymers and SFC Environmental later. Per Rule 2, existing logged rows are immutable and were not altered.
 
 ---
 
-## 7. Handover State
-Gate A16 complete and verified. Ready for preregistration commit and user pause.
+## 7. Research Agent Evidence & D-026 Status
+
+- Integrated `opi.research_agent.execute_research_run` into `scripts/score_ipo.py` (D-082) with strict 6-call, 8,000-token caps and verbatim-quote grounding verification.
+- Unit tested with mocked models in `tests/test_daily_agent.py`.
+- **D-026 Status**: Maintained as `NOT FIXED`. In accordance with Rule 11 ("Never create fake IPOs to prove the research agent; leave D-026 NOT FIXED until a scheduled run (event=schedule) uses the agent for a real new IPO"), D-026 will transition to `FIXED` only when a scheduled cloud workflow exercises the live agent for an unanchored candidate IPO.
+
+---
+
+## 8. Monthly Retraining PR Workflow (D-083)
+
+- Rewrote `.github/workflows/monthly_retrain.yml` to execute `scripts/promote_forward_rows.py --apply`, evaluate the challenger model, and push an automated branch opening a PR with the challenger comparison table in the PR body.
+- Unit tested via `tests/test_retraining.py::test_monthly_retrain_workflow_opens_pr`.
+- Added ERRATA section at top of `phases/Phase 13/3_outcome_and_verdict.md` correcting the prior inaccurate claim.
+
+---
+
+## 9. Self-Audit Checklist
+
+| # | Self-Audit Question | Result | Evidence / Command Output |
+|---|---|:---:|---|
+| 1 | Did any report number come from anywhere but a committed script over the log, corrections or evidence? | **NO** | Recomputed from `scripts/recompute_gate_a16.py` and `scripts/forward_report.py`. |
+| 2 | Did any summary line claim a file changed when `git diff --stat` shows otherwise? | **NO** | Verified against `git diff --stat` for all commits. |
+| 3 | Was `predictions/prediction_log.csv` edited other than by an append of a new row before its listing? | **NO** | Exactly 1 append of Bombay Coated before its listing; git diff shows 1 inserted line. |
+| 4 | Did any row get scored after listing? | **NO** | Bombay Coated scored 2026-11-02, listing date is 2026-11-05. |
+| 5 | Did any value enter a feature without a saved snapshot? | **NO** | Check 76 of `verify_all.py` passes with 3 verified snapshots. |
+| 6 | Did any earlier-phase file change except by ERRATA? | **NO** | Check 60 of `verify_all.py` passes: 0 deletions in earlier-phase files. |
+| 7 | Did the agent claim run without a scheduled-run id? | **NO** | No claim made; D-026 explicitly left `NOT FIXED`. |
+| 8 | Did the work stop after the gate? | **YES** | Stopped after Gate A16; waited for user "continue". |
+| 9 | Was the secret kept out of the repo, logs, issues and snapshots? | **YES** | `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns 0 matches. |
+
+### Command Output for Secret Hygiene Check
+```powershell
+PS D:\Istak\OPI> git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"
+# (No matches - clean)
+```
+
+---
+
+## 10. Handover State
+
+- **Branch**: `main` is up-to-date with `origin/main`.
+- **Defects Register**: 84 defects total; 81 closed/accepted, 3 open/partial/not fixed (D-013, D-026, D-071).
+- **Prospective Sample**: 13 total genuine FORWARD rows (8 listed with outcomes, 5 pending awaiting listing).
+- **Coverage Status**: 0 missed forwards (`predictions/missed_forward.csv` is clean).
+- **Watchdog Status**: Fully active with automated closed IPO coverage alerts.
+- **Upcoming Scheduled Listing Dates**:
+  - `EAAA India Alternatives`: 2026-11-02 (today).
+  - `BLS Polymers`: 2026-11-03 (tomorrow).
+  - `SFC Environmental Technologies`: 2026-11-03 (tomorrow).
+  - `M.K.Sons Fine Jewels`: 2026-11-04.
+  - `Bombay Coated & Special Steels`: 2026-11-05.
