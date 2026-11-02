@@ -196,3 +196,25 @@ def test_daily_runner_checks_pending_outcomes():
     from opi.run_daily import run_daily_forward_test
     # Must run cleanly in dry_run mode without exceptions
     run_daily_forward_test(dry_run=True)
+
+
+def test_nov1_scored_rows_audit_and_provenance():
+    """D-084: Audit four automatically scored rows from 2026-11-01 for provenance and subscription."""
+    import pandas as pd
+    log_path = ROOT_DIR / "predictions" / "prediction_log.csv"
+    assert log_path.exists()
+    df = pd.read_csv(log_path)
+
+    nov1_companies = [
+        "M.K.Sons Fine Jewels",
+        "BLS Polymers",
+        "SFC Environmental Technologies",
+        "EAAA India Alternatives",
+    ]
+    fwd = df[df["status"] == "FORWARD"]
+    for c in nov1_companies:
+        match = fwd[fwd["company"].str.lower().str.contains(c.lower())]
+        assert not match.empty, f"{c} must be logged with FORWARD status in prediction_log.csv"
+        row = match.iloc[0]
+        assert pd.notna(row["pred_gain_pct"]), f"{c} must have predicted gain"
+        assert pd.notna(row["features_snapshot_json"]), f"{c} must have features snapshot recorded"

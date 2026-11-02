@@ -21,6 +21,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional, Dict, Any, Tuple
 import joblib
 import numpy as np
 import pandas as pd
@@ -66,7 +67,7 @@ def paired_bootstrap_diff(y_true, pred_challenger, pred_champion, n_resamples=20
     return float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))
 
 
-def run_challenger_comparison(data_path: Path, rolling: bool = True):
+def run_challenger_comparison(data_path: Path, rolling: bool = True, report_path: Optional[Path] = None):
     print("=" * 78)
     print("  OPI RETRAINING GOVERNANCE: CHAMPION VS CHALLENGER EVALUATION")
     print("=" * 78)
@@ -253,6 +254,27 @@ def run_challenger_comparison(data_path: Path, rolling: bool = True):
     print("  Notice: Champion model remains active in model/registry.json. No files were modified.")
     print("=" * 78 + "\n")
 
+    if report_path:
+        p = Path(report_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        md_content = f"""# Monthly Challenger Model Evaluation Report
+
+| Metric | Champion ({champ_version}) | Challenger | Delta | Policy Threshold | Status |
+|---|---|---|---|---|---|
+| Point MAE | {mae_champ:.2f}% | {mae_challenger:.2f}% | {point_diff:+.2f}% | Delta <= 0.0% | {'PASS' if point_diff <= 0 else 'FAIL'} |
+| 95% Paired Bootstrap CI | - | - | [{ci_low:+.2f}%, {ci_high:+.2f}%] | Upper CI <= +0.50% | {'PASS' if crit_1_non_inferior else 'FAIL'} |
+| Equal-Frequency ECE | {ece_champ:.4f} | {ece_challenger:.4f} | {ece_challenger - ece_champ:+.4f} | ECE_chall <= ECE_champ + 0.01 | {'PASS' if crit_2_calibration else 'FAIL'} |
+| Brier Score Loss | {brier_champ:.4f} | {brier_challenger:.4f} | {brier_challenger - brier_champ:+.4f} | Brier_chall <= Brier_champ + 0.005 | {'PASS' if crit_3_brier else 'FAIL'} |
+| ROC-AUC | {auc_champ:.4f} | {auc_challenger:.4f} | {auc_challenger - auc_champ:+.4f} | Information only | - |
+| 80% Conformal Coverage | {champ_cov*100:.1f}% | {chall_cov*100:.1f}% | {(chall_cov - champ_cov)*100:+.1f} pp | Range [75%, 95%] | {'PASS' if crit_4_coverage else 'FAIL'} |
+
+### Governance Decision
+- **Promotion Status**: **{'ELIGIBLE FOR REVIEW' if eligible else 'DO NOT PROMOTE (Challenger does not demonstrate non-inferiority)'}**
+- **Champion Artifact**: Model file in `model/` was **NOT modified** (automatic model promotion strictly prohibited).
+"""
+        p.write_text(md_content, encoding="utf-8")
+        print(f"Challenger evaluation report written to {p}")
+
     return {
         "mae_champ": mae_champ,
         "mae_challenger": mae_challenger,
@@ -274,8 +296,10 @@ def main():
     parser = argparse.ArgumentParser(description="Retrain and evaluate Challenger model against Champion")
     parser.add_argument("--data", default=str(ROOT_DIR / "data" / "ipo_master.csv"), help="Path to master dataset")
     parser.add_argument("--no-rolling", action="store_true", help="Use single static 80/20 split instead of rolling origin")
+    parser.add_argument("--report", help="Path to save markdown comparison report")
     args = parser.parse_args()
-    run_challenger_comparison(Path(args.data), rolling=not args.no_rolling)
+    report_p = Path(args.report) if args.report else None
+    run_challenger_comparison(Path(args.data), rolling=not args.no_rolling, report_path=report_p)
 
 
 if __name__ == "__main__":

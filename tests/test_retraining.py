@@ -69,3 +69,32 @@ def test_refactored_scripts_run_cleanly():
         )
         assert res.returncode == 0, f"{rel_path} --help failed:\n{res.stderr}"
         assert "usage:" in res.stdout.lower()
+
+
+def test_retrain_challenger_generates_markdown_report(tmp_path):
+    """D-083: Verify retrain_challenger.py writes comparison markdown report when requested."""
+    from scripts.retrain_challenger import run_challenger_comparison
+    report_file = tmp_path / "challenger_report.md"
+
+    run_challenger_comparison(MASTER_DATA, rolling=False, report_path=report_file)
+    assert report_file.exists(), "Markdown comparison report must be generated"
+    content = report_file.read_text(encoding="utf-8")
+    assert "# Monthly Challenger Model Evaluation Report" in content
+    assert "Point MAE" in content
+    assert "Governance Decision" in content
+    assert "Champion Artifact" in content
+
+
+def test_monthly_retrain_workflow_opens_pr():
+    """D-083: Verify monthly_retrain.yml applies promotions and opens PR via GitHub CLI."""
+    wf_path = ROOT / ".github" / "workflows" / "monthly_retrain.yml"
+    assert wf_path.exists(), ".github/workflows/monthly_retrain.yml must exist"
+    content = wf_path.read_text(encoding="utf-8")
+
+    # Workflow must apply promotions
+    assert "python scripts/promote_forward_rows.py --apply" in content
+    # Workflow must generate report
+    assert "python scripts/retrain_challenger.py --no-rolling --report docs/monthly_challenger_comparison.md" in content
+    # Workflow must open PR
+    assert "gh pr create" in content
+    assert "Open Pull Request with Challenger Comparison" in content

@@ -354,6 +354,7 @@ def render_pre_listing_markdown(
         "",
         f"> ⚠️ **PROVISIONAL STATUS: n listed = {n_listed} of 30**. Decision aid only, not financial advice.",
         "> Per pre-registered protocol, all model outputs are descriptive estimates, never guarantees.",
+        f"> **Coverage Ledger**: Active logged forward predictions: {len(pending)} | Missed forward rows: {data.get('missed_forward_count', 0)}",
         "",
         "## Active Forward Predictions (Awaiting Listing)",
         "",
@@ -413,6 +414,17 @@ def generate_dashboard_data() -> Dict[str, Any]:
         "disclaimer": "Decision aid only, not financial advice. No empirical performance claims permitted until n >= 30.",
         "last_cloud_run": get_last_cloud_run_time()
     }
+    missed_csv = ROOT_DIR / "predictions" / "missed_forward.csv"
+    data["missed_forward_count"] = 0
+    data["missed_forward_rows"] = []
+    if missed_csv.exists():
+        try:
+            m_df = pd.read_csv(missed_csv, keep_default_na=False)
+            data["missed_forward_count"] = len(m_df)
+            data["missed_forward_rows"] = m_df.to_dict(orient="records")
+        except Exception:
+            pass
+
     data["champion_replay"] = _champion_replay_summary()
     data["forward_chart"] = ""
     data["pre_listing"] = get_pre_listing_data()
@@ -680,6 +692,9 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             <div class="card">
                 <div class="card-label">Logged Predictions</div>
                 <div class="card-num">{n_fwd}</div>
+                <div style="font-size: 13px; color: {'#ef4444' if d.get('missed_forward_count', 0) > 0 else '#6b7280'}; margin-top: 6px;">
+                    missed forward: {d.get('missed_forward_count', 0)}
+                </div>
             </div>
             <div class="card">
                 <div class="card-label">Completed Listings</div>

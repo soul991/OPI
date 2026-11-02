@@ -40,9 +40,10 @@ def get_today_ist() -> str:
 def normalize_company_name(name: str) -> str:
     """Normalize company name ignoring legal/regional suffixes, punctuation, and extra spaces."""
     s = str(name).lower()
+    s = s.replace("&", " and ")
     s = re.sub(r"\(.*?\)", "", s)
     s = re.sub(r"['\"’`]", "", s)
-    s = re.sub(r"[^a-z0-9&]+", " ", s)
+    s = re.sub(r"[^a-z0-9]+", " ", s)
     s = re.sub(r"\b(limited|ltd|pvt|private|india|co|corp|corporation)\b", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
@@ -69,13 +70,13 @@ def load_master_companies() -> dict[str, dict[str, Any]]:
     return lookup
 
 
-def load_logged_companies() -> dict[str, dict[str, Any]]:
+def load_logged_companies(log_path: Optional[Path] = None) -> dict[str, dict[str, Any]]:
     """Load normalized company lookup map from predictions/prediction_log.csv."""
-    log_path = ROOT_DIR / "predictions" / "prediction_log.csv"
+    target_path = log_path or (ROOT_DIR / "predictions" / "prediction_log.csv")
     lookup: dict[str, dict[str, Any]] = {}
-    if log_path.exists():
+    if target_path.exists():
         try:
-            df = pd.read_csv(log_path)
+            df = pd.read_csv(target_path)
             for _, row in df.iterrows():
                 comp = str(row.get("company", ""))
                 norm = normalize_company_name(comp)

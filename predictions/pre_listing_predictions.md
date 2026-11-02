@@ -2,6 +2,7 @@
 
 > ⚠️ **PROVISIONAL STATUS: n listed = 8 of 30**. Decision aid only, not financial advice.
 > Per pre-registered protocol, all model outputs are descriptive estimates, never guarantees.
+> **Coverage Ledger**: Active logged forward predictions: 4 | Missed forward rows: 0
 
 ## Active Forward Predictions (Awaiting Listing)
 
@@ -14,6 +15,4 @@
 
 ## Bidding Open (Scored After Close)
 
-| Company | Bidding Window | Expected Listing Date | Status | Notes |
-|---|:---:|:---:|:---:|---|
-| **Bombay Coated & Special Steels** | 2026-10-29 to 2026-11-02 | TBD | BIDDING_OPEN | Bidding open: scored after close on 2026-11-02 |
+No IPOs currently in bidding open status.

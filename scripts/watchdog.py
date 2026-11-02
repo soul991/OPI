@@ -244,6 +244,171 @@ def check_missing_outcomes(
     return True, f"All forward listings within {threshold_days}-day threshold or outcomes recorded.", []
 
 
+def record_missed_forward(
+    company: str,
+    close_date: str,
+    listing_date: str,
+    reason: str,
+    missed_path: Optional[Path] = None,
+) -> bool:
+    """Record an unlogged listed IPO into predictions/missed_forward.csv (D-080)."""
+    import csv
+    target_path = missed_path or (ROOT_DIR / "predictions" / "missed_forward.csv")
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    now_iso = dt.datetime.now(dt.timezone.utc).isoformat()
+    fieldnames = ["company", "close_date", "listing_date", "status", "reason", "recorded_at"]
+
+    rows = []
+    if target_path.exists():
+        try:
+            with open(target_path, "r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                for r in reader:
+                    rows.append(r)
+        except Exception:
+            pass
+
+    from opi.discover import normalize_company_name
+    norm_comp = normalize_company_name(company)
+    for r in rows:
+        if normalize_company_name(r.get("company", "")) == norm_comp:
+            return False  # Already recorded
+
+    rows.append({
+        "company": company,
+        "close_date": close_date,
+        "listing_date": listing_date,
+        "status": "MISSED_FORWARD",
+        "reason": reason,
+        "recorded_at": now_iso,
+    })
+
+    with open(target_path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return True
+
+
+def check_unlogged_closing_ipos(
+    candidates: Optional[List[Dict[str, Any]]] = None,
+    log_path: Optional[Path] = None,
+    missed_path: Optional[Path] = None,
+    current_date: Optional[dt.date] = None,
+    threshold_days: int = 2,
+) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    """Check (e): Detect closed IPOs lacking forward predictions near or past listing (D-080).
+
+    - If closed and unlogged with listing_date <= today + threshold_days: FAIL (urgent alert).
+    - If closed and unlogged with listing_date > today + threshold_days: PASS with WARN.
+    - If already listed without a forward prediction: record as MISSED_FORWARD and FAIL.
+    """
+    from opi.discover import normalize_company_name, load_logged_companies, load_master_companies, is_company_in_master, get_today_ist
+
+    if current_date is not None:
+        today = current_date
+    else:
+        today = dt.datetime.strptime(get_today_ist(), "%Y-%m-%d").date()
+    target_log = log_path or (ROOT_DIR / "predictions" / "prediction_log.csv")
+    target_missed = missed_path or (ROOT_DIR / "predictions" / "missed_forward.csv")
+
+    logged = load_logged_companies(target_log)
+    master = load_master_companies()
+
+    if candidates is None:
+        try:
+            from opi.discover import discover_ipos
+            cands = discover_ipos(confirm_overview=False)
+        except Exception as e:
+            return False, f"Could not discover candidates: {e}", []
+    else:
+        cands = candidates
+
+    urgent_issues: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+
+    for cand in cands:
+        comp = cand.get("company", "").strip()
+        if not comp:
+            continue
+        norm = normalize_company_name(comp)
+        if norm in logged or norm in master or is_company_in_master(comp, master)[0]:
+            continue
+
+        raw_ld = str(cand.get("listing_date", "")).strip()[:10]
+        raw_cd = str(cand.get("close_date", "")).strip()[:10]
+        cand_status = str(cand.get("status", "")).strip()
+
+        try:
+            ld = dt.datetime.strptime(raw_ld, "%Y-%m-%d").date()
+        except Exception:
+            continue
+
+        cd = None
+        if raw_cd:
+            try:
+                cd = dt.datetime.strptime(raw_cd, "%Y-%m-%d").date()
+            except Exception:
+                pass
+
+        # Check if bidding has closed
+        is_closed = cand_status in ("CLOSED_UNLISTED", "LISTED")
+        if cd and cd <= today:
+            is_closed = True
+
+        if not is_closed:
+            continue
+
+        days_to_listing = (ld - today).days
+
+        if days_to_listing < 0:
+            # Already listed without forward scoring -> MISSED_FORWARD
+            record_missed_forward(
+                company=comp,
+                close_date=raw_cd or "N/A",
+                listing_date=raw_ld,
+                reason=f"Listed on {raw_ld} without forward prediction recorded",
+                missed_path=target_missed,
+            )
+            urgent_issues.append({
+                "company": comp,
+                "close_date": raw_cd,
+                "listing_date": raw_ld,
+                "days_to_listing": days_to_listing,
+                "type": "MISSED_FORWARD",
+                "message": f"{comp} listed on {raw_ld} ({abs(days_to_listing)} days ago) without forward prediction; recorded as MISSED_FORWARD.",
+            })
+        elif days_to_listing <= threshold_days:
+            # Urgent: listing within threshold_days and no forward row
+            urgent_issues.append({
+                "company": comp,
+                "close_date": raw_cd,
+                "listing_date": raw_ld,
+                "days_to_listing": days_to_listing,
+                "type": "IMPENDING_LISTING_UNSCORED",
+                "message": f"{comp} bidding closed on {raw_cd}, listings in {days_to_listing} days ({raw_ld}), but no FORWARD prediction row exists!",
+            })
+        else:
+            # Listing is > threshold_days away: passes with a warning
+            warnings.append(
+                f"[WARN] {comp} bidding closed on {raw_cd}, listings in {days_to_listing} days ({raw_ld}); awaiting forward scoring."
+            )
+
+    if urgent_issues:
+        lines = [f"Coverage alert: {len(urgent_issues)} closed unlogged IPO(s) require attention:"]
+        for iss in urgent_issues:
+            lines.append(f"  - [{iss['type']}] {iss['message']}")
+        if warnings:
+            lines.extend(warnings)
+        return False, sanitize_text("\n".join(lines)), urgent_issues
+
+    if warnings:
+        return True, sanitize_text("\n".join(warnings)), []
+
+    return True, "All closed IPOs have forward predictions or listings outside threshold.", []
+
+
 def execute_keepalive_if_needed(dry_run: bool = False) -> Tuple[bool, str]:
     """Check keepalive: commit timestamp to predictions/heartbeat.txt if no commit in 30 days."""
     try:
@@ -336,6 +501,16 @@ def run_watchdog(
     print(f"  {msg_d}\n")
     if not ok_d:
         failures.append(f"Missing Listing Outcomes: {msg_d}")
+
+    # Check (e): Unlogged closing IPO coverage (D-080)
+    if skip_network_for_testing:
+        print("Check (e) [Unlogged Closing IPO Coverage]: SKIPPED (testing flag)\n")
+    else:
+        ok_e, msg_e, urgent_e = check_unlogged_closing_ipos()
+        print(f"Check (e) [Unlogged Closing IPO Coverage]: {'PASS' if ok_e else 'FAIL'}")
+        print(f"  {msg_e}\n")
+        if not ok_e:
+            failures.append(f"Unlogged Closing IPO Coverage: {msg_e}")
 
     # Keepalive check
     ok_k, msg_k = execute_keepalive_if_needed(dry_run=dry_run)

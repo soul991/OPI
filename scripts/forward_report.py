@@ -70,7 +70,16 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
     print(f"Excluded INVALID Rows      : {invalid_count} (status starting with INVALID*)")
     if other_count > 0:
         print(f"Excluded Other Rows        : {other_count} (status unverified/unknown)")
+    missed_path = ROOT_DIR / "predictions" / "missed_forward.csv"
+    missed_count = 0
+    if missed_path.exists():
+        try:
+            m_df = pd.read_csv(missed_path)
+            missed_count = len(m_df)
+        except Exception:
+            pass
     print(f"Genuine FORWARD Rows       : {n_forward} (status == 'FORWARD')")
+    print(f"Missed FORWARD Rows        : {missed_count} (recorded in predictions/missed_forward.csv)")
     defects = parse_defects_summary()
     print(f"Tracked Defects Health     : {defects['TOTAL']} total ({defects['FIXED']} fixed, {defects['ACCEPTED']} accepted, {defects['DEFERRED']} deferred, {defects['OPEN'] + defects['PARTIAL']} open/partial)")
     print("-" * 86)

@@ -22,6 +22,10 @@ from typing import List, Dict, Any, Tuple
 import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from opi.outcomes import effective_outcome
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 MASTER_PATH = ROOT_DIR / "data" / "ipo_master.csv"
 PROMOTIONS_PATH = ROOT_DIR / "data" / "promotions.csv"
@@ -39,9 +43,10 @@ def check_forward_row_eligibility(
     if str(row["status"]).strip() != "FORWARD":
         return False, f"Status is '{row['status']}', not 'FORWARD'", {}
 
-    # 2. Actual outcome must be recorded and non-null
-    act = row.get("actual_gain_pct")
-    if pd.isna(act) or str(act).strip() == "":
+    # 2. Actual outcome must be recorded and non-null (accounting for corrections)
+    eff_res = effective_outcome(row)
+    eff_gain = eff_res["actual_gain_pct"]
+    if eff_gain is None:
         return False, "Actual listing gain is not yet recorded (pending listing)", {}
 
     # 3. Not already in master dataset
@@ -116,6 +121,8 @@ def promote_forward_rows(apply: bool = False) -> List[Dict[str, Any]]:
             r = item["log_row"]
             f = item["features"]
             
+            eff_res = effective_outcome(r)
+            eff_gain = eff_res["actual_gain_pct"]
             # Construct master record matching schema
             master_rec = {
                 "company": r["company"],
@@ -124,7 +131,7 @@ def promote_forward_rows(apply: bool = False) -> List[Dict[str, Any]]:
                 "close_date": r.get("close_date"),
                 "issue_price": f.get("issue_price"),
                 "listing_price": None,
-                "listing_gain_pct": float(r["actual_gain_pct"]),
+                "listing_gain_pct": eff_gain,
                 "issue_size_cr": f.get("issue_size_cr"),
                 "fresh_issue_pct": f.get("fresh_issue_pct"),
                 "ofs_pct": f.get("ofs_pct"),
@@ -140,7 +147,7 @@ def promote_forward_rows(apply: bool = False) -> List[Dict[str, Any]]:
                 "exchange": f.get("exchange"),
                 "gmp_pct": f.get("gmp_pct"),
                 "gmp_status": "OBSERVED" if f.get("gmp_pct") is not None else "NOT_RECORDED",
-                "label_good": 1 if float(r["actual_gain_pct"]) > 10.0 else 0,
+                "label_good": 1 if (eff_gain is not None and eff_gain > 10.0) else 0,
                 "updated_at": now_iso
             }
             new_master_rows.append(master_rec)
@@ -149,7 +156,7 @@ def promote_forward_rows(apply: bool = False) -> List[Dict[str, Any]]:
                 "promoted_at": now_iso,
                 "company": r["company"],
                 "listing_date": r["listing_date"],
-                "actual_gain_pct": r["actual_gain_pct"],
+                "actual_gain_pct": eff_gain,
                 "model_version": f.get("_model_version", "v4.0.0-champion"),
                 "evidence_paths": f.get("source_urls", "N/A"),
                 "promoted_by": "scripts/promote_forward_rows.py"

@@ -301,3 +301,111 @@ def test_watchdog_script_standalone_execution():
     )
     assert res.returncode == 0
     assert "watchdog.py" in res.stdout or "usage:" in res.stdout
+
+
+def test_coverage_alert_threshold_boundaries(tmp_path):
+    """D-080: Coverage check flags closed unlogged IPOs within 2 days of listing, warns for 5 days."""
+    from scripts.watchdog import check_unlogged_closing_ipos
+    log_csv = tmp_path / "synthetic_log.csv"
+    log_csv.write_text("company,listing_date,status\nAlready Logged Co,2026-11-04,FORWARD\n", encoding="utf-8")
+    missed_csv = tmp_path / "missed.csv"
+    today = dt.date(2026, 11, 2)
+
+    # 1. Closed, unlogged, listing in 2 days (boundary <= 2 days) -> FAIL
+    cands_urgent = [
+        {
+            "company": "Urgent Listing Ltd",
+            "close_date": "2026-11-01",
+            "listing_date": "2026-11-04",  # (2026-11-04 - 2026-11-02) = 2 days
+            "status": "CLOSED_UNLISTED"
+        }
+    ]
+    ok1, msg1, urgent1 = check_unlogged_closing_ipos(
+        candidates=cands_urgent, log_path=log_csv, missed_path=missed_csv, current_date=today, threshold_days=2
+    )
+    assert ok1 is False
+    assert len(urgent1) == 1
+    assert urgent1[0]["company"] == "Urgent Listing Ltd"
+    assert urgent1[0]["type"] == "IMPENDING_LISTING_UNSCORED"
+    assert "Urgent Listing Ltd" in msg1
+
+    # 2. Closed, unlogged, listing in 5 days (boundary > 2 days) -> PASS with warning
+    cands_warn = [
+        {
+            "company": "Future Listing Ltd",
+            "close_date": "2026-11-01",
+            "listing_date": "2026-11-07",  # 5 days
+            "status": "CLOSED_UNLISTED"
+        }
+    ]
+    ok2, msg2, urgent2 = check_unlogged_closing_ipos(
+        candidates=cands_warn, log_path=log_csv, missed_path=missed_csv, current_date=today, threshold_days=2
+    )
+    assert ok2 is True
+    assert len(urgent2) == 0
+    assert "[WARN]" in msg2
+    assert "Future Listing Ltd" in msg2
+
+    # 3. Candidate already logged in prediction_log.csv -> PASS
+    cands_logged = [
+        {
+            "company": "Already Logged Co",
+            "close_date": "2026-11-01",
+            "listing_date": "2026-11-04",
+            "status": "CLOSED_UNLISTED"
+        }
+    ]
+    ok3, msg3, urgent3 = check_unlogged_closing_ipos(
+        candidates=cands_logged, log_path=log_csv, missed_path=missed_csv, current_date=today, threshold_days=2
+    )
+    assert ok3 is True
+    assert len(urgent3) == 0
+
+    # 4. Candidate with bidding open -> PASS
+    cands_open = [
+        {
+            "company": "Bidding Open Ltd",
+            "close_date": "2026-11-05",
+            "listing_date": "2026-11-10",
+            "status": "BIDDING_OPEN"
+        }
+    ]
+    ok4, msg4, urgent4 = check_unlogged_closing_ipos(
+        candidates=cands_open, log_path=log_csv, missed_path=missed_csv, current_date=today, threshold_days=2
+    )
+    assert ok4 is True
+    assert len(urgent4) == 0
+
+
+def test_missed_forward_csv_recording(tmp_path):
+    """D-080: Listed unlogged IPOs are recorded into missed_forward.csv as MISSED_FORWARD."""
+    from scripts.watchdog import check_unlogged_closing_ipos
+    log_csv = tmp_path / "synthetic_log.csv"
+    log_csv.write_text("company,listing_date,status\n", encoding="utf-8")
+    missed_csv = tmp_path / "missed.csv"
+    today = dt.date(2026, 11, 2)
+
+    cands = [
+        {
+            "company": "Overdue Unscored Ltd",
+            "close_date": "2026-10-25",
+            "listing_date": "2026-10-28",  # Listed 5 days ago!
+            "status": "LISTED"
+        }
+    ]
+    ok, msg, urgent = check_unlogged_closing_ipos(
+        candidates=cands, log_path=log_csv, missed_path=missed_csv, current_date=today
+    )
+    assert ok is False
+    assert len(urgent) == 1
+    assert urgent[0]["type"] == "MISSED_FORWARD"
+    assert missed_csv.exists()
+
+    content = missed_csv.read_text(encoding="utf-8")
+    assert "Overdue Unscored Ltd" in content
+    assert "MISSED_FORWARD" in content
+
+    # Test idempotence: running again doesn't duplicate
+    check_unlogged_closing_ipos(candidates=cands, log_path=log_csv, missed_path=missed_csv, current_date=today)
+    lines = [l for l in missed_csv.read_text(encoding="utf-8").splitlines() if "Overdue Unscored Ltd" in l]
+    assert len(lines) == 1

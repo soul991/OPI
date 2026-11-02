@@ -239,6 +239,23 @@ def run_daily_forward_test(dry_run: bool = False):
         else:
             print(f"  [DRY RUN] Would fail with missing outcomes error:\n{msg_d}")
 
+    # 5. Check for unlogged closing IPO coverage (D-080)
+    print("\n[Step 5] Checking for unlogged closing IPO coverage (D-080)...")
+    from scripts.watchdog import check_unlogged_closing_ipos
+    ok_e, msg_e, urgent_e = check_unlogged_closing_ipos(candidates=discovered, log_path=log_path)
+    print(f"  {msg_e}")
+    if not ok_e:
+        for item in urgent_e:
+            if not dry_run:
+                append_run_log(
+                    run_id, "ALERT", item["company"], "COVERAGE_ALERT",
+                    item["message"]
+                )
+        if not dry_run:
+            raise RuntimeError(f"Unlogged closing IPOs near listing: {msg_e}")
+        else:
+            print(f"  [DRY RUN] Would fail with coverage alert:\n{msg_e}")
+
     print(f"\n{'='*78}\n")
 
 

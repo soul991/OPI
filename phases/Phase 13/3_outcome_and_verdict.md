@@ -5,6 +5,11 @@
 
 ---
 
+> ### ERRATA (Added in Phase 16 - D-083)
+> - **Section 4 (Workstream E / Retraining Workflow)**: The statement that `monthly_retrain.yml` "opens pull requests" was inaccurate when written in Phase 13. While the workflow ran the evaluation script, it did not execute `promote_forward_rows.py` with `--apply`, did not commit changes to a branch, and did not open pull requests. This defect was registered as D-083 and resolved in Phase 16 by updating `.github/workflows/monthly_retrain.yml` to apply promotion, write the challenger comparison report, commit to a branch, and open a PR via GitHub CLI.
+
+---
+
 ## 1. Targets Missed and Unfixed Items
 
 "Unfixed items: None" is **not true**. The following target remains unfixed per project rules:
