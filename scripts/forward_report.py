@@ -27,7 +27,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from opi.report import parse_defects_summary
+from opi.report import parse_defects_summary, render_pre_listing_markdown
 
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 
@@ -272,8 +272,11 @@ def main():
     parser = argparse.ArgumentParser(description="Report forward prediction performance for OPI.")
     parser.add_argument("--log", type=str, default=str(LOG_PATH), help="Path to prediction log CSV")
     parser.add_argument("--markdown", action="store_true", help="Print the results table in Markdown format")
+    parser.add_argument("--pre-listing", action="store_true", help="Print pre-listing predictions table in Markdown format")
     args = parser.parse_args()
-    if args.markdown:
+    if args.pre_listing:
+        print(render_pre_listing_markdown(log_path=Path(args.log)))
+    elif args.markdown:
         print(generate_markdown_results_table(args.log))
     else:
         generate_forward_report(args.log)

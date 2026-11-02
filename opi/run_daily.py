@@ -207,10 +207,12 @@ def run_daily_forward_test(dry_run: bool = False):
                     outcome_res.get("reason", "Unknown outcome result")
                 )
 
-    # 3. Regenerate dashboard
+    # 3. Regenerate dashboard and pre-listing predictions list (D-079)
     if not dry_run:
         dashboard_path = render_dashboard_html()
+        from opi.report import PRE_LISTING_MD_PATH
         print(f"\n[Step 3] Dashboard updated at: {dashboard_path}")
+        print(f"         Pre-listing predictions list updated at: {PRE_LISTING_MD_PATH}")
         append_run_log(run_id, "FINISH", "ALL", "SUCCESS")
     else:
         print("\n[Step 3] [DRY RUN] Dashboard update skipped in dry-run mode.")

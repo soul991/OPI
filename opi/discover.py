@@ -276,24 +276,41 @@ def parse_discovery_html(
             except Exception:
                 pass
 
+        is_closed = False
         if ref_date < o_date:
             status = "UPCOMING"
-        elif ref_date <= c_date:
+        elif ref_date < c_date:
             status = "BIDDING_OPEN"
-        elif in_master or (l_date and ref_date >= l_date):
-            status = "LISTED"
-        elif l_date and ref_date < l_date:
-            status = "CLOSED_UNLISTED"
-        else:
-            conf_l_date = confirm_listing_date_from_overview(full_url) if confirm_overview else None
-            if conf_l_date:
-                l_date = conf_l_date
-                if ref_date >= conf_l_date:
-                    status = "LISTED"
-                else:
-                    status = "CLOSED_UNLISTED"
+        elif ref_date == c_date:
+            today_str = get_today_ist()
+            now_ist = datetime.now()
+            try:
+                from zoneinfo import ZoneInfo
+                now_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+            except Exception:
+                pass
+            if ref_date_str == today_str and (now_ist.hour > 18 or (now_ist.hour == 18 and now_ist.minute >= 0)):
+                is_closed = True
             else:
-                status = "UNKNOWN_LISTING_DATE"
+                status = "BIDDING_OPEN"
+        else:
+            is_closed = True
+
+        if is_closed:
+            if in_master or (l_date and ref_date >= l_date):
+                status = "LISTED"
+            elif l_date and ref_date < l_date:
+                status = "CLOSED_UNLISTED"
+            else:
+                conf_l_date = confirm_listing_date_from_overview(full_url) if confirm_overview else None
+                if conf_l_date:
+                    l_date = conf_l_date
+                    if ref_date >= conf_l_date:
+                        status = "LISTED"
+                    else:
+                        status = "CLOSED_UNLISTED"
+                else:
+                    status = "UNKNOWN_LISTING_DATE"
 
         sub_url = derive_subscription_url(full_url)
         candidates.append({
@@ -309,10 +326,8 @@ def parse_discovery_html(
             "issue_size_cr": issue_size_str,
         })
 
-    if candidates:
-        return candidates
-
     # Strategy 2: Check 2-column dashboard tables (Chittorgarh ipo_dashboard.asp Table 0)
+    seen_companies = {normalize_company_name(c["company"]): i for i, c in enumerate(candidates)}
     tables = soup.find_all("table")
     if tables:
         t0 = tables[0]
@@ -331,13 +346,15 @@ def parse_discovery_html(
             is_open = "O" in parts
 
             date_part = parts[-1]
-            m = re.search(r"(\d+)\s*-\s*(\d+)\s*([A-Za-z]+)", date_part)
+            m = re.search(r"(\d+)\s*([A-Za-z]*)\s*-\s*(\d+)\s*([A-Za-z]+)", date_part)
             if not m:
                 continue
-            d1, d2, mon = m.groups()
+            d1, m1, d2, m2 = m.groups()
+            mon1 = m1.strip() or m2.strip()
+            mon2 = m2.strip()
             try:
-                close_dt = datetime.strptime(f"{d2} {mon} {cur_year}", "%d %b %Y").date()
-                open_dt = datetime.strptime(f"{d1} {mon} {cur_year}", "%d %b %Y").date()
+                close_dt = datetime.strptime(f"{d2} {mon2} {cur_year}", "%d %b %Y").date()
+                open_dt = datetime.strptime(f"{d1} {mon1} {cur_year}", "%d %b %Y").date()
             except Exception:
                 continue
 
@@ -350,34 +367,51 @@ def parse_discovery_html(
             if not l_date_str and norm_c in logged_lookup and logged_lookup[norm_c].get("listing_date"):
                 l_date_str = logged_lookup[norm_c]["listing_date"]
 
+            is_closed = False
             if ref_date < open_dt:
                 status = "UPCOMING"
-            elif is_open or (open_dt <= ref_date <= close_dt):
+            elif ref_date < close_dt:
                 status = "BIDDING_OPEN"
-            elif in_master:
-                status = "LISTED"
-            elif l_date_str:
+            elif ref_date == close_dt:
+                today_str = get_today_ist()
+                now_ist = datetime.now()
                 try:
-                    l_dt = datetime.strptime(l_date_str[:10], "%Y-%m-%d").date()
-                    if ref_date >= l_dt:
-                        status = "LISTED"
-                    else:
-                        status = "CLOSED_UNLISTED"
+                    from zoneinfo import ZoneInfo
+                    now_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
                 except Exception:
-                    status = "UNKNOWN_LISTING_DATE"
-            else:
-                conf_l_date = confirm_listing_date_from_overview(url) if confirm_overview else None
-                if conf_l_date:
-                    l_date_str = str(conf_l_date)
-                    if ref_date >= conf_l_date:
-                        status = "LISTED"
-                    else:
-                        status = "CLOSED_UNLISTED"
+                    pass
+                if not is_open and ref_date_str == today_str and (now_ist.hour > 18 or (now_ist.hour == 18 and now_ist.minute >= 0)):
+                    is_closed = True
                 else:
-                    status = "UNKNOWN_LISTING_DATE"
+                    status = "BIDDING_OPEN"
+            else:
+                is_closed = True
+
+            if is_closed:
+                if in_master:
+                    status = "LISTED"
+                elif l_date_str:
+                    try:
+                        l_dt = datetime.strptime(l_date_str[:10], "%Y-%m-%d").date()
+                        if ref_date >= l_dt:
+                            status = "LISTED"
+                        else:
+                            status = "CLOSED_UNLISTED"
+                    except Exception:
+                        status = "UNKNOWN_LISTING_DATE"
+                else:
+                    conf_l_date = confirm_listing_date_from_overview(url) if confirm_overview else None
+                    if conf_l_date:
+                        l_date_str = str(conf_l_date)
+                        if ref_date >= conf_l_date:
+                            status = "LISTED"
+                        else:
+                            status = "CLOSED_UNLISTED"
+                    else:
+                        status = "UNKNOWN_LISTING_DATE"
 
             sub_url = derive_subscription_url(url)
-            candidates.append({
+            cand_obj = {
                 "company": comp,
                 "open_date": str(open_dt),
                 "close_date": str(close_dt),
@@ -388,7 +422,16 @@ def parse_discovery_html(
                 "type": "Mainboard",
                 "issue_price": "",
                 "issue_size_cr": "",
-            })
+            }
+            if norm_c in seen_companies:
+                idx = seen_companies[norm_c]
+                if not candidates[idx].get("sub_url") and sub_url:
+                    candidates[idx]["sub_url"] = sub_url
+                if not candidates[idx].get("listing_date") and l_date_str:
+                    candidates[idx]["listing_date"] = l_date_str
+            else:
+                seen_companies[norm_c] = len(candidates)
+                candidates.append(cand_obj)
 
     return candidates
 

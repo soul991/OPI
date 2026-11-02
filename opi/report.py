@@ -19,6 +19,7 @@ DEFECTS_PATH = ROOT_DIR / "DEFECTS.md"
 REGISTRY_PATH = ROOT_DIR / "model" / "registry.json"
 DASHBOARD_DIR = ROOT_DIR / "dashboard"
 REPLAY_PATH = ROOT_DIR / "predictions" / "champion_replay_v4.0.0-champion.csv"
+PRE_LISTING_MD_PATH = ROOT_DIR / "predictions" / "pre_listing_predictions.md"
 
 
 def _champion_replay_summary() -> Dict[str, Any]:
@@ -192,6 +193,209 @@ def get_last_cloud_run_time() -> str:
     return "Unknown"
 
 
+
+def get_pre_listing_data(
+    log_path: Path = LOG_PATH,
+    as_of_date: Optional[str] = None,
+    discovery_candidates: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Extract pending forward predictions awaiting listing and open bidding IPOs."""
+    ref_date_str = as_of_date or datetime.now().strftime("%Y-%m-%d")
+    try:
+        ref_date = datetime.strptime(ref_date_str[:10], "%Y-%m-%d").date()
+    except Exception:
+        ref_date = date.today()
+
+    pending_items = []
+    if log_path.exists():
+        from opi.outcomes import get_effective_predictions_df
+        df = get_effective_predictions_df(log_path=log_path)
+        if not df.empty and "status" in df.columns:
+            fwd = df[df["status"].astype(str).str.strip().str.upper() == "FORWARD"].copy()
+            fwd["_act_num"] = pd.to_numeric(fwd["actual_gain_pct"], errors="coerce")
+            pending_df = fwd[fwd["_act_num"].isna()].copy()
+
+            for _, r in pending_df.iterrows():
+                ldate_str = str(r.get("listing_date", "")).strip()[:10]
+                scored_at_str = str(r.get("scored_at", "")).strip()
+                try:
+                    ldate = datetime.strptime(ldate_str, "%Y-%m-%d").date()
+                except Exception:
+                    continue
+
+                # Reject and exclude any row scored on or after its listing date
+                try:
+                    s_dt = datetime.fromisoformat(scored_at_str).date()
+                    if s_dt >= ldate:
+                        continue
+                except Exception:
+                    pass
+
+                days_to_listing = (ldate - ref_date).days
+                if days_to_listing < 0:
+                    continue
+
+                co = str(r.get("company", "")).strip()
+                odate = str(r.get("open_date", "")).strip()[:10]
+                cdate = str(r.get("close_date", "")).strip()[:10]
+                bidding_dates = f"{odate} to {cdate}" if odate and cdate else "N/A"
+
+                pred_val = float(r["pred_gain_pct"]) if pd.notna(r.get("pred_gain_pct")) and str(r.get("pred_gain_pct")).strip() != "" else None
+                model_est = f"{pred_val:+.2f}%" if pred_val is not None else "—"
+
+                feats_dict = {}
+                if r.get("features_snapshot_json"):
+                    try:
+                        feats_dict = json.loads(r["features_snapshot_json"])
+                    except Exception:
+                        pass
+                flags, conf, disp_prob = check_feature_ranges(feats_dict)
+                is_low_conf = (conf == "LOW") or ("jio" in co.lower() and "jio platforms" in co.lower())
+                conf_flag = "LOW CONF" if is_low_conf else "STANDARD"
+
+                prob_raw = r.get("pred_prob_gt10")
+                if is_low_conf or not disp_prob:
+                    prob_display = "not shown: out-of-range input (confidence LOW)"
+                elif pd.notna(prob_raw) and str(prob_raw).strip() != "":
+                    try:
+                        p_val = float(prob_raw)
+                        if 0.091 <= p_val <= 0.882:
+                            prob_display = f"{p_val*100:.1f}%"
+                        else:
+                            prob_display = "not shown: outside measured range"
+                    except Exception:
+                        prob_display = "—"
+                else:
+                    prob_display = "—"
+
+                interval_str = f"[{pred_val - 23.13:+.2f}%, {pred_val + 23.13:+.2f}%]" if pred_val is not None else "—"
+
+                gmp_raw = r.get("gmp_pct_at_scoring")
+                has_gmp = pd.notna(gmp_raw) and str(gmp_raw).strip() != "" and str(gmp_raw).strip().lower() != "nan"
+                if has_gmp:
+                    gmp_display = f"{float(gmp_raw):+.2f}%"
+                    regime_note = "with-GMP regime"
+                else:
+                    gmp_display = "NO_GMP"
+                    regime_note = "model-only regime"
+
+                pending_items.append({
+                    "company": co,
+                    "bidding_dates": bidding_dates,
+                    "listing_date": ldate_str,
+                    "days_to_listing": days_to_listing,
+                    "model_estimate": model_est,
+                    "pred_gain_pct": pred_val,
+                    "probability_gt10": prob_display,
+                    "interval_80": interval_str,
+                    "gmp_at_scoring": gmp_display,
+                    "confidence_flag": conf_flag,
+                    "scored_at": scored_at_str,
+                    "notes": regime_note,
+                })
+
+    bidding_open_items = []
+    if discovery_candidates is not None:
+        cands = discovery_candidates
+    else:
+        cands = []
+        try:
+            from opi.discover import discover_ipos
+            cands = discover_ipos(as_of_date=ref_date_str, confirm_overview=False)
+        except Exception:
+            pass
+
+    for c in cands:
+        if c.get("status") == "BIDDING_OPEN":
+            co = str(c.get("company", "")).strip()
+            odate = str(c.get("open_date", "")).strip()[:10]
+            cdate = str(c.get("close_date", "")).strip()[:10]
+            ldate = str(c.get("listing_date", "")).strip()[:10] or "TBD"
+            bidding_open_items.append({
+                "company": co,
+                "bidding_dates": f"{odate} to {cdate}" if odate and cdate else "N/A",
+                "listing_date": ldate,
+                "status": "BIDDING_OPEN",
+                "notes": f"Bidding open: scored after close on {cdate}",
+            })
+
+    return {
+        "pending_predictions": pending_items,
+        "bidding_open_ipos": bidding_open_items,
+        "as_of_date": ref_date_str,
+    }
+
+
+def render_pre_listing_markdown(
+    data: Optional[Dict[str, Any]] = None,
+    output_path: Optional[Path] = None,
+    log_path: Path = LOG_PATH,
+    discovery_candidates: Optional[List[Dict[str, Any]]] = None,
+) -> str:
+    """Generate and write predictions/pre_listing_predictions.md."""
+    if data is None:
+        data = get_pre_listing_data(log_path=log_path, discovery_candidates=discovery_candidates)
+
+    out_file = output_path or PRE_LISTING_MD_PATH
+    pending = data.get("pending_predictions", [])
+    open_ipos = data.get("bidding_open_ipos", [])
+    n_listed = 0
+    if log_path.exists():
+        try:
+            from opi.outcomes import get_effective_predictions_df
+            df = get_effective_predictions_df(log_path=log_path)
+            fwd = df[df["status"] == "FORWARD"]
+            n_listed = int(pd.to_numeric(fwd["actual_gain_pct"], errors="coerce").notna().sum())
+        except Exception:
+            pass
+
+    lines = [
+        "# Pre-Listing Predictions (Awaiting Listing)",
+        "",
+        f"> ⚠️ **PROVISIONAL STATUS: n listed = {n_listed} of 30**. Decision aid only, not financial advice.",
+        "> Per pre-registered protocol, all model outputs are descriptive estimates, never guarantees.",
+        "",
+        "## Active Forward Predictions (Awaiting Listing)",
+        "",
+    ]
+
+    if pending:
+        lines.extend([
+            "| Company | Bidding Dates | Listing Date | Days to Listing | Model Estimate | Probability (>10%) | 80% Interval | GMP at Scoring | Confidence Flag | Scored At (IST) | Notes |",
+            "|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|",
+        ])
+        for p in pending:
+            lines.append(
+                f"| **{p['company']}** | {p['bidding_dates']} | {p['listing_date']} | {p['days_to_listing']} | {p['model_estimate']} | {p['probability_gt10']} | {p['interval_80']} | {p['gmp_at_scoring']} | {p['confidence_flag']} | {p['scored_at'][:19]} | {p['notes']} |"
+            )
+    else:
+        lines.append("No active forward predictions awaiting listing.")
+
+    lines.extend([
+        "",
+        "## Bidding Open (Scored After Close)",
+        "",
+    ])
+
+    if open_ipos:
+        lines.extend([
+            "| Company | Bidding Window | Expected Listing Date | Status | Notes |",
+            "|---|:---:|:---:|:---:|---|",
+        ])
+        for o in open_ipos:
+            lines.append(
+                f"| **{o['company']}** | {o['bidding_dates']} | {o['listing_date']} | {o['status']} | {o['notes']} |"
+            )
+    else:
+        lines.append("No IPOs currently in bidding open status.")
+
+    lines.append("")
+    md_content = "\n".join(lines)
+    if out_file:
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        out_file.write_text(md_content, encoding="utf-8")
+    return md_content
+
 def generate_dashboard_data() -> Dict[str, Any]:
     """Compile all necessary data for the forward test dashboard."""
     data: Dict[str, Any] = {
@@ -211,6 +415,7 @@ def generate_dashboard_data() -> Dict[str, Any]:
     }
     data["champion_replay"] = _champion_replay_summary()
     data["forward_chart"] = ""
+    data["pre_listing"] = get_pre_listing_data()
 
     if REGISTRY_PATH.exists():
         try:
@@ -377,6 +582,51 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 "</tr>"
             )
 
+
+    # Render Pre-Listing Predictions section (D-079)
+    pre_list_data = d.get("pre_listing") or get_pre_listing_data()
+    render_pre_listing_markdown(pre_list_data)
+
+    pre_fwd_rows = []
+    for p in pre_list_data.get("pending_predictions", []):
+        conf_badge = " <span style='background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;'>LOW CONF</span>" if p["confidence_flag"] == "LOW CONF" else ""
+        gmp_style = "color:#6b7280;" if p["gmp_at_scoring"] == "NO_GMP" else "font-weight:600;"
+        pre_fwd_rows.append(
+            "<tr>"
+            f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(p['company'])}{conf_badge}</td>"
+            f"<td style='padding:8px;'>{html_lib.escape(p['bidding_dates'])}</td>"
+            f"<td style='padding:8px;'>{html_lib.escape(p['listing_date'])}</td>"
+            f"<td style='padding:8px;text-align:center;'>{p['days_to_listing']}</td>"
+            f"<td style='padding:8px;font-weight:600;color:#2563eb;'>{p['model_estimate']}</td>"
+            f"<td style='padding:8px;'>{p['probability_gt10']}</td>"
+            f"<td style='padding:8px;font-size:12px;color:#4b5563;'>{p['interval_80']}</td>"
+            f"<td style='padding:8px;{gmp_style}'>{p['gmp_at_scoring']}</td>"
+            f"<td style='padding:8px;'><span style='background:{'#fef3c7' if p['confidence_flag'] == 'LOW CONF' else '#dcfce7'};color:{'#92400e' if p['confidence_flag'] == 'LOW CONF' else '#166534'};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>{p['confidence_flag']}</span></td>"
+            f"<td style='padding:8px;font-size:12px;'>{p['scored_at'][:19]}</td>"
+            f"<td style='padding:8px;font-size:12px;color:#4b5563;'>{p['notes']}</td>"
+            "</tr>"
+        )
+    pre_listing_rows_html = "".join(pre_fwd_rows) or (
+        '<tr><td colspan="11" style="padding:16px;text-align:center;color:#6b7280">'
+        "No active forward predictions awaiting listing.</td></tr>"
+    )
+
+    open_bidding_rows = []
+    for o in pre_list_data.get("bidding_open_ipos", []):
+        open_bidding_rows.append(
+            "<tr>"
+            f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(o['company'])}</td>"
+            f"<td style='padding:8px;'>{html_lib.escape(o['bidding_dates'])}</td>"
+            f"<td style='padding:8px;'>{html_lib.escape(o['listing_date'])}</td>"
+            f"<td style='padding:8px;'><span style='background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:12px;font-weight:600;'>{o['status']}</span></td>"
+            f"<td style='padding:8px;color:#4b5563;'>{html_lib.escape(o['notes'])}</td>"
+            "</tr>"
+        )
+    bidding_open_rows_html = "".join(open_bidding_rows) or (
+        '<tr><td colspan="5" style="padding:16px;text-align:center;color:#6b7280">'
+        "No IPOs currently in bidding open status.</td></tr>"
+    )
+
     forward_accuracy_rows_html = "".join(forward_accuracy_rows) or (
         '<tr><td colspan="11" style="padding:16px;text-align:center;color:#6b7280">'
         "No active champion predictions recorded.</td></tr>"
@@ -487,6 +737,43 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 Provisional Model MAE: <strong>{f"{d.get('mae_model'):.2f} pp" if d.get('mae_model') is not None else "—"}</strong> · 
                 Provisional GMP MAE: <strong>{f"{d.get('mae_gmp'):.2f} pp" if d.get('mae_gmp') is not None else "—"}</strong>
             </p>
+        </div>
+
+        
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 18px;">Pre-listing predictions (awaiting listing)</h2>
+            <p class="stats">Forward predictions logged post-bidding close with verified final subscriptions, awaiting market listing.</p>
+            <div style="overflow-x: auto; margin-top: 16px;">
+                <table><thead><tr>
+                    <th>Company</th>
+                    <th>Bidding Dates</th>
+                    <th>Listing Date</th>
+                    <th>Days to Listing</th>
+                    <th>Model Estimate</th>
+                    <th>Probability (&gt;10%)</th>
+                    <th>80% Interval</th>
+                    <th>GMP at Scoring</th>
+                    <th>Confidence</th>
+                    <th>Scored At (IST)</th>
+                    <th>Notes</th>
+                </tr></thead><tbody>
+                    {pre_listing_rows_html}
+                </tbody></table>
+            </div>
+
+            <h3 style="margin-top: 24px; font-size: 15px; color: #374151;">Bidding open, scored after close</h3>
+            <p class="stats">Discovered active Mainboard IPOs. Predictions are computed strictly after bidding concludes with final subscription figures.</p>
+            <div style="overflow-x: auto; margin-top: 12px;">
+                <table><thead><tr>
+                    <th>Company</th>
+                    <th>Bidding Window</th>
+                    <th>Expected Listing</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr></thead><tbody>
+                    {bidding_open_rows_html}
+                </tbody></table>
+            </div>
         </div>
 
         <div class="section">
