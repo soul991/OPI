@@ -1,0 +1,1 @@
+{"2026-11-01T18:30:00.000Z":{"Open":1675.5,"High":1762.5,"Low":1601.0,"Close":1727.8000488281,"Volume":7002146,"Dividends":0.0,"Stock Splits":0.0},"2026-11-02T18:30:00.000Z":{"Open":null,"High":null,"Low":null,"Close":null,"Volume":659045,"Dividends":0.0,"Stock Splits":0.0}}

@@ -614,3 +614,28 @@ issue_price.value
 2026-11-03T19:00:55.288267+05:30,run_20261103_133048,ACTUALS,SFC Environmental Technologies,SKIPPED_NO_MATCH,Could not resolve NSE/BSE symbols for SFC Environmental Technologies
 2026-11-03T19:00:56.209671+05:30,run_20261103_133048,ACTUALS,EAAA India Alternatives,SKIPPED_NO_MATCH,"Tier 2 primary source (EDELALTS.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-03, listing date 2026-11-02"
 2026-11-03T19:00:58.791506+05:30,run_20261103_133048,FINISH,ALL,SUCCESS,
+2026-11-04T01:53:27.449456+05:30,run_20261103_202327,START,ALL,STARTED,dry_run=False
+2026-11-04T01:53:29.219921+05:30,run_20261103_202327,DISCOVERY,M.K.Sons Fine Jewels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.235196+05:30,run_20261103_202327,DISCOVERY,BLS Polymers,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.250283+05:30,run_20261103_202327,DISCOVERY,SFC Environmental Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.265289+05:30,run_20261103_202327,DISCOVERY,EAAA India Alternatives,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.280245+05:30,run_20261103_202327,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.295220+05:30,run_20261103_202327,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.310278+05:30,run_20261103_202327,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.325749+05:30,run_20261103_202327,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.341557+05:30,run_20261103_202327,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.356821+05:30,run_20261103_202327,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.372652+05:30,run_20261103_202327,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.388414+05:30,run_20261103_202327,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.404518+05:30,run_20261103_202327,DISCOVERY,Nityas Gems & Jewellery,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.421178+05:30,run_20261103_202327,DISCOVERY,Vishal Nirmiti,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.437377+05:30,run_20261103_202327,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.453560+05:30,run_20261103_202327,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.471209+05:30,run_20261103_202327,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.487367+05:30,run_20261103_202327,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.503464+05:30,run_20261103_202327,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-04T01:53:29.519884+05:30,run_20261103_202327,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
+2026-11-04T01:53:30.584676+05:30,run_20261103_202327,ACTUALS,BLS Polymers,SKIPPED_FETCH_FAILED,Tier 2 primary source (BLSPOLY.NS) failed: yfinance returned empty price history for BLSPOLY.NS
+2026-11-04T01:53:31.918007+05:30,run_20261103_202327,ACTUALS,SFC Environmental Technologies,SKIPPED_FETCH_FAILED,Tier 2 primary source (545009.BO) failed: yfinance returned empty price history for 545009.BO
+2026-11-04T01:53:32.592778+05:30,run_20261103_202327,ACTUALS,EAAA India Alternatives,RECORDED,Recorded opening price ₹1675.5 via tier2
+2026-11-04T01:53:34.228013+05:30,run_20261103_202327,FINISH,ALL,SUCCESS,

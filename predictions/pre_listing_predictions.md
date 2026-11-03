@@ -1,6 +1,6 @@
 # Pre-Listing Predictions (Awaiting Listing)
 
-> ⚠️ **PROVISIONAL STATUS: n listed = 8 of 30**. Decision aid only, not financial advice.
+> ⚠️ **PROVISIONAL STATUS: n listed = 9 of 30**. Decision aid only, not financial advice.
 > Per pre-registered protocol, all model outputs are descriptive estimates, never guarantees.
 > **Coverage Ledger**: Active logged forward predictions: 4 | Missed forward rows: 0
 
