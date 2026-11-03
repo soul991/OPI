@@ -1,0 +1,18 @@
+claim_id,claim_text,file_checked,audit_result,evidence_notes
+C-01,"Claim (IPO): Bombay Coated & Special Steels Issue ₹82.00, Model Est +10.14%, GMP +11.28%, Listing 2026-11-05",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 18: Bombay Coated issue 82.00, pred_gain_pct 10.14, gmp_pct_at_scoring 11.28, listing_date 2026-11-05"
+C-02,"Claim (IPO): EAAA India Alternatives Issue ₹1665.00, Model Est +5.35%, Scored 2026-11-01, Listing 2026-11-02",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 17: EAAA India Alternatives issue 1665.00, pred_gain_pct 5.35, listing_date 2026-11-02"
+C-03,"Claim (IPO): Tonbo Imaging India Limited Issue ₹700.00, Listing ₹1160.00, Actual Gain +65.71%, Model Est +74.70%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 10: Tonbo Imaging issue 700.00, actual_gain_pct 65.71, pred_gain_pct 74.70"
+C-04,"Claim (IPO): Jio Platforms Limited Issue ₹1119.00, Official Open ₹1358.02, Actual Gain +21.36%, Model Pred +22.14%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 12: Jio Platforms issue 1119.00, actual_gain_pct 21.36, pred_gain_pct 22.14"
+C-05,"Claim (IPO): Sahajanand Medical Technologies Limited Issue ₹344.00, Listing ₹371.15, Gain +7.89%, Model Est +8.32%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 9: SMT issue 344.00, actual_gain_pct 7.89, pred_gain_pct 8.32"
+C-06,Claim (file X contains Y): tests/test_pre_listing.py contains test_pending_forward_row_appears_in_pre_listing,tests/test_pre_listing.py,VERIFIED,tests/test_pre_listing.py defines test_pending_forward_row_appears_in_pre_listing (D-079)
+C-07,Claim (file X contains Y): tests/test_gmp_discovery.py contains test_investorgain_list_page_discovery_saved_fixture,tests/test_gmp_discovery.py,VERIFIED,tests/test_gmp_discovery.py defines test_investorgain_list_page_discovery_saved_fixture (D-081)
+C-08,Claim (file X contains Y): tests/test_daily_agent.py contains test_score_ipo_calls_research_agent_for_missing_fields,tests/test_daily_agent.py,VERIFIED,tests/test_daily_agent.py defines test_score_ipo_calls_research_agent_for_missing_fields (D-082)
+C-09,"Claim (verify quote): phases/Phase 16/3_outcome_and_verdict.md quotes verify_end.txt as '77 pass, 0 warn, 0 fail'",phases/Phase 16/verify_end.txt,VERIFIED,"phases/Phase 16/verify_end.txt SUMMARY line reads 'SUMMARY: 77 pass, 0 warn, 0 fail'; verbatim match"
+C-10,"Claim (verify quote): phases/Phase 16/2_building_and_execution.md quotes verify_extra_start.txt as '7 pass, 0 warn, 0 fail'",phases/Phase 16/verify_extra_start.txt,VERIFIED,"phases/Phase 16/verify_extra_start.txt SUMMARY line reads 'SUMMARY: 7 pass, 0 warn, 0 fail'; verbatim match"
+
+headline_id,metric_name,verdict_claimed,recomputed_raw,status
+H-01,Overall Prospective Model MAE (n=8 listed),5.99 pp,5.9913 pp,"PASS (Recomputed value: 5.9913 pp, rounds to 5.99 pp)"
+H-02,GMP Subset Raw GMP MAE (n=7 with GMP),6.15 pp,6.1471 pp,"PASS (Recomputed value: 6.1471 pp, rounds to 6.15 pp)"
+H-03,GMP Subset Model MAE (n=7 with GMP),6.67 pp,6.6743 pp,"PASS (Recomputed value: 6.6743 pp, rounds to 6.67 pp)"
+H-04,"Model MAE Ex-Outlier Shock (n=7, no Bonfiglioli)",3.83 pp,3.8329 pp,"PASS (Recomputed value: 3.8329 pp, rounds to 3.83 pp)"
+H-05,Master Dataset Row Count (ipo_master.csv),731 rows,731 rows,PASS (Matches master dataset row count: 731)
