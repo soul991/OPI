@@ -639,3 +639,30 @@ issue_price.value
 2026-11-04T01:53:31.918007+05:30,run_20261103_202327,ACTUALS,SFC Environmental Technologies,SKIPPED_FETCH_FAILED,Tier 2 primary source (545009.BO) failed: yfinance returned empty price history for 545009.BO
 2026-11-04T01:53:32.592778+05:30,run_20261103_202327,ACTUALS,EAAA India Alternatives,RECORDED,Recorded opening price ₹1675.5 via tier2
 2026-11-04T01:53:34.228013+05:30,run_20261103_202327,FINISH,ALL,SUCCESS,
+2026-11-05T03:59:02.513978+05:30,run_20261104_222902,START,ALL,STARTED,dry_run=False
+2026-11-05T03:59:04.840433+05:30,run_20261104_222902,DISCOVERY,Bombay Coated & Special Steels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:04.883126+05:30,run_20261104_222902,DISCOVERY,M.K.Sons Fine Jewels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:04.926350+05:30,run_20261104_222902,DISCOVERY,BLS Polymers,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:04.969684+05:30,run_20261104_222902,DISCOVERY,SFC Environmental Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.012831+05:30,run_20261104_222902,DISCOVERY,EAAA India Alternatives,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.057077+05:30,run_20261104_222902,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.107339+05:30,run_20261104_222902,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.149829+05:30,run_20261104_222902,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.192282+05:30,run_20261104_222902,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.234653+05:30,run_20261104_222902,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.337904+05:30,run_20261104_222902,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.383351+05:30,run_20261104_222902,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.426710+05:30,run_20261104_222902,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.470033+05:30,run_20261104_222902,DISCOVERY,Nityas Gems & Jewellery,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.513492+05:30,run_20261104_222902,DISCOVERY,Vishal Nirmiti,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.557593+05:30,run_20261104_222902,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.600469+05:30,run_20261104_222902,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.643465+05:30,run_20261104_222902,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.687176+05:30,run_20261104_222902,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.730796+05:30,run_20261104_222902,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T03:59:05.773893+05:30,run_20261104_222902,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Listing date 2026-10-22 is on or before today
+2026-11-05T03:59:06.401056+05:30,run_20261104_222902,ACTUALS,M.K.Sons Fine Jewels,SKIPPED_FETCH_FAILED,Tier 2 primary source (MKJEWELS.NS) failed: yfinance returned empty price history for MKJEWELS.NS
+2026-11-05T03:59:06.778567+05:30,run_20261104_222902,ACTUALS,BLS Polymers,SKIPPED_NO_MATCH,"Tier 2 primary source (BLSPOLY.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-04, listing date 2026-11-03"
+2026-11-05T03:59:07.120884+05:30,run_20261104_222902,ACTUALS,SFC Environmental Technologies,SKIPPED_NO_MATCH,"Tier 2 primary source (SFCTECH.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-04, listing date 2026-11-03"
+2026-11-05T03:59:07.329761+05:30,run_20261104_222902,MARKET_EVIDENCE,2026-11-02,RECORDED,Recorded Nifty evidence for 2026-11-02
+2026-11-05T03:59:12.164550+05:30,run_20261104_222902,FINISH,ALL,SUCCESS,
