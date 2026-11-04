@@ -84,6 +84,7 @@ jobs:
 
       - name: Commit and Push Updated Predictions & Dashboard
         id: commit_and_push
+        if: always() && steps.run_tests.outcome == 'success' && steps.run_daily.outcome == 'success'
         run: |
           set -o pipefail
           git config user.name "github-actions[bot]"
@@ -129,7 +130,7 @@ jobs:
             --run-id "${{ github.run_id }}" \
             --workflow-name "daily.yml" \
             --failed-step "$FAILED_STEP" \
-            --reason-file failed_step_reason.txt"
+            --reason-file failed_step_reason.txt
 
       - name: Close Open Alerts on Success
         if: success()

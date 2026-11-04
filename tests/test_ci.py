@@ -213,3 +213,11 @@ def test_phase15_process_rule_defect_registration_and_branch_pr():
     assert "ci_local.py" in protocol_text
     actions_status = (ROOT_DIR / "phases" / "Phase 15" / "actions_status.md").read_text(encoding="utf-8")
     assert "D-076" in actions_status
+
+
+def test_daily_workflow_commits_data_despite_verify_all_failure():
+    """D-094: daily.yml commits data when run_daily and pytest pass, regardless of verify_all outcome."""
+    daily = (ROOT_DIR / ".github" / "workflows" / "daily.yml").read_text(encoding="utf-8")
+    assert daily.index("id: run_daily") < daily.index("id: run_tests") < daily.index("id: verify_all") < daily.index("id: commit_and_push") < daily.index("id: alert_on_failure")
+    assert "if: always() && steps.run_tests.outcome == 'success' && steps.run_daily.outcome == 'success'" in daily
+    assert 'failed_step_reason.txt"' not in daily

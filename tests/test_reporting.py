@@ -310,3 +310,48 @@ def test_quoted_verify_results_match_saved_files():
         d814892_mismatches = extract_and_check(d814892_content, p16_dir, "2_building_and_execution.md")
         assert len(d814892_mismatches) > 0, "Test should have caught discrepancy on pre-ERRATA commit d814892!"
         assert "71 pass, 0 warn, 0 fail" in d814892_mismatches[0]
+
+
+def test_verify_all_allows_in_progress_phase(tmp_path, monkeypatch):
+    """D-094: Completed older phases missing exit files still FAIL; latest phase missing exit files reports WARN."""
+    import scripts.verify_all as va
+
+    phases_dir = tmp_path / "phases"
+    phases_dir.mkdir(parents=True)
+
+    # Phase 1: completed phase with all 3 files -> PASS
+    p1 = phases_dir / "Phase 1"
+    p1.mkdir()
+    (p1 / "1_planning_and_goals.md").write_text("ok", encoding="utf-8")
+    (p1 / "2_building_and_execution.md").write_text("ok", encoding="utf-8")
+    (p1 / "3_outcome_and_verdict.md").write_text("ok", encoding="utf-8")
+
+    # Phase 2: completed older phase missing exit files -> must FAIL
+    p2 = phases_dir / "Phase 2"
+    p2.mkdir()
+    (p2 / "1_planning_and_goals.md").write_text("ok", encoding="utf-8")
+
+    # Phase 3: latest phase missing exit files -> must WARN
+    p3 = phases_dir / "Phase 3"
+    p3.mkdir()
+    (p3 / "1_planning_and_goals.md").write_text("ok", encoding="utf-8")
+
+    monkeypatch.setattr(va, "ROOT", tmp_path)
+    monkeypatch.setattr(va, "R", [])
+    monkeypatch.setattr(va, "parse_defects", lambda: [])
+
+    va.check_phases_and_defects()
+
+    statuses = {name: (status, detail) for status, name, detail in va.R}
+    assert statuses["Phase 1: three required files"][0] == "PASS"
+    assert statuses["Phase 2: three required files"][0] == "FAIL"
+    assert statuses["Phase 3: three required files"][0] == "WARN"
+    assert "phase in progress" in statuses["Phase 3: three required files"][1]
+
+    # If latest phase lacks 1_planning_and_goals.md, it must FAIL
+    p4 = phases_dir / "Phase 4"
+    p4.mkdir()
+    monkeypatch.setattr(va, "R", [])
+    va.check_phases_and_defects()
+    statuses = {name: (status, detail) for status, name, detail in va.R}
+    assert statuses["Phase 4: three required files"][0] == "FAIL"

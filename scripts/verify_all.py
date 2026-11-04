@@ -195,7 +195,13 @@ def check_phases_and_defects():
     phases = sorted((ROOT / "phases").glob("Phase *"), key=lambda p: int(p.name.split()[1]))
     for ph in phases:
         miss = [f for f in ("1_planning_and_goals.md", "2_building_and_execution.md", "3_outcome_and_verdict.md") if not (ph / f).exists()]
-        add("FAIL" if miss else "PASS", f"{ph.name}: three required files", ", ".join(miss))
+        is_latest = bool(phases and ph == phases[-1])
+        if not miss:
+            add("PASS", f"{ph.name}: three required files", "")
+        elif is_latest and (ph / "1_planning_and_goals.md").exists():
+            add("WARN", f"{ph.name}: three required files", "phase in progress")
+        else:
+            add("FAIL", f"{ph.name}: three required files", ", ".join(miss))
     rows = parse_defects()
     if rows is None:
         return
