@@ -21,13 +21,21 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 MARKET_EVIDENCE_DIR = ROOT_DIR / "data" / "evidence" / "market"
 
 
-def fetch_market_history(start_date: str, end_date: str, save: bool = True) -> Dict[str, Dict[str, Any]]:
+def fetch_market_history(
+    start_date: str,
+    end_date: str,
+    save: bool = True,
+    overwrite: bool = False,
+    market_dir: Optional[Path] = None,
+) -> Dict[str, Dict[str, Any]]:
     """Fetch daily ^NSEI and ^INDIAVIX history for a date range and save evidence files.
 
     Args:
         start_date: YYYY-MM-DD
         end_date: YYYY-MM-DD
-        save: Whether to persist .raw and .json evidence to data/evidence/market/
+        save: Whether to persist .raw and .json evidence
+        overwrite: If False, never overwrite existing evidence files (D-085)
+        market_dir: Optional directory override for saving (defaults to data/evidence/market)
 
     Returns:
         Dict mapping date string (YYYY-MM-DD) to parsed dictionary.
@@ -38,7 +46,8 @@ def fetch_market_history(start_date: str, end_date: str, save: bool = True) -> D
         print("NOT_AVAILABLE: yfinance is not installed", file=sys.stderr)
         return {}
 
-    MARKET_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    target_dir = market_dir or MARKET_EVIDENCE_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
 
     # Extend start date backward slightly to ensure previous trading day's close is fetched
     start_dt = dt.datetime.strptime(start_date, "%Y-%m-%d").date()
@@ -117,15 +126,100 @@ def fetch_market_history(start_date: str, end_date: str, save: bool = True) -> D
         }
 
         if save:
-            raw_path = MARKET_EVIDENCE_DIR / f"{date_str}_nifty.raw"
-            json_path = MARKET_EVIDENCE_DIR / f"{date_str}_nifty.json"
+            raw_path = target_dir / f"{date_str}_nifty.raw"
+            json_path = target_dir / f"{date_str}_nifty.json"
 
-            raw_path.write_bytes(raw_bytes)
-            json_path.write_text(json.dumps(parsed_data, indent=2), encoding="utf-8")
+            if not raw_path.exists() or overwrite:
+                raw_path.write_bytes(raw_bytes)
+            if not json_path.exists() or overwrite:
+                json_path.write_text(json.dumps(parsed_data, indent=2), encoding="utf-8")
 
         results[date_str] = parsed_data
 
     return results
+
+
+def ensure_market_evidence_for_listed_dates(
+    log_path: Optional[Path] = None,
+    save: bool = True,
+    overwrite: bool = False,
+    market_dir: Optional[Path] = None,
+    run_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Ensure every listed IPO with recorded outcome has evidenced Nifty data (D-085).
+
+    Reads prediction_log.csv, identifies listing dates with recorded actual outcomes,
+    checks if data/evidence/market/<date>_nifty.{raw,json} exists.
+    If missing, fetches market data via yfinance and writes evidence.
+    Never overwrites existing files unless overwrite=True.
+    Logs MARKET_EVIDENCE RECORDED or SKIPPED_<reason> to run_log.csv.
+    """
+    import pandas as pd
+
+    target_log = log_path or (ROOT_DIR / "predictions" / "prediction_log.csv")
+    if not target_log.exists():
+        return {"status": "SKIPPED_NO_LOG", "recorded": [], "missing": []}
+
+    try:
+        df = pd.read_csv(target_log, dtype=str)
+    except Exception as e:
+        return {"status": "SKIPPED_ERROR", "error": str(e), "recorded": [], "missing": []}
+
+    if "status" not in df.columns or "actual_gain_pct" not in df.columns:
+        return {"status": "SKIPPED_INVALID_COLUMNS", "recorded": [], "missing": []}
+
+    fwd = df[df["status"].str.strip().str.upper() == "FORWARD"]
+    with_outcome = fwd[fwd["actual_gain_pct"].notna() & (fwd["actual_gain_pct"].str.strip() != "")]
+
+    needed_dates = sorted({
+        r["listing_date"].strip()[:10]
+        for _, r in with_outcome.iterrows()
+        if pd.notna(r.get("listing_date")) and str(r.get("listing_date")).strip()
+    })
+
+    target_dir = market_dir or MARKET_EVIDENCE_DIR
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    recorded: List[str] = []
+    skipped: List[str] = []
+
+    for d in needed_dates:
+        json_file = target_dir / f"{d}_nifty.json"
+        raw_file = target_dir / f"{d}_nifty.raw"
+        if json_file.exists() and raw_file.exists():
+            continue
+
+        # Missing evidence for this listed date; attempt fetch
+        try:
+            fetched = fetch_market_history(
+                start_date=d,
+                end_date=d,
+                save=save,
+                overwrite=overwrite,
+                market_dir=target_dir,
+            )
+            if d in fetched:
+                recorded.append(d)
+                if run_id:
+                    from opi.log import append_run_log
+                    append_run_log(run_id, "MARKET_EVIDENCE", d, "RECORDED", f"Recorded Nifty evidence for {d}")
+            else:
+                skipped.append(d)
+                if run_id:
+                    from opi.log import append_run_log
+                    append_run_log(run_id, "MARKET_EVIDENCE", d, "SKIPPED_UNAVAILABLE", f"Market data unavailable for {d}")
+        except Exception as exc:
+            skipped.append(d)
+            if run_id:
+                from opi.log import append_run_log
+                append_run_log(run_id, "MARKET_EVIDENCE", d, "SKIPPED_FETCH_FAILED", str(exc))
+
+    return {
+        "status": "OK",
+        "needed_dates": needed_dates,
+        "recorded": recorded,
+        "skipped": skipped,
+    }
 
 
 def get_nifty_market_move(date_str: str) -> Optional[float]:
