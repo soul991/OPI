@@ -1,4 +1,4 @@
-# Phase 17 GitHub Actions Health & Scheduled Runs Audit (G3, G4, G5)
+# Phase 17 GitHub Actions Health & Scheduled Runs Audit (G3, G4, G5, G6)
 
 **Audit Timestamp**: 2026-11-04T03:33:00+05:30  
 **Repository**: `soul991/OPI`  
@@ -61,5 +61,26 @@ Computed directly from `predictions/prediction_log.csv` and `predictions/run_log
 ## 4. Secret Sanitization Audit (G5)
 
 - **GitHub Secret Presence**: `gh secret list` confirms `OPENROUTER_API_KEY` is registered in GitHub Secrets.
-- **Repository Pattern Scan**: `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns strictly 0 matches across all branches and working trees.
+- **Repository Pattern Scan**: Secret key pattern search returns strictly 0 matches across all branches and working trees.
 - **Clean Hygiene**: Zero secret key material committed to disk, logs, issues, or snapshots.
+
+---
+
+## 5. PR #12 Audit & Status (G6)
+
+- **PR State**: `OPEN` (URL: https://github.com/soul991/OPI/pull/12, branch: `retrain/challenger-20261103-214459`)
+- **Appended Rows (9 total)**:
+  1. HD Fire Protect Limited (listed 2026-10-21, gain 23.39%)
+  2. Fusion CX Limited (listed 2026-10-22, gain 5.54%)
+  3. Zetwerk Manufacturing Business Limited (listed 2026-10-23, gain 5.46%)
+  4. Sahajanand Medical Technologies Limited (listed 2026-10-23, gain 7.89%)
+  5. Tonbo Imaging India Limited (listed 2026-10-23, gain 65.71%)
+  6. Bonfiglioli Transmissions Limited (listed 2026-10-23, gain 0.0%)
+  7. Jio Platforms Limited (listed 2026-10-28, gain 21.36%)
+  8. Paras Healthcare Limited (listed 2026-10-28, gain 3.90%)
+  9. EAAA India Alternatives (listed 2026-11-02, gain 0.63%)
+- **Existing Master Rows Changed**: Exactly **731 of 731** existing rows had values changed in `data/ipo_master.csv` (all existing integer years float-cast to `2010.0` due to NaN columns in appended rows, plus an unapproved `updated_at` column was introduced).
+- **Failing Test on PR Head**: Running `pytest` on PR head `e084603` failed:
+  `tests/test_discover.py::test_discovers_closed_unlisted_mainboard_ipos_from_fixture`
+  `AssertionError: assert 'LISTED' == 'CLOSED_UNLISTED'` (Zetwerk, SMT, Jio, Paras presence in master breaks discovery test classification).
+- **Disposition**: Per protocol, PR #12 is NOT merged and not pushed to. The user closes PR #12 on GitHub. Workstream B addresses the promotion format (D-092) and fixture isolation (D-093).
