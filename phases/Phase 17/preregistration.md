@@ -31,14 +31,16 @@
 
 ---
 
-## 3. Retraining PR Verification Standard (D-087, D-083)
+## 3. Retraining PR Verification Standard (D-087, D-083, D-092, D-093)
 
 1. **Governance & Permission Proof**:
    - Defect D-083 / D-087 cannot be marked `FIXED` solely from unit test assertions.
-   - Marking `FIXED` requires a verified green cloud workflow execution on `main` that successfully opened an automated Pull Request via GitHub Actions without personal access tokens.
+   - Marking `FIXED` requires a verified green cloud workflow execution on `main` that successfully opened an automated Pull Request via GitHub Actions without personal access tokens, and the opened PR must strictly satisfy D-092 and D-093.
+   - **D-092 (Byte-identical existing master rows)**: `scripts/promote_forward_rows.py` appends only newly eligible completed forward rows with their original text values (read with `dtype=str`), adds no unauthorized columns, and leaves every existing row of `data/ipo_master.csv` byte-identical (0 existing rows changed).
+   - **D-093 (Branch check execution & test isolation)**: The monthly workflow runs `pytest` and `verify_all.py` on the PR branch before opening the PR, copies real results into the PR body, and opens the PR as a draft marked `FAILING CHECKS` with an alert issue if any check fails. Discovery tests must remain independent of master dataset membership using dedicated test fixtures.
    - The workflow `monthly_retrain.yml` catches permission failures during `gh pr create` and alerts the user naming the exact setting:
      `Settings -> Actions -> General -> Workflow permissions -> Allow GitHub Actions to create and approve pull requests`.
-   - The champion model file `model/ipo_model.joblib` remains strictly immutable in automated retraining; automated merging is strictly prohibited.
+   - The champion model file `model/ipo_model.joblib` remains strictly immutable in automated retraining; automatic model promotion into production is strictly prohibited.
 
 ---
 
