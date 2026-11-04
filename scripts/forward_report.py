@@ -127,6 +127,10 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
             mae_gmp = float(has_gmp["err_gmp"].mean())
 
         print(f"Provisional Model MAE      : {mae_model:.2f} percentage points (n={n_eval})")
+        if n_eval >= 9:
+            first_8 = evaluated.iloc[:8]
+            mae_8 = float((first_8["pred_clean"] - first_8["actual_clean"]).abs().mean())
+            print(f"Prior Cohort Model MAE     : {mae_8:.2f} percentage points (n=8)")
         if mae_gmp is not None:
             print(f"Provisional Raw GMP MAE    : {mae_gmp:.2f} percentage points (n={len(has_gmp)})")
         print("-" * 86)

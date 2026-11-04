@@ -153,3 +153,39 @@ def test_dashboard_contains_pre_listing_section():
     assert "Bidding open, scored after close" in content
     assert "Model Estimate" in content
     assert "Days to Listing" in content
+
+
+def test_pre_listing_table_shows_distinct_bidding_dates(tmp_path: Path):
+    """D-090: Ensure pre-listing table shows distinct open and close dates and does not repeat close date twice."""
+    dummy_log = tmp_path / "prediction_log.csv"
+    with open(dummy_log, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "scored_at", "company", "open_date", "close_date", "listing_date",
+            "features_snapshot_json", "pred_gain_pct", "pred_prob_gt10",
+            "gmp_pct_at_scoring", "actual_gain_pct", "status", "notes"
+        ])
+        # Case 1: distinct open and close dates
+        writer.writerow([
+            "2026-11-01T10:00:00", "Distinct Dates Corp", "2026-10-28", "2026-10-30", "2026-11-05",
+            '{"issue_price": 100.0}', "10.00", "0.60", "5.0", "", "FORWARD", "test"
+        ])
+        # Case 2: identical open and close dates (close date repeated)
+        writer.writerow([
+            "2026-11-01T10:00:00", "Same Dates Corp", "2026-10-30", "2026-10-30", "2026-11-05",
+            '{"issue_price": 100.0}', "10.00", "0.60", "5.0", "", "FORWARD", "test"
+        ])
+
+    data = get_pre_listing_data(log_path=dummy_log, as_of_date="2026-11-02")
+    pending = {item["company"]: item for item in data["pending_predictions"]}
+
+    # Case 1 must show distinct dates
+    assert pending["Distinct Dates Corp"]["bidding_dates"] == "2026-10-28 to 2026-10-30"
+
+    # Case 2 must NOT repeat close date twice as '2026-10-30 to 2026-10-30'
+    assert pending["Same Dates Corp"]["bidding_dates"] == "2026-10-30"
+    assert "2026-10-30 to 2026-10-30" not in pending["Same Dates Corp"]["bidding_dates"]
+
+    md = render_pre_listing_markdown(data=data, log_path=dummy_log)
+    assert "2026-10-28 to 2026-10-30" in md
+    assert "2026-10-30 to 2026-10-30" not in md

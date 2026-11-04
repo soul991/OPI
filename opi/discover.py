@@ -448,16 +448,27 @@ def discover_ipos(
     as_of_date: Optional[str] = None,
     timeout: int = 10,
     confirm_overview: bool = True,
+    master_lookup: Optional[dict[str, dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """Discover Mainboard IPO candidates from provided HTML or live web."""
     if source_html is not None:
-        return parse_discovery_html(source_html, as_of_date=as_of_date, confirm_overview=confirm_overview)
+        return parse_discovery_html(
+            source_html,
+            as_of_date=as_of_date,
+            confirm_overview=confirm_overview,
+            master_lookup=master_lookup,
+        )
 
     # Try live fetch
     try:
         resp = requests.get(DISCOVERY_URL, headers=DEFAULT_HEADERS, timeout=timeout)
         if resp.status_code == 200:
-            return parse_discovery_html(resp.text, as_of_date=as_of_date, confirm_overview=confirm_overview)
+            return parse_discovery_html(
+                resp.text,
+                as_of_date=as_of_date,
+                confirm_overview=confirm_overview,
+                master_lookup=master_lookup,
+            )
     except Exception as e:
         print(f"Warning: Live discovery fetch failed: {e}")
 
@@ -469,6 +480,7 @@ def discover_ipos(
             fixture_path.read_text(encoding="utf-8"),
             as_of_date=as_of_date,
             confirm_overview=confirm_overview,
+            master_lookup=master_lookup,
         )
 
     return []

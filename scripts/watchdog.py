@@ -409,6 +409,30 @@ def check_unlogged_closing_ipos(
     return True, "All closed IPOs have forward predictions or listings outside threshold.", []
 
 
+def check_verify_extra(verify_script_path: Optional[Path] = None) -> Tuple[bool, str, List[str]]:
+    """Check (f): Run scripts/verify_extra.py and report failing checks (D-086)."""
+    script = verify_script_path or (ROOT_DIR / "scripts" / "verify_extra.py")
+    res = subprocess.run(
+        [sys.executable, str(script)],
+        cwd=str(ROOT_DIR),
+        capture_output=True,
+        text=True,
+    )
+    if res.returncode == 0:
+        return True, "All verify_extra checks passed.", []
+
+    output_lines = (res.stdout + res.stderr).splitlines()
+    failing_lines = [
+        line.strip() for line in output_lines
+        if line.strip().startswith("[FAIL]") or line.strip().startswith("missing:")
+    ]
+    if not failing_lines:
+        failing_lines = [line.strip() for line in output_lines if "FAIL" in line or "fail" in line]
+
+    msg = f"verify_extra.py failed with exit code {res.returncode}:\n" + "\n".join(f"  {line}" for line in failing_lines)
+    return False, sanitize_text(msg), failing_lines
+
+
 def execute_keepalive_if_needed(dry_run: bool = False) -> Tuple[bool, str]:
     """Check keepalive: commit timestamp to predictions/heartbeat.txt if no commit in 30 days."""
     try:
@@ -511,6 +535,13 @@ def run_watchdog(
         print(f"  {msg_e}\n")
         if not ok_e:
             failures.append(f"Unlogged Closing IPO Coverage: {msg_e}")
+
+    # Check (f): verify_extra.py guard (D-086)
+    ok_f, msg_f, failing_f = check_verify_extra()
+    print(f"Check (f) [Verification Extra Guard]: {'PASS' if ok_f else 'FAIL'}")
+    print(f"  {msg_f}\n")
+    if not ok_f:
+        failures.append(f"Verification Extra Guard Failure:\n{msg_f}")
 
     # Keepalive check
     ok_k, msg_k = execute_keepalive_if_needed(dry_run=dry_run)

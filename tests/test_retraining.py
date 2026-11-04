@@ -98,3 +98,62 @@ def test_monthly_retrain_workflow_opens_pr():
     # Workflow must open PR
     assert "gh pr create" in content
     assert "Open Pull Request with Challenger Comparison" in content
+
+
+def test_promote_forward_rows_byte_identical_existing(tmp_path):
+    """D-092: Verify that promote_forward_rows --apply leaves existing rows 100% byte-identical."""
+    from scripts.promote_forward_rows import promote_forward_rows, MASTER_COLUMNS
+
+    tmp_master = tmp_path / "ipo_master.csv"
+    tmp_promotions = tmp_path / "promotions.csv"
+    tmp_log = tmp_path / "prediction_log.csv"
+
+    orig_bytes = MASTER_DATA.read_bytes()
+    tmp_master.write_bytes(orig_bytes)
+    orig_lines = MASTER_DATA.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    tmp_log.write_text((ROOT / "predictions" / "prediction_log.csv").read_text(encoding="utf-8"), encoding="utf-8")
+
+    promoted = promote_forward_rows(
+        apply=True,
+        log_path=tmp_log,
+        master_path=tmp_master,
+        promotions_path=tmp_promotions
+    )
+
+    new_content = tmp_master.read_text(encoding="utf-8")
+    new_lines = new_content.splitlines(keepends=True)
+
+    assert len(new_lines) >= len(orig_lines), "Master dataset lost lines during promotion"
+    for i in range(len(orig_lines)):
+        assert new_lines[i] == orig_lines[i], f"Line {i+1} changed! Expected:\n{orig_lines[i]!r}\nGot:\n{new_lines[i]!r}"
+
+    import csv
+    with open(tmp_master, mode="r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        assert header == MASTER_COLUMNS, "Header columns modified or order altered"
+        assert "updated_at" not in header, "Illegal column updated_at added to master dataset"
+
+        for row_idx, row in enumerate(reader):
+            assert len(row) == len(MASTER_COLUMNS), f"Row {row_idx+2} has {len(row)} columns, expected {len(MASTER_COLUMNS)}"
+            year_val = row[header.index("year")]
+            if year_val:
+                assert "." not in year_val, f"Year formatted as float '{year_val}' at row {row_idx+2}"
+
+
+def test_monthly_retrain_workflow_branch_verification_and_alerting():
+    """D-087 and D-093: Verify workflow validates branch before PR, flags drafts, and alerts exact admin setting."""
+    wf_path = ROOT / ".github" / "workflows" / "monthly_retrain.yml"
+    assert wf_path.exists(), ".github/workflows/monthly_retrain.yml must exist"
+    content = wf_path.read_text(encoding="utf-8")
+
+    assert "python -m pytest -q" in content
+    assert "python scripts/verify_all.py" in content
+    assert "PR_CHECKS_MD=" in content
+    assert "--draft" in content
+
+    assert "issues: write" in content
+    assert "pull-requests: write" in content
+    assert "Allow GitHub Actions to create and approve pull requests" in content
+    assert "Settings -> Actions -> General -> Workflow permissions" in content

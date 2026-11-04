@@ -149,6 +149,7 @@ def run_daily_forward_test(dry_run: bool = False):
                     company=company,
                     listing_date=listing_date,
                     close_date=close_date,
+                    open_date=cand.get("open_date"),
                     overview_url=overview_url,
                     sub_url=sub_url,
                     gmp_url=gmp_url,
@@ -212,6 +213,16 @@ def run_daily_forward_test(dry_run: bool = False):
                     run_id, "ACTUALS", comp_name, "SKIPPED_FETCH_FAILED",
                     outcome_res.get("reason", "Unknown outcome result")
                 )
+
+    # 2b. Market evidence for listed dates (D-085)
+    print("\n[Step 2b] Ensuring market evidence for listed dates (D-085)...")
+    from opi.market import ensure_market_evidence_for_listed_dates
+    m_res = ensure_market_evidence_for_listed_dates(
+        log_path=log_path,
+        save=(not dry_run),
+        run_id=run_id if not dry_run else None,
+    )
+    print(f"  Market evidence status: {m_res.get('status', 'OK')} (needed: {len(m_res.get('needed_dates', []))}, recorded: {len(m_res.get('recorded', []))}, skipped: {len(m_res.get('skipped', []))})")
 
     # 3. Regenerate dashboard and pre-listing predictions list (D-079)
     if not dry_run:

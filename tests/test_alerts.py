@@ -1,3 +1,4 @@
+from pathlib import Path
 """Unit tests for automated GitHub issue alerts and deduplication (D-057)."""
 
 import json
@@ -5,6 +6,8 @@ import os
 import subprocess
 from unittest.mock import MagicMock, patch
 import pytest
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 from scripts.manage_alerts import (
     sanitize_text,
@@ -140,3 +143,51 @@ def test_handle_success_closes_open_alert_issues(mock_gh):
     assert "42" in close_call_args
     assert "--reason" in close_call_args
     assert "completed" in close_call_args
+
+
+@patch("scripts.manage_alerts.run_gh_command")
+def test_daily_alert_includes_failed_step_name_and_trace(mock_gh, tmp_path):
+    """D-091: Daily failure alerts name the failed step and include the tail of its output from reason file."""
+    list_result = MagicMock()
+    list_result.returncode = 0
+    list_result.stdout = "[]"
+
+    create_result = MagicMock()
+    create_result.returncode = 0
+    create_result.stdout = "https://github.com/soul991/OPI/issues/130"
+
+    mock_gh.side_effect = [list_result, create_result]
+
+    reason_file = tmp_path / "failed_step_reason.txt"
+    trace_lines = [f"Traceback line {i}: error in processing" for i in range(1, 41)]
+    reason_file.write_text("\n".join(trace_lines), encoding="utf-8")
+
+    from scripts.manage_alerts import main
+    with patch("sys.argv", [
+        "manage_alerts.py",
+        "--on-failure",
+        "--workflow-name", "daily.yml",
+        "--run-id", "555666777",
+        "--failed-step", "Run Test Suite",
+        "--reason-file", str(reason_file)
+    ]):
+        ret = main()
+
+    assert ret == 0
+    assert mock_gh.call_count == 2
+    create_call_args = mock_gh.call_args_list[1][0][0]
+    assert "--body" in create_call_args
+    body_idx = create_call_args.index("--body")
+    issue_body = create_call_args[body_idx + 1]
+
+    assert "- **Failed Step / Component**: `Run Test Suite`" in issue_body
+    assert "Traceback line 40" in issue_body
+
+    daily_wf = ROOT_DIR / ".github" / "workflows" / "daily.yml"
+    assert daily_wf.exists()
+    wf_text = daily_wf.read_text(encoding="utf-8")
+    assert "id: run_tests" in wf_text
+    assert "id: run_daily" in wf_text
+    assert "id: verify_all" in wf_text
+    assert "--failed-step" in wf_text
+    assert "--reason-file" in wf_text

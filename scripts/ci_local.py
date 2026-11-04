@@ -40,6 +40,25 @@ def main() -> int:
             print(f"[{'PASS' if r.returncode == 0 else 'FAIL'}] {name}")
             if r.returncode != 0:
                 failed.append(name)
+
+        # verify_extra run (D-086): printed result, non-blocking if only missing market evidence awaiting cloud
+        print(f"\n=== verify_extra: scripts/verify_extra.py")
+        rx = subprocess.run([sys.executable, "scripts/verify_extra.py"], cwd=work, capture_output=True, text=True)
+        print(rx.stdout.strip())
+        if rx.stderr.strip():
+            print(rx.stderr.strip())
+
+        if rx.returncode == 0:
+            print("[PASS] verify_extra")
+        else:
+            output_lines = (rx.stdout + rx.stderr).splitlines()
+            fails = [line.strip() for line in output_lines if line.strip().startswith("[FAIL]")]
+            is_only_missing_nifty = len(fails) == 1 and "each listed date has a parsed Nifty evidence file" in fails[0]
+            if is_only_missing_nifty:
+                print("[WARN] verify_extra: missing Nifty market evidence for listed date awaiting cloud run; non-blocking for local push.")
+            else:
+                print("[FAIL] verify_extra")
+                failed.append("verify_extra")
         print("\nCI_LOCAL:", "FAIL (" + ", ".join(failed) + ")" if failed else "PASS")
         return 1 if failed else 0
 

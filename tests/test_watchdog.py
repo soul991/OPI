@@ -409,3 +409,25 @@ def test_missed_forward_csv_recording(tmp_path):
     check_unlogged_closing_ipos(candidates=cands, log_path=log_csv, missed_path=missed_csv, current_date=today)
     lines = [l for l in missed_csv.read_text(encoding="utf-8").splitlines() if "Overdue Unscored Ltd" in l]
     assert len(lines) == 1
+
+
+def test_watchdog_runs_verify_extra_and_reports_failure():
+    """D-086: Watchdog executes verify_extra.py and reports failing check lines."""
+    from scripts.watchdog import check_verify_extra
+
+    mock_res = MagicMock()
+    mock_res.returncode = 1
+    mock_res.stdout = (
+        "[PASS] subscription figures in Phase 11+ reports equal prediction_log values\n"
+        "[FAIL] each listed date has a parsed Nifty evidence file: missing: 2026-11-02\n"
+        "\nSUMMARY: 6 pass, 0 warn, 1 fail\n"
+    )
+    mock_res.stderr = ""
+
+    with patch("subprocess.run", return_value=mock_res):
+        ok, msg, failing = check_verify_extra()
+        assert ok is False
+        assert len(failing) >= 1
+        assert "each listed date has a parsed Nifty evidence file" in msg
+        assert "missing: 2026-11-02" in msg
+
