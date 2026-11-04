@@ -5,6 +5,14 @@
 
 ---
 
+## ERRATA (Phase 17 Correction)
+
+- **Gate A16 Start Verification**: The baseline verification summary for `phases/Phase 16/verify_start.txt` was reported as `71 pass, 0 warn, 0 fail`. The actual committed `verify_start.txt` summary is:
+  `phases/Phase 16/verify_start.txt: 71 pass, 1 warn, 3 fail`
+  (1 warning: `earlier-phase files unchanged: phase16-gate-a commit not found` before gate commit; 3 failures: pytest verdict table mismatch, missing phase 16 files, and uncommitted gate/preregistration at gate start).
+
+---
+
 ## 1. Summary of Workstreams & Milestones
 
 Phase 16 establishes pre-listing prediction visibility, deterministic automated Grey Market Premium (GMP) discovery, research agent integration into daily scoring pipelines, coverage alerting for closed unlisted IPOs, and pull request reporting for monthly retraining models:

@@ -238,7 +238,15 @@ def get_pre_listing_data(
                 co = str(r.get("company", "")).strip()
                 odate = str(r.get("open_date", "")).strip()[:10]
                 cdate = str(r.get("close_date", "")).strip()[:10]
-                bidding_dates = f"{odate} to {cdate}" if odate and cdate else "N/A"
+                # D-090: Ensure distinct open and close dates appear rather than repeating close date
+                if odate and cdate:
+                    bidding_dates = f"{odate} to {cdate}" if odate != cdate else cdate
+                elif cdate:
+                    bidding_dates = cdate
+                elif odate:
+                    bidding_dates = odate
+                else:
+                    bidding_dates = "N/A"
 
                 pred_val = float(r["pred_gain_pct"]) if pd.notna(r.get("pred_gain_pct")) and str(r.get("pred_gain_pct")).strip() != "" else None
                 model_est = f"{pred_val:+.2f}%" if pred_val is not None else "—"
@@ -313,7 +321,7 @@ def get_pre_listing_data(
             ldate = str(c.get("listing_date", "")).strip()[:10] or "TBD"
             bidding_open_items.append({
                 "company": co,
-                "bidding_dates": f"{odate} to {cdate}" if odate and cdate else "N/A",
+                "bidding_dates": (f"{odate} to {cdate}" if odate != cdate else cdate) if odate and cdate else (cdate or odate or "N/A"),
                 "listing_date": ldate,
                 "status": "BIDDING_OPEN",
                 "notes": f"Bidding open: scored after close on {cdate}",

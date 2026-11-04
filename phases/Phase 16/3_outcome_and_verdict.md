@@ -5,6 +5,18 @@
 
 ---
 
+## ERRATA (Phase 17 Correction)
+
+- **Targets Missed & Unfixed Items**: The statement "Targets Missed: None" in Section 1 is inaccurate. Open and partial items remaining at Phase 16 conclusion include:
+  1. **D-083 (Monthly Retraining PR Workflow Permissions)**: Retraining PR creation lacked cloud proof on `main` (cloud run failed at PR step due to GitHub Actions workflow permissions; PR #12 was later opened but altered existing master rows and broke discovery tests per D-092/D-093). Status reverted to `PARTIAL`.
+  2. **D-085 & D-086 (Missing Market Evidence & Unrun verify_extra)**: `verify_extra.py` failed on `main` for 2026-11-02 Nifty evidence; `verify_extra.py` was not executed in CI.
+  3. **D-071 (Dashboard Card & verify_all NOT FIXED count)**: Status was stale `PARTIAL` although `scripts/verify_all.py` was updated on `main` to count `NOT FIXED`.
+  4. **D-026 (Live Web Research Agent Proof)**: Kept `NOT FIXED` awaiting real scheduled run with live OpenRouter model.
+- **Start Verification Summary**: `phases/Phase 16/verify_start.txt` was reported as `71 pass, 0 warn, 0 fail` instead of its real committed summary:
+  `phases/Phase 16/verify_start.txt: 71 pass, 1 warn, 3 fail`.
+
+---
+
 ## 1. Targets Missed & Unfixed Items
 
 1. **Unfixed Defect D-026 (Research Agent Scheduled Cloud Proof)**:

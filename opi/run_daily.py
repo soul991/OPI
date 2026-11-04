@@ -149,6 +149,7 @@ def run_daily_forward_test(dry_run: bool = False):
                     company=company,
                     listing_date=listing_date,
                     close_date=close_date,
+                    open_date=cand.get("open_date"),
                     overview_url=overview_url,
                     sub_url=sub_url,
                     gmp_url=gmp_url,

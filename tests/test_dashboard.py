@@ -72,3 +72,23 @@ def test_dashboard_shows_listed_outcome_pending_count_and_names():
     m_card = re.search(r"listed, outcome pending:\s*(\d+)", content)
     assert m_card is not None
 
+
+
+def test_verify_all_and_dashboard_count_not_fixed():
+    """D-089: Verify scripts/verify_all.py and dashboard code both count NOT FIXED along with OPEN and PARTIAL."""
+    verify_script = ROOT / "scripts" / "verify_all.py"
+    assert verify_script.exists()
+    v_text = verify_script.read_text(encoding="utf-8")
+    assert '("OPEN", "PARTIAL", "NOT FIXED")' in v_text or "('OPEN', 'PARTIAL', 'NOT FIXED')" in v_text
+
+    defects = parse_defects_summary()
+    assert "NOT FIXED" in defects
+    assert defects["NOT FIXED"] > 0
+    expected_unresolved = defects["OPEN"] + defects["PARTIAL"] + defects["NOT FIXED"]
+
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    content = dash_path.read_text(encoding="utf-8")
+    m_card = re.search(r'Open / Partial (?:/ Not Fixed )?Defects.*?<div class="card-num"[^>]*>\s*(\d+)\s*</div>', content, re.DOTALL)
+    assert m_card is not None
+    assert int(m_card.group(1)) == expected_unresolved
