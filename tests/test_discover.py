@@ -13,7 +13,7 @@ def test_discovers_closed_unlisted_mainboard_ipos_from_fixture():
     assert fixture_path.exists(), "tests/fixtures/discovery_page.html must exist"
 
     html = fixture_path.read_text(encoding="utf-8")
-    candidates = discover_ipos(source_html=html, as_of_date="2026-10-21")
+    candidates = discover_ipos(source_html=html, as_of_date="2026-10-21", master_lookup={})
 
     # Check discovered count
     companies = [c["company"] for c in candidates]
@@ -69,7 +69,7 @@ def test_derive_subscription_url_from_overview_url():
 
     # Verify discovery output populates sub_url for candidate IPOs
     fixture_path = ROOT / "tests" / "fixtures" / "discovery_page.html"
-    candidates = discover_ipos(source_html=fixture_path.read_text(encoding="utf-8"), as_of_date="2026-10-21")
+    candidates = discover_ipos(source_html=fixture_path.read_text(encoding="utf-8"), as_of_date="2026-10-21", master_lookup={})
     jio_cand = next(c for c in candidates if c["company"] == "Jio Platforms Limited")
     assert jio_cand["sub_url"] == "https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3095/"
 
@@ -110,3 +110,19 @@ def test_derive_subscription_url_edge_cases():
     assert derive_subscription_url("https://www.chittorgarh.com/ipo_subscription/jio-platforms-ipo/3152/") is None
 
 
+
+
+def test_discovery_independent_of_master_membership():
+    """D-093: Discovery classification of candidates remains independent of master dataset membership."""
+    fixture_path = ROOT / "tests" / "fixtures" / "discovery_page.html"
+    assert fixture_path.exists(), "tests/fixtures/discovery_page.html must exist"
+    html = fixture_path.read_text(encoding="utf-8")
+
+    # Even with an empty or non-empty master_lookup, passing an isolated lookup ensures
+    # closed unlisted candidates are not prematurely classified as LISTED
+    cands_isolated = discover_ipos(source_html=html, as_of_date="2026-10-21", master_lookup={})
+    zet = next(c for c in cands_isolated if c["company"] == "Zetwerk Manufacturing Business Limited")
+    assert zet["status"] == "CLOSED_UNLISTED", f"Expected CLOSED_UNLISTED, got {zet['status']}"
+
+    jio = next(c for c in cands_isolated if c["company"] == "Jio Platforms Limited")
+    assert jio["status"] == "BIDDING_OPEN", f"Expected BIDDING_OPEN, got {jio['status']}"
