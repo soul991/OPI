@@ -1,0 +1,18 @@
+claim_id,claim_text,file_checked,audit_result,evidence_notes
+C-01,"Claim (IPO): Bonfiglioli Transmissions Limited Issue ₹586.00, Listing ₹586.00, Actual Gain +0.00%, Model Estimate +21.10%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 11: Bonfiglioli issue 586.00, actual_gain_pct 0.00, pred_gain_pct 21.10"
+C-02,"Claim (IPO): Sahajanand Medical Technologies Limited Issue ₹344.00, Listing ₹371.15, Actual Gain +7.89%, Model Estimate +8.32%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 9: SMT issue 344.00, actual_gain_pct 7.89, pred_gain_pct 8.32"
+C-03,"Claim (Defect): D-090 marked FIXED in Phase 17 with test tests/test_pre_listing.py::test_pre_listing_table_shows_distinct_bidding_dates",DEFECTS.md,VERIFIED,"DEFECTS.md row D-090 specifies status FIXED and test tests/test_pre_listing.py::test_pre_listing_table_shows_distinct_bidding_dates"
+C-04,"Claim (Run ID): Watchdog Workflow Run 41926847918 executed verify_extra.py in cloud CI",phases/Phase 17/actions_status.md,VERIFIED,"phases/Phase 17/actions_status.md records run 41926847918 Check (f) [Verification Extra Guard]: PASS"
+C-05,"Claim (IPO): Paras Healthcare Limited Issue ₹693.00, Listing ₹720.00, Actual Gain +3.90%, Model Estimate -2.56%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 13 with outcome_corrections.csv effective gain 3.90, pred_gain_pct -2.56"
+C-06,"Claim (IPO): Jio Platforms Limited Issue ₹1119.00, Listing ₹1358.02, Actual Gain +21.36%, Model Estimate +22.14%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 12: Jio Platforms issue 1119.00, actual_gain_pct 21.36, pred_gain_pct 22.14"
+C-07,"Claim (Defect): D-094 marked FIXED in Phase 17 with test tests/test_reporting.py::test_verify_all_allows_in_progress_phase",DEFECTS.md,VERIFIED,"DEFECTS.md row D-094 specifies status FIXED and test tests/test_reporting.py::test_verify_all_allows_in_progress_phase"
+C-08,"Claim (Verify quote): Phase 17 Section 4 quotes verify_start.txt as 74 pass, 1 warn, 3 fail",phases/Phase 17/verify_start.txt,VERIFIED,"phases/Phase 17/verify_start.txt SUMMARY line is 'SUMMARY: 74 pass, 1 warn, 3 fail'"
+C-09,"Claim (Verify quote): Phase 17 Section 4 quotes verify_extra_start.txt as 6 pass, 0 warn, 1 fail",phases/Phase 17/verify_extra_start.txt,VERIFIED,"phases/Phase 17/verify_extra_start.txt SUMMARY line is 'SUMMARY: 6 pass, 0 warn, 1 fail'"
+C-10,"Claim (IPO): Zetwerk Manufacturing Business Limited Issue ₹151.00, Listing ₹159.25, Actual Gain +5.46%, Model Estimate -0.77%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 8: Zetwerk issue 151.00, actual_gain_pct 5.46, pred_gain_pct -0.77"
+
+headline_id,metric_name,verdict_claimed,recomputed_raw,status
+H-01,Overall Prospective Model MAE (n=9 listed),5.85 pp,5.8500 pp,"PASS (Recomputed raw: 5.8500 pp, rounds to 5.85 pp)"
+H-02,Prior Cohort Model MAE (n=8 listed),5.99 pp,5.9913 pp,"PASS (Recomputed raw: 5.9913 pp, rounds to 5.99 pp)"
+H-03,Provisional Raw GMP MAE (n=7 with GMP),6.15 pp,6.1471 pp,"PASS (Recomputed raw: 6.1471 pp, rounds to 6.15 pp)"
+H-04,GMP Subset Model MAE (n=7 with GMP),6.67 pp,6.6743 pp,"PASS (Recomputed raw: 6.6743 pp, rounds to 6.67 pp)"
+H-05,Master Dataset Row Count (ipo_master.csv),731 rows,740 rows,"UPDATED (PR #17 merged into main at a240726 on 2026-11-05, appending 9 rows: 731 -> 740)"
