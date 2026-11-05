@@ -666,3 +666,32 @@ issue_price.value
 2026-11-05T03:59:07.120884+05:30,run_20261104_222902,ACTUALS,SFC Environmental Technologies,SKIPPED_NO_MATCH,"Tier 2 primary source (SFCTECH.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-04, listing date 2026-11-03"
 2026-11-05T03:59:07.329761+05:30,run_20261104_222902,MARKET_EVIDENCE,2026-11-02,RECORDED,Recorded Nifty evidence for 2026-11-02
 2026-11-05T03:59:12.164550+05:30,run_20261104_222902,FINISH,ALL,SUCCESS,
+2026-11-05T19:24:48.952165+05:30,run_20261105_135448,START,ALL,STARTED,dry_run=False
+2026-11-05T19:24:51.124642+05:30,run_20261105_135448,DISCOVERY,Bombay Coated & Special Steels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.168185+05:30,run_20261105_135448,DISCOVERY,M.K.Sons Fine Jewels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.211255+05:30,run_20261105_135448,DISCOVERY,BLS Polymers,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.254757+05:30,run_20261105_135448,DISCOVERY,SFC Environmental Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.297686+05:30,run_20261105_135448,DISCOVERY,EAAA India Alternatives,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.341367+05:30,run_20261105_135448,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.384680+05:30,run_20261105_135448,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.428283+05:30,run_20261105_135448,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.471151+05:30,run_20261105_135448,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.515024+05:30,run_20261105_135448,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.618570+05:30,run_20261105_135448,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.663200+05:30,run_20261105_135448,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.707483+05:30,run_20261105_135448,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.751554+05:30,run_20261105_135448,DISCOVERY,Nityas Gems & Jewellery,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.795873+05:30,run_20261105_135448,DISCOVERY,Vishal Nirmiti,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.839555+05:30,run_20261105_135448,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.884326+05:30,run_20261105_135448,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.929436+05:30,run_20261105_135448,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:51.973895+05:30,run_20261105_135448,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:52.018291+05:30,run_20261105_135448,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:52.063267+05:30,run_20261105_135448,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-05T19:24:52.959017+05:30,run_20261105_135448,ACTUALS,M.K.Sons Fine Jewels,RECORDED,Recorded opening price ₹171.0 via tier2
+2026-11-05T19:24:53.436315+05:30,run_20261105_135448,ACTUALS,BLS Polymers,PENDING_REVIEW,Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%)
+2026-11-05T19:24:53.928468+05:30,run_20261105_135448,ACTUALS,SFC Environmental Technologies,RECORDED,Recorded opening price ₹355.1000061035156 via tier2
+2026-11-05T19:24:54.010324+05:30,run_20261105_135448,ACTUALS,Bombay Coated & Special Steels,SKIPPED_NO_MATCH,Could not resolve NSE/BSE symbols for Bombay Coated & Special Steels
+2026-11-05T19:24:54.717049+05:30,run_20261105_135448,MARKET_EVIDENCE,2026-11-03,RECORDED,Recorded Nifty evidence for 2026-11-03
+2026-11-05T19:24:55.005028+05:30,run_20261105_135448,MARKET_EVIDENCE,2026-11-04,RECORDED,Recorded Nifty evidence for 2026-11-04
+2026-11-05T19:24:59.282123+05:30,run_20261105_135448,FINISH,ALL,SUCCESS,
