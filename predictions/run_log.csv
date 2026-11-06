@@ -774,3 +774,29 @@ issue_price.value
 2026-11-07T01:43:33.374225+05:30,run_20261106_201327,ACTUALS,Bombay Coated & Special Steels,PENDING_REVIEW,Tier 2 sources diverge beyond 1.0% tolerance: yfinance=91.0 vs second_source=92.02 (diff=1.12%)
 2026-11-07T01:43:37.194555+05:30,run_20261106_201327,FINISH,ALL,SUCCESS,
 2026-11-07T01:43:37.225006+05:30,run_20261106_201327,ALERT,BLS Polymers,MISSING_OUTCOME_ALERT,Listed 2026-11-03 (4d ago) missing outcome: PENDING_REVIEW: Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%)
+2026-11-07T03:03:19.194230+05:30,run_20261106_213319,START,ALL,STARTED,dry_run=False
+2026-11-07T03:03:21.505891+05:30,run_20261106_213319,DISCOVERY,Bombay Coated & Special Steels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.550413+05:30,run_20261106_213319,DISCOVERY,M.K.Sons Fine Jewels,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.594347+05:30,run_20261106_213319,DISCOVERY,BLS Polymers,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.638479+05:30,run_20261106_213319,DISCOVERY,SFC Environmental Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.682730+05:30,run_20261106_213319,DISCOVERY,EAAA India Alternatives,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.727166+05:30,run_20261106_213319,DISCOVERY,Jio Platforms,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.845843+05:30,run_20261106_213319,DISCOVERY,Paras Healthcare,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.890743+05:30,run_20261106_213319,DISCOVERY,Tonbo Imaging India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.935641+05:30,run_20261106_213319,DISCOVERY,Zetwerk Manufacturing Business,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:21.981457+05:30,run_20261106_213319,DISCOVERY,Bonfiglioli Transmissions,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.026585+05:30,run_20261106_213319,DISCOVERY,Sahajanand Medical Technologies,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.071845+05:30,run_20261106_213319,DISCOVERY,Fusion CX,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.116915+05:30,run_20261106_213319,DISCOVERY,HD Fire Protect,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.162751+05:30,run_20261106_213319,DISCOVERY,Nityas Gems & Jewellery,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.208156+05:30,run_20261106_213319,DISCOVERY,Vishal Nirmiti,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.253437+05:30,run_20261106_213319,DISCOVERY,SRIT India,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.299968+05:30,run_20261106_213319,DISCOVERY,Shah Investor's Home,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.348642+05:30,run_20261106_213319,DISCOVERY,Acevector (Snapdeal),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.393645+05:30,run_20261106_213319,DISCOVERY,Orient Cables (India),SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.439278+05:30,run_20261106_213319,DISCOVERY,German Green Steel & Power,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:22.485908+05:30,run_20261106_213319,DISCOVERY,Fusion CX Limited,SKIPPED_ALREADY_LISTED,Company already listed in ipo_master or market
+2026-11-07T03:03:27.372168+05:30,run_20261106_213319,ACTUALS,BLS Polymers,PENDING_REVIEW,Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%) (arbitration: SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange majority)
+2026-11-07T03:03:27.770455+05:30,run_20261106_213319,ACTUALS,Bombay Coated & Special Steels,SKIPPED_NO_MATCH,"Tier 2 primary source (BCSSL.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-06, listing date 2026-11-05"
+2026-11-07T03:03:30.326736+05:30,run_20261106_213319,FINISH,ALL,SUCCESS,
+2026-11-07T03:03:30.421366+05:30,run_20261106_213319,ALERT,BLS Polymers,MISSING_OUTCOME_ALERT,Listed 2026-11-03 (4d ago) missing outcome: PENDING_REVIEW: Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%) (arbitration: SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange majority)
