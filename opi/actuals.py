@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import statistics
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -21,6 +22,7 @@ from opi.log import IST, LOG_PATH, ROOT_DIR, get_write_timestamp, update_actual_
 MAX_RESPONSE_BYTES = 12 * 1024 * 1024
 MAX_REDIRECTS = 4
 OFFICIAL_EXCHANGE_DOMAINS = ("nseindia.com", "bseindia.com")
+TOLERANCE_PCT: float = 1.0  # Inviolable 1.0% relative tolerance constant (D-100)
 PRICE_TOKEN = re.compile(r"(?<![\w])(?:₹\s*)?([0-9][0-9,]*(?:\.[0-9]+)?)(?![\w])")
 OPENING_PRICE_LABEL = re.compile(
     r"\b(?:(?:listing|opening|open|first[\s-]+traded?)\s+(?:day\s+)?price|open)\b",
@@ -1057,6 +1059,298 @@ def record_actual_from_tier2b(
     }
 
 
+def record_actual_from_tier2_arbitrated(
+    *,
+    company: str,
+    listing_date: date,
+    issue_price: Decimal,
+    nse_symbol: Optional[str],
+    bse_code: Optional[str],
+    overview_url: str,
+    quote_url: Optional[str] = None,
+    log_path: str | Path = LOG_PATH,
+    initial_sources: Optional[list[dict[str, Any]]] = None,
+    mock_additional_sources: Optional[list[dict[str, Any]]] = None,
+) -> dict[str, Any]:
+    """Execute pre-registered divergence arbitration (D-100, Phase 19 Workstream B).
+
+    Rule (preregistration Section 1):
+    1. Compares values strictly if and only if exchange (NSE vs BSE) and quantity match.
+    2. UNKNOWN exchange or mismatched quantities are excluded from agreement.
+    3. Yahoo Finance and any Yahoo-derived source count strictly as one publisher.
+    4. Outcome accepted only if >= 2 sources from different publishers agree within TOLERANCE_PCT (1.0%)
+       AND the agreeing group constitutes a strict majority (> 50%) of all labelled independent sources
+       for that specific (exchange, quantity).
+    5. Official price is median of the agreeing majority group.
+    """
+    target_log = Path(log_path)
+    if not target_log.is_file():
+        return {"status": "SKIPPED_FETCH_FAILED", "reason": f"Log file not found: {target_log}"}
+
+    # Verify active unrecorded FORWARD row
+    frame = pd.read_csv(target_log, dtype=str, keep_default_na=False)
+    matches = frame[(frame["company"].str.casefold() == company.strip().casefold()) & (frame["status"] == "FORWARD")]
+    if len(matches) != 1:
+        return {"status": "SKIPPED_NO_MATCH", "reason": f"Expected 1 active FORWARD row for {company}, found {len(matches)}"}
+    row = matches.iloc[0]
+    if row["actual_gain_pct"].strip():
+        return {"status": "SKIPPED_ALREADY_RECORDED", "reason": f"Outcome already recorded for {company}"}
+
+    # Gather all sources
+    all_sources: list[dict[str, Any]] = []
+    if initial_sources:
+        all_sources.extend(initial_sources)
+
+    # If additional mock sources are provided, add them
+    if mock_additional_sources:
+        all_sources.extend(mock_additional_sources)
+    else:
+        # Fetch up to 2 reachable independent publishers if available
+        # 1. Groww listing news
+        slug = re.sub(r"[^a-z0-9]+", "-", company.lower()).strip("-")
+        groww_candidates = [
+            f"https://groww.in/blog/{slug}-shares-list-at-nse-bse",
+            f"https://groww.in/blog/{slug}-ipo-listing-news",
+            f"https://groww.in/blog/{slug}-ipo-listing",
+            f"https://groww.in/blog/{slug}-shares-debut",
+        ]
+        for g_url in groww_candidates:
+            try:
+                rg = requests.get(g_url, headers=DEFAULT_HEADERS, timeout=12)
+                if rg.status_code == 200:
+                    g_meta = parse_source_value_metadata(
+                        rg.content,
+                        target_date=listing_date,
+                        publisher="Groww",
+                        url=g_url,
+                    )
+                    if g_meta.get("value") is not None:
+                        g_meta["source_url"] = g_url
+                        g_meta["raw_bytes"] = rg.content
+                        all_sources.append(g_meta)
+                        break
+            except Exception:
+                pass
+
+        # 2. Chittorgarh quote page if different from overview
+        if quote_url and quote_url != overview_url:
+            try:
+                rq = requests.get(quote_url, headers=DEFAULT_HEADERS, timeout=12)
+                if rq.status_code == 200:
+                    q_meta = parse_source_value_metadata(
+                        rq.content,
+                        target_date=listing_date,
+                        publisher="Chittorgarh Quote",
+                        url=quote_url,
+                    )
+                    if q_meta.get("value") is not None:
+                        q_meta["source_url"] = quote_url
+                        q_meta["raw_bytes"] = rq.content
+                        all_sources.append(q_meta)
+            except Exception:
+                pass
+
+    # Annotate hypothetical gains for all sources
+    for s in all_sources:
+        v = s.get("value")
+        if v is not None and issue_price > 0:
+            try:
+                s["hypothetical_gain_pct"] = round(float((Decimal(str(v)) - issue_price) / issue_price * Decimal("100")), 2)
+            except Exception:
+                s["hypothetical_gain_pct"] = None
+        else:
+            s["hypothetical_gain_pct"] = None
+
+    # Filter 1: Label compatibility gating (NSE or BSE only; exclude UNKNOWN exchange or missing values)
+    labelled = [
+        s for s in all_sources
+        if s.get("exchange") in ("NSE", "BSE") and s.get("value") is not None and float(s["value"]) > 0
+    ]
+
+    if len(labelled) < 2:
+        distinct_exchs = set(s.get("exchange") for s in all_sources if s.get("value") is not None)
+        if len(distinct_exchs - {"UNKNOWN"}) > 1:
+            return {
+                "status": "PENDING_REVIEW",
+                "reason": "SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange agreement",
+                "all_sources": all_sources,
+            }
+        return {
+            "status": "PENDING_REVIEW",
+            "reason": "SKIPPED_ARBITRATION_UNAVAILABLE: fewer than 2 independent labelled sources available",
+            "all_sources": all_sources,
+        }
+
+    # Group by (exchange, quantity)
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for s in labelled:
+        key = (s["exchange"], s.get("quantity", "open"))
+        groups.setdefault(key, []).append(s)
+
+    best_agreement: Optional[dict[str, Any]] = None
+
+    for (exch, qty), group in groups.items():
+        # Publisher deduplication: Yahoo and Yahoo-derived count as strictly 1 publisher
+        pub_map: dict[str, dict[str, Any]] = {}
+        for s in group:
+            pub_raw = s.get("publisher", "Unknown")
+            pub_norm = "Yahoo Finance" if "yahoo" in pub_raw.lower() else pub_raw
+            if pub_norm not in pub_map:
+                pub_map[pub_norm] = s
+
+        distinct_sources = list(pub_map.values())
+        n_group = len(distinct_sources)
+        if n_group < 2:
+            continue
+
+        # Check clusters of agreeing sources within TOLERANCE_PCT (1.0%)
+        clusters: list[list[dict[str, Any]]] = []
+        for i, s1 in enumerate(distinct_sources):
+            current_cluster = [s1]
+            p1 = float(s1["value"])
+            for j, s2 in enumerate(distinct_sources):
+                if i == j:
+                    continue
+                p2 = float(s2["value"])
+                diff_pct = abs(p1 - p2) / min(p1, p2) * 100.0
+                if diff_pct <= TOLERANCE_PCT:
+                    current_cluster.append(s2)
+            if len(current_cluster) >= 2:
+                # Confirm all pairwise differences in cluster <= TOLERANCE_PCT
+                all_agree = True
+                for a in range(len(current_cluster)):
+                    for b in range(a + 1, len(current_cluster)):
+                        pa = float(current_cluster[a]["value"])
+                        pb = float(current_cluster[b]["value"])
+                        if (abs(pa - pb) / min(pa, pb) * 100.0) > TOLERANCE_PCT:
+                            all_agree = False
+                            break
+                    if not all_agree:
+                        break
+                if all_agree:
+                    clusters.append(current_cluster)
+
+        # Check strict majority requirement: len(cluster) > n_group / 2
+        for c in clusters:
+            if len(c) > (n_group / 2.0):
+                best_agreement = {
+                    "exchange": exch,
+                    "quantity": qty,
+                    "agreeing_sources": c,
+                    "n_group": n_group,
+                }
+                break
+        if best_agreement:
+            break
+
+    if not best_agreement:
+        # Check if exchange mismatch between labelled sources
+        exchs = set(s["exchange"] for s in labelled)
+        if len(exchs) > 1:
+            return {
+                "status": "PENDING_REVIEW",
+                "reason": "SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange majority",
+                "all_sources": all_sources,
+            }
+        return {
+            "status": "PENDING_REVIEW",
+            "reason": "SKIPPED_ARBITRATION_NO_MAJORITY: no strict majority among agreeing sources",
+            "all_sources": all_sources,
+        }
+
+    # Strict majority accepted! Compute median agreed opening price
+    agreeing = best_agreement["agreeing_sources"]
+    prices = [float(s["value"]) for s in agreeing]
+    agreed_price = round(float(statistics.median(prices)), 2)
+    gain_pct = ((Decimal(str(agreed_price)) - issue_price) / issue_price * Decimal("100")).quantize(Decimal("0.01"))
+
+    evidence_dir = ROOT_DIR / "data" / "evidence" / "actuals"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "-", company.lower()).strip("-")
+    ld_str = listing_date.isoformat()
+    snapshot_path = evidence_dir / f"{ld_str}_{slug}_arbitrated.txt"
+    manifest_path = evidence_dir / f"{ld_str}_{slug}_arbitrated.json"
+
+    # Primary source URL for log update
+    primary_url = str(agreeing[0].get("source_url") or overview_url)
+
+    # Save summary text snapshot of arbitration
+    snap_lines = [
+        f"Company: {company}",
+        f"Listing Date: {ld_str}",
+        f"Arbitrated Exchange: {best_agreement['exchange']}",
+        f"Arbitrated Quantity: {best_agreement['quantity']}",
+        f"Official Opening Price: {agreed_price}",
+        f"Computed Listing Gain: {gain_pct}%",
+        f"Agreeing Publishers: {', '.join(sorted(set(str(s.get('publisher', '')) for s in agreeing)))}",
+        "Source Values Evaluated:",
+    ]
+    for s in all_sources:
+        snap_lines.append(f"  - {s.get('publisher')}: {s.get('exchange')} {s.get('quantity')}={s.get('value')} (gain={s.get('hypothetical_gain_pct')}%)")
+    snap_bytes = ("\n".join(snap_lines) + "\n").encode("utf-8")
+    snapshot_path.write_bytes(snap_bytes)
+    snapshot_hash = hashlib.sha256(snap_bytes).hexdigest()
+
+    # Save any raw bodies from agreeing sources that were fetched
+    for idx, s in enumerate(all_sources):
+        raw_b = s.get("raw_bytes")
+        if raw_b and isinstance(raw_b, bytes):
+            pub_slug = re.sub(r"[^a-z0-9]+", "-", str(s.get("publisher", "src")).lower()).strip("-")
+            sub_snap = evidence_dir / f"{ld_str}_{slug}_{pub_slug}_{idx}.txt"
+            if not sub_snap.exists():
+                sub_snap.write_bytes(raw_b)
+            s["snapshot_path"] = sub_snap.relative_to(ROOT_DIR).as_posix()
+        if "raw_bytes" in s:
+            del s["raw_bytes"]
+
+    manifest = {
+        "company": company,
+        "listing_date": ld_str,
+        "page_date": ld_str,
+        "accessed_at": get_write_timestamp(),
+        "source_url": primary_url,
+        "final_url": primary_url,
+        "source_host": urlsplit(primary_url).hostname,
+        "snapshot_path": snapshot_path.relative_to(ROOT_DIR).as_posix(),
+        "snapshot_sha256": snapshot_hash,
+        "outcome_source": "tier2_arbitrated",
+        "exchange": best_agreement["exchange"],
+        "quantity": best_agreement["quantity"],
+        "source_publisher": ", ".join(sorted(set(str(s.get("publisher", "")) for s in agreeing))),
+        "issue_price_in_prediction": float(issue_price),
+        "official_opening_price": float(agreed_price),
+        "computed_listing_gain_pct": float(gain_pct),
+        "arbitration_rule": "pre_registered_strict_majority",
+        "agreeing_publishers": [str(s.get("publisher", "")) for s in agreeing],
+        "agreeing_prices": prices,
+        "source_values": all_sources,
+        "verification_status": "VERIFIED_TIER2_ARBITRATED",
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    ok, message = update_actual_outcome(
+        company=company,
+        listing_date=ld_str,
+        actual_listing_price=float(agreed_price),
+        issue_price=float(issue_price),
+        source_url=primary_url,
+        source_snapshot_path=snapshot_path.relative_to(ROOT_DIR).as_posix(),
+        outcome_source="tier2_arbitrated",
+        log_path=target_log,
+    )
+    if not ok:
+        return {"status": "SKIPPED_FETCH_FAILED", "reason": f"Failed updating prediction log: {message}"}
+
+    return {
+        "status": "RECORDED",
+        "tier": "tier2_arbitrated",
+        "official_opening_price": agreed_price,
+        "actual_gain_pct": float(gain_pct),
+        "manifest": manifest,
+        "message": message,
+    }
+
+
 def execute_two_tier_outcome_chain(
     *,
     company: str,
@@ -1069,6 +1363,7 @@ def execute_two_tier_outcome_chain(
     mock_bse_code: Optional[str] = None,
     mock_tier2b_source_b_text: Optional[str] = None,
     mock_tier2b_source_b_url: Optional[str] = None,
+    mock_arbitration_sources: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
     """Execute two-tier outcome recording chain for due forward row (D-066, D-069)."""
     target_log = Path(log_path)
@@ -1151,6 +1446,37 @@ def execute_two_tier_outcome_chain(
     )
     if tier1_error and "manifest" in tier2_res:
         tier2_res["manifest"]["tier1_error"] = tier1_error
+
+    # Pre-registered Divergence Arbitration (D-100, Phase 19 Workstream B):
+    # When Tier 2 sources diverge beyond 1.0%, invoke arbitration
+    if tier2_res.get("status") == "PENDING_REVIEW" and "diverge beyond 1.0%" in str(tier2_res.get("reason", "")):
+        init_sources = []
+        if nse_sym or bse_code:
+            t_sym = f"{nse_sym}.NS" if nse_sym else f"{bse_code}.BO"
+            # Try to get yfinance open if available
+            yf_o, yf_e, yf_r = fetch_yfinance_first_session_open(t_sym, listing_date, mock_history=mock_yfinance_history)
+            if yf_o is not None:
+                init_sources.append(make_yfinance_source_value(t_sym, listing_date, yf_o))
+        sec_o, sec_u, sec_e, sec_r = fetch_second_source_open(overview_url, quote_url, listing_date, mock_text=mock_second_source_text)
+        if sec_o is not None:
+            init_sources.append(parse_source_value_metadata(sec_r or "", target_date=listing_date, publisher="Chittorgarh", extracted_price=sec_o, url=sec_u or overview_url))
+
+        arb_res = record_actual_from_tier2_arbitrated(
+            company=company,
+            listing_date=listing_date,
+            issue_price=issue_price,
+            nse_symbol=nse_sym,
+            bse_code=bse_code,
+            overview_url=overview_url,
+            quote_url=quote_url,
+            log_path=target_log,
+            initial_sources=init_sources,
+            mock_additional_sources=mock_arbitration_sources,
+        )
+        if arb_res.get("status") == "RECORDED":
+            return arb_res
+        if arb_res.get("status") == "PENDING_REVIEW":
+            tier2_res["reason"] = f"{tier2_res['reason']} (arbitration: {arb_res['reason']})"
 
     # Tier 2b fallback (D-096):
     # When Tier 2 returns LISTING_DAY_BAR_MISSING or empty yfinance history, and listing date is in the past
