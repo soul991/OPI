@@ -11,6 +11,10 @@
 | **Distinct Dates Corp** | 2026-10-28 to 2026-10-30 | 2026-11-05 | 3 | +10.00% | 60.0% | [-13.13%, +33.13%] | +5.00% | STANDARD | 2026-11-01T10:00:00 | with-GMP regime |
 | **Same Dates Corp** | 2026-10-30 | 2026-11-05 | 3 | +10.00% | 60.0% | [-13.13%, +33.13%] | +5.00% | STANDARD | 2026-11-01T10:00:00 | with-GMP regime |
 
+## Listed, Outcome Pending
+
+No listed IPOs currently awaiting outcome.
+
 ## Bidding Open (Scored After Close)
 
 | Company | Bidding Window | Expected Listing Date | Status | Notes |

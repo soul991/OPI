@@ -92,3 +92,24 @@ def test_verify_all_and_dashboard_count_not_fixed():
     m_card = re.search(r'Open / Partial (?:/ Not Fixed )?Defects.*?<div class="card-num"[^>]*>\s*(\d+)\s*</div>', content, re.DOTALL)
     assert m_card is not None
     assert int(m_card.group(1)) == expected_unresolved
+
+
+def test_dashboard_shows_pending_outcomes_table():
+    """D-098: Verify dashboard and pre_listing_predictions.md display the 'Listed, outcome pending' table."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists(), "dashboard/index.html must exist"
+    content = dash_path.read_text(encoding="utf-8")
+
+    assert "Listed, outcome pending" in content, "Dashboard must contain 'Listed, outcome pending' section"
+    assert "<th>Company</th>" in content
+    assert "<th>Listing Date</th>" in content
+    assert "<th>Days Since Listing</th>" in content
+    assert "<th>Last Logged Status</th>" in content
+    assert "<th>Reason / Detail</th>" in content
+
+    pre_md_path = ROOT / "predictions" / "pre_listing_predictions.md"
+    assert pre_md_path.exists(), "pre_listing_predictions.md must exist"
+    md_content = pre_md_path.read_text(encoding="utf-8")
+    assert "## Listed, Outcome Pending" in md_content
+    assert "| Company | Listing Date | Days Since Listing | Last Logged Status | Reason / Detail |" in md_content

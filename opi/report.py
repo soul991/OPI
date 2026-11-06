@@ -207,6 +207,21 @@ def get_pre_listing_data(
         ref_date = date.today()
 
     pending_items = []
+    listed_outcome_pending_items = []
+    last_reasons: Dict[str, Tuple[str, str]] = {}
+    run_log_path = ROOT_DIR / "predictions" / "run_log.csv"
+    if run_log_path.exists():
+        try:
+            r_df = pd.read_csv(run_log_path, keep_default_na=False)
+            for _, r_log in r_df.iterrows():
+                co_log = str(r_log.get("company", "")).strip()
+                st_log = str(r_log.get("status", "")).strip()
+                det_log = str(r_log.get("details", "")).strip()
+                if co_log:
+                    last_reasons[co_log] = (st_log, det_log)
+        except Exception:
+            pass
+
     if log_path.exists():
         from opi.outcomes import get_effective_predictions_df
         df = get_effective_predictions_df(log_path=log_path)
@@ -232,7 +247,20 @@ def get_pre_listing_data(
                     pass
 
                 days_to_listing = (ldate - ref_date).days
+                co = str(r.get("company", "")).strip()
+
                 if days_to_listing < 0:
+                    # D-098: Listed, outcome pending
+                    days_since = abs(days_to_listing)
+                    st_val, det_val = last_reasons.get(co, ("PENDING", "Awaiting outcome verification"))
+                    clean_det = det_val if det_val else st_val
+                    listed_outcome_pending_items.append({
+                        "company": co,
+                        "listing_date": ldate_str,
+                        "days_since_listing": days_since,
+                        "last_status": st_val,
+                        "reason": clean_det,
+                    })
                     continue
 
                 co = str(r.get("company", "")).strip()
@@ -329,6 +357,7 @@ def get_pre_listing_data(
 
     return {
         "pending_predictions": pending_items,
+        "listed_outcome_pending": listed_outcome_pending_items,
         "bidding_open_ipos": bidding_open_items,
         "as_of_date": ref_date_str,
     }
@@ -379,6 +408,24 @@ def render_pre_listing_markdown(
             )
     else:
         lines.append("No active forward predictions awaiting listing.")
+
+    listed_pending = data.get("listed_outcome_pending", [])
+    lines.extend([
+        "",
+        "## Listed, Outcome Pending",
+        "",
+    ])
+    if listed_pending:
+        lines.extend([
+            "| Company | Listing Date | Days Since Listing | Last Logged Status | Reason / Detail |",
+            "|---|:---:|:---:|:---:|---|",
+        ])
+        for lp in listed_pending:
+            lines.append(
+                f"| **{lp['company']}** | {lp['listing_date']} | {lp['days_since_listing']} | {lp['last_status']} | {lp['reason']} |"
+            )
+    else:
+        lines.append("No listed IPOs currently awaiting outcome.")
 
     lines.extend([
         "",
@@ -647,6 +694,19 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         "No IPOs currently in bidding open status.</td></tr>"
     )
 
+    listed_outcome_pending_rows = []
+    for lp in pre_list_data.get("listed_outcome_pending", []):
+        listed_outcome_pending_rows.append(f"""<tr>
+            <td style="padding: 10px 8px; font-weight: 600;">{lp['company']}</td>
+            <td style="padding: 10px 8px; text-align: center;">{lp['listing_date']}</td>
+            <td style="padding: 10px 8px; text-align: center;">{lp['days_since_listing']}</td>
+            <td style="padding: 10px 8px; text-align: center;"><span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">{lp['last_status']}</span></td>
+            <td style="padding: 10px 8px; color: #4b5563;">{lp['reason']}</td>
+        </tr>""")
+    listed_outcome_pending_rows_html = "".join(listed_outcome_pending_rows) or (
+        '<tr><td colspan="5" style="padding: 16px; text-align: center; color: #6b7280;">No listed IPOs currently awaiting outcome.</td></tr>'
+    )
+
     forward_accuracy_rows_html = "".join(forward_accuracy_rows) or (
         '<tr><td colspan="11" style="padding:16px;text-align:center;color:#6b7280">'
         "No active champion predictions recorded.</td></tr>"
@@ -763,6 +823,22 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         </div>
 
         
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 18px;">Listed, outcome pending</h2>
+            <p class="stats">IPOs that have passed their listing date but outcome recording is pending verification.</p>
+            <div style="overflow-x: auto; margin-top: 12px;">
+                <table><thead><tr>
+                    <th>Company</th>
+                    <th>Listing Date</th>
+                    <th>Days Since Listing</th>
+                    <th>Last Logged Status</th>
+                    <th>Reason / Detail</th>
+                </tr></thead><tbody>
+                    {listed_outcome_pending_rows_html}
+                </tbody></table>
+            </div>
+        </div>
+
         <div class="section">
             <h2 style="margin-top: 0; font-size: 18px;">Pre-listing predictions (awaiting listing)</h2>
             <p class="stats">Forward predictions logged post-bidding close with verified final subscriptions, awaiting market listing.</p>
