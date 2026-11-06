@@ -23,7 +23,13 @@ The following items in `DEFECTS.md` remain open, partial, or not fixed at the co
    - **Reason**: The research agent is integrated into `opi/run_daily.py` with grounding and schema validations. Marked NOT FIXED until a green scheduled cloud run discovers an unrecorded IPO requiring the agent and proves execution end-to-end in GitHub Actions.
 3. **D-085 (Missing Nifty Market Evidence for Past Listing Dates)**:
    - **Status**: `PARTIAL`.
-   - **Reason**: Workstream C (D-097) implementation ensures market evidence collection for all past listing dates regardless of outcome recording status. Per Phase 18 planning, D-085 remains PARTIAL until proven in production by `github-actions[bot]` committing Nifty evidence files for 2026-11-03, 2026-11-04, and 2026-11-05, followed by `verify_extra.py` 7 PASS on `main`.
+   - **Reason**: Workstream C (D-097) implementation ensures market evidence collection for all past listing dates regardless of outcome recording status. Cloud run `42218253536` committed `2026-11-05_nifty.json` and `2026-11-05_nifty.raw` in commit `993b5c0`. Retained as PARTIAL until verified on scheduled cadence.
+4. **D-096 (Automate Tier 2b Dual-Source Outcome Verification)**:
+   - **Status**: `OPEN`.
+   - **Reason**: Automated Tier 2b resolution logic implemented in `opi/actuals.py` and validated via tests `test_tier2b_dual_source_agreement_recorded` and `test_tier2b_divergence_beyond_tolerance_rejected`. In production, BLS Polymers remains `PENDING_REVIEW` because Yahoo (248.0) and Chittorgarh (244.1) diverge by 1.57% (> 1.0% tolerance). A third independent source (Groww) reports 248.0, agreeing with Yahoo but diverging from Chittorgarh (244.1 by 1.57%), correctly leaving the row pending review per the strict 1.0% tolerance guardrail.
+5. **D-099 (Symbol Resolution Fallback for Modern Chittorgarh Pages)**:
+   - **Status**: `OPEN`.
+   - **Reason**: Fallback regexes implemented in `resolve_company_symbols_and_urls` and verified via `test_symbol_resolution_fallbacks`. In production cloud run `42218253536`, symbol resolution dynamically resolved `BCSSL.NS` in the cloud runner. Cloud execution skipped with `SKIPPED_NO_MATCH: Tier 2 primary source (BCSSL.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-06, listing date 2026-11-05` (quoted verbatim per prompt instruction). Left OPEN pending cloud recording.
 
 ---
 
@@ -31,12 +37,10 @@ The following items in `DEFECTS.md` remain open, partial, or not fixed at the co
 
 | ID | Description | Severity | Status | Verification Test |
 |---|---|---|---|---|
-| D-091 | Daily failure alerts name the step "Execution" with a generic reason (issue #11), so the cause needs the run log. | Low | FIXED | `tests/test_alerts.py::test_daily_alert_includes_failed_step_name_and_trace` |
-| D-095 | An overdue-outcome (or coverage) alert makes `run_daily` raise, which blocks the commit step, so one unresolved listing stops all new data. | High | FIXED | `tests/test_watchdog.py::test_missing_outcomes_alert_does_not_block_run_daily` |
-| D-096 | Tier 2b (two independent non-Yahoo sources) is manual only; a late Yahoo bar leaves outcomes pending indefinitely. | High | FIXED | `tests/test_actuals_job.py::test_tier2b_dual_source_agreement_recorded` |
-| D-097 | Market (Nifty) evidence is written only for dates with a recorded outcome. | Medium | FIXED | `tests/test_market_evidence_job.py::test_job_records_nifty_evidence_for_unrecorded_past_listing` |
-| D-098 | The daily job cannot show which IPOs are pending and why; users learn of a stuck row only from an alert. | Medium | FIXED | `tests/test_dashboard.py::test_dashboard_shows_pending_outcomes_table` |
-| D-099 | Symbol resolution fails for new IPOs (Bombay Coated: "Could not resolve NSE/BSE symbols"). | Medium | FIXED | `tests/test_actuals_symbol_resolution.py::test_symbol_resolution_fallbacks` |
+| D-091 | Daily failure alerts name the step "Execution" with a generic reason (issue #11), so the cause needs the run log. | Low | FIXED | `tests/test_alerts.py::test_daily_alert_includes_failed_step_name_and_trace` (Cloud proof: Actions run `42207678334`, Issue #18 comment named `Check Forced Failure Flag`) |
+| D-095 | An overdue-outcome (or coverage) alert makes `run_daily` raise, which blocks the commit step, so one unresolved listing stops all new data. | High | FIXED | `tests/test_watchdog.py::test_missing_outcomes_alert_does_not_block_run_daily` (Cloud proof: Actions run `42218253536`, commit `993b5c0` succeeded despite overdue alert) |
+| D-097 | Market (Nifty) evidence is written only for dates with a recorded outcome. | Medium | FIXED | `tests/test_market_evidence_job.py::test_job_records_nifty_evidence_for_unrecorded_past_listing` (Cloud proof: Actions run `42218253536`, committed `2026-11-05_nifty.json` and `.raw`) |
+| D-098 | The daily job cannot show which IPOs are pending and why; users learn of a stuck row only from an alert. | Medium | FIXED | `tests/test_dashboard.py::test_dashboard_shows_pending_outcomes_table` (Cloud proof: Actions run `42218253536`, committed dashboard and markdown with "Listed, outcome pending" table) |
 
 ---
 
@@ -63,7 +67,7 @@ From `scripts/forward_report.py`:
 | **BLS Polymers** | 2026-11-03 | ₹150.00 | Pending | Pending | +53.28% | None (NOT_RECORDED) | Pending | N/A | unspecified | FORWARD | Closed 2026-10-29; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-03 | Status: PENDING_REVIEW (yfinance=248.0 vs second_source=244.1, diff=1.57% > 1.0% tolerance) |
 | **SFC Environmental Technologies** | 2026-11-03 | ₹330.00 | ₹355.11 | **+7.61%** | +5.49% | None (NOT_RECORDED) | **2.12 pp** | N/A | unspecified | LISTED | Closed 2026-10-29; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-03 | Actual opening price verified via https://finance.yahoo.com/quote/SFCTECH.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-11-03_sfc-environmental-technologies_c73079abd326.txt |
 | **EAAA India Alternatives** | 2026-11-02 | ₹1665.00 | ₹1675.49 | **+0.63%** | +5.35% | None (NOT_RECORDED) | **4.72 pp** | N/A | unspecified | LISTED | Closed 2026-10-28; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-02 | Actual opening price verified via https://finance.yahoo.com/quote/EDELALTS.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-11-02_eaaa-india-alternatives_a8a32fe858d1.txt |
-| **Bombay Coated & Special Steels** | 2026-11-05 | ₹82.00 | Pending | Pending | +10.14% | +11.28% | Pending | Pending | unspecified | FORWARD | Closed 2026-11-02; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-05 | Status: PENDING_REVIEW (yfinance=91.0 vs second_source=92.02, diff=1.12% > 1.0% tolerance) |
+| **Bombay Coated & Special Steels** | 2026-11-05 | ₹82.00 | Pending | Pending | +10.14% | +11.28% | Pending | Pending | unspecified | FORWARD | Closed 2026-11-02; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-05 | Status: SKIPPED_NO_MATCH (Tier 2 primary source (BCSSL.NS) failed: LISTING_DAY_BAR_MISSING: first bar is 2026-11-06, listing date 2026-11-05) |
 
 ---
 
@@ -75,7 +79,7 @@ From `scripts/forward_report.py`:
 
 2. **`scripts/verify_all.py`**:
    - Result: `SUMMARY: 81 pass, 0 warn, 0 fail`
-   - All 99 registered defects parsed; exactly 3 open/partial/not-fixed defects tracked in `DEFECTS.md` (D-013, D-026, D-085) and reconciled with this verdict.
+   - All 99 registered defects parsed; exactly 5 open/partial/not-fixed defects tracked in `DEFECTS.md` (D-013, D-026, D-085, D-096, D-099) and reconciled with this verdict.
    - Every `FIXED` defect has an existing and passing regression test.
 
 3. **`pytest`**:

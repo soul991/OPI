@@ -1,5 +1,5 @@
 [PASS] no absolute/local paths in docs or code                                              
-[PASS] pytest suite passes                                                                  238 passed, 1 skipped, 7 warnings in 114.14s (0:01:54)
+[PASS] pytest suite passes                                                                  238 passed, 1 skipped, 7 warnings in 87.58s (0:01:27)
 [PASS] no duplicate (company, listing_date)                                                 0 duplicates
 [PASS] listing_gain_pct matches prices                                                      0 mismatches
 [PASS] label_good matches gain                                                              0 mismatches
@@ -43,7 +43,7 @@
 [PASS] Phase 16: three required files                                                       
 [PASS] Phase 17: three required files                                                       
 [PASS] Phase 18: three required files                                                       
-[PASS] defect register parsed                                                               99 defects, 3 open/partial
+[PASS] defect register parsed                                                               99 defects, 5 open/partial
 [PASS] every FIXED defect has an existing regression test                                   
 [PASS] Phase 18 verdict 'None unfixed' consistent with defect register                      
 [PASS] Phase 6: gate + preregistration committed before other work                          
@@ -78,6 +78,6 @@
 [PASS] grounding: SFC Environmental Technologies inputs appear in saved snapshots           4 snapshot files
 [PASS] grounding: EAAA India Alternatives inputs appear in saved snapshots                  4 snapshot files
 [PASS] grounding: Bombay Coated & Special Steels inputs appear in saved snapshots           3 snapshot files
-[PASS] pytest passes on a fresh clone (no untracked/ignored files)                          238 passed, 1 skipped, 8 warnings in 178.80s (0:02:58)
+[PASS] pytest passes on a fresh clone (no untracked/ignored files)                          238 passed, 1 skipped, 8 warnings in 110.87s (0:01:50)
 
 SUMMARY: 81 pass, 0 warn, 0 fail
