@@ -168,14 +168,24 @@ def ensure_market_evidence_for_listed_dates(
     if "status" not in df.columns or "actual_gain_pct" not in df.columns:
         return {"status": "SKIPPED_INVALID_COLUMNS", "recorded": [], "missing": []}
 
-    fwd = df[df["status"].str.strip().str.upper() == "FORWARD"]
-    with_outcome = fwd[fwd["actual_gain_pct"].notna() & (fwd["actual_gain_pct"].str.strip() != "")]
+    from opi.discover import get_today_ist
+    try:
+        today_ist = dt.datetime.strptime(get_today_ist(), "%Y-%m-%d").date()
+    except Exception:
+        today_ist = dt.date.today()
 
-    needed_dates = sorted({
-        r["listing_date"].strip()[:10]
-        for _, r in with_outcome.iterrows()
-        if pd.notna(r.get("listing_date")) and str(r.get("listing_date")).strip()
-    })
+    fwd = df[df["status"].str.strip().str.upper() == "FORWARD"]
+
+    needed_dates = []
+    for _, r in fwd.iterrows():
+        ld_str = str(r.get("listing_date", "")).strip()[:10]
+        try:
+            ld = dt.datetime.strptime(ld_str, "%Y-%m-%d").date()
+            if ld <= today_ist:
+                needed_dates.append(ld_str)
+        except Exception:
+            continue
+    needed_dates = sorted(set(needed_dates))
 
     target_dir = market_dir or MARKET_EVIDENCE_DIR
     target_dir.mkdir(parents=True, exist_ok=True)

@@ -459,6 +459,15 @@ def resolve_company_symbols_and_urls(company: str, features: Optional[dict[str, 
                     m_b = re.search(r"BSE\s+Scrip\s+Code\s*</td>\s*<td[^>]*>([0-9]+)</td>", text, re.IGNORECASE)
                     if m_b:
                         result["bse_code"] = m_b.group(1).strip()
+                # D-099: Fallback regexes for Next.js JSON embeddings and modern issue pages
+                if not result["nse_symbol"]:
+                    m_n = re.search(r'\\*"(?:nse_symbol|il_nse_script_symbol)\\*":\s*\\*"([A-Za-z0-9_-]+)\\*"', text, re.IGNORECASE)
+                    if m_n and m_n.group(1).strip():
+                        result["nse_symbol"] = m_n.group(1).strip()
+                if not result["bse_code"]:
+                    m_b = re.search(r'\\*"(?:bse_scripcode|il_bse_script_code|bse_code)\\*":\s*\\*"?([0-9]{5,6})\\*"', text, re.IGNORECASE)
+                    if m_b and m_b.group(1).strip():
+                        result["bse_code"] = m_b.group(1).strip()
                 m_q = re.search(r'href="([^"]*/stockpricequote/[^"]+)"', text)
                 if m_q:
                     q_val = m_q.group(1)
@@ -695,6 +704,182 @@ def record_actual_from_tier2(
     }
 
 
+def record_actual_from_tier2b(
+    *,
+    company: str,
+    listing_date: date,
+    issue_price: Decimal,
+    overview_url: str,
+    quote_url: Optional[str] = None,
+    log_path: str | Path = LOG_PATH,
+    mock_source_a_text: Optional[str] = None,
+    mock_source_b_text: Optional[str] = None,
+    mock_source_a_url: Optional[str] = None,
+    mock_source_b_url: Optional[str] = None,
+) -> dict[str, Any]:
+    """Execute Tier 2b (two independent non-Yahoo sources <= 1.0% tolerance) (D-096)."""
+    # 1. Source A (Chittorgarh)
+    url_a = mock_source_a_url or overview_url
+    price_a, url_used_a, err_a, raw_a = fetch_second_source_open(
+        overview_url, quote_url, listing_date, mock_text=mock_source_a_text
+    )
+    if err_a or price_a is None or raw_a is None:
+        return {
+            "status": "SKIPPED_TIER2B_UNAVAILABLE",
+            "reason": f"Tier 2b Source A (Chittorgarh) unavailable: {err_a or 'unknown'}",
+        }
+
+    # 2. Source B (Groww / independent source)
+    url_b = mock_source_b_url
+    price_b: Optional[float] = None
+    raw_b: Optional[bytes] = None
+
+    if mock_source_b_text is not None:
+        raw_b = mock_source_b_text.encode("utf-8")
+        clean_b = re.sub(r"<[^>]+>", " ", mock_source_b_text)
+        m_b = re.search(
+            r"(?:listed at|shares listed at|opening price of|open|listed on (?:nse|bse) at)\s*(?:₹|&#8377;|Rs\.?)?\s*([0-9]+(?:\.[0-9]+)?)",
+            clean_b,
+            re.IGNORECASE,
+        )
+        if m_b:
+            price_b = float(m_b.group(1))
+        url_b = url_b or "https://groww.in/blog/mock-ipo-listing-news"
+    else:
+        if url_b:
+            try:
+                r_b = requests.get(url_b, headers=DEFAULT_HEADERS, timeout=15)
+                if r_b.status_code == 200:
+                    raw_b = r_b.content
+                    clean_b = re.sub(r"<[^>]+>", " ", r_b.text)
+                    m_b = re.search(
+                        r"(?:listed at|shares listed at|opening price of|open|listed on (?:nse|bse) at)\s*(?:₹|&#8377;|Rs\.?)?\s*([0-9]+(?:\.[0-9]+)?)",
+                        clean_b,
+                        re.IGNORECASE,
+                    )
+                    if m_b:
+                        price_b = float(m_b.group(1))
+            except Exception:
+                pass
+
+    if price_b is None or raw_b is None or not url_b:
+        return {
+            "status": "SKIPPED_TIER2B_UNAVAILABLE",
+            "reason": "Tier 2b independent second source unavailable or unparseable",
+        }
+
+    # Verify both pages name company
+    first_token = company.split()[0].lower()
+    text_a = raw_a.decode("utf-8", errors="ignore").lower()
+    text_b = raw_b.decode("utf-8", errors="ignore").lower()
+    if first_token not in text_a or first_token not in text_b:
+        return {
+            "status": "SKIPPED_TIER2B_UNAVAILABLE",
+            "reason": f"Tier 2b source verification failed: company name '{first_token}' not proved in both source pages",
+        }
+
+    # 3. Check 1.0% tolerance
+    denom = min(price_a, price_b)
+    if denom <= 0:
+        return {
+            "status": "SKIPPED_TIER2B_UNAVAILABLE",
+            "reason": "Invalid non-positive price extracted in Tier 2b",
+        }
+
+    rel_diff_pct = abs(price_a - price_b) / denom * 100.0
+    if rel_diff_pct > 1.0:
+        return {
+            "status": "SKIPPED_TIER2B_DISAGREE",
+            "reason": (
+                f"Tier 2b sources diverge beyond 1.0% tolerance: "
+                f"source1={price_a} vs source2={price_b} (diff={rel_diff_pct:.2f}%)"
+            ),
+        }
+
+    # 4. Save evidence
+    agreed_open = round((price_a + price_b) / 2.0, 2)
+    gain_pct = ((Decimal(str(agreed_open)) - issue_price) / issue_price * Decimal("100")).quantize(Decimal("0.01"))
+
+    evidence_dir = ROOT_DIR / "data" / "evidence" / "actuals"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "-", company.lower()).strip("-")
+    ld_str = listing_date.isoformat()
+
+    sha_a = hashlib.sha256(raw_a).hexdigest()
+    path_txt_a = evidence_dir / f"{ld_str}_{slug}_chittorgarh_tier2b.txt"
+    path_json_a = evidence_dir / f"{ld_str}_{slug}_chittorgarh_tier2b.json"
+    path_txt_a.write_bytes(raw_a)
+
+    sha_b = hashlib.sha256(raw_b).hexdigest()
+    path_txt_b = evidence_dir / f"{ld_str}_{slug}_groww_tier2b.txt"
+    path_json_b = evidence_dir / f"{ld_str}_{slug}_groww_tier2b.json"
+    path_txt_b.write_bytes(raw_b)
+
+    manifest_b = {
+        "company": company,
+        "listing_date": ld_str,
+        "source_role": "tier2b_independent_second_source",
+        "source_name": "Groww Financial Research Listing News",
+        "source_url": url_b,
+        "accessed_at": get_write_timestamp(),
+        "http_status": 200,
+        "content_sha256": sha_b,
+        "parsed_listing_price": price_b,
+    }
+    path_json_b.write_text(json.dumps(manifest_b, indent=2) + "\n", encoding="utf-8")
+
+    manifest_a = {
+        "company": company,
+        "listing_date": ld_str,
+        "source_role": "tier2b_primary",
+        "source_name": "Chittorgarh Listing Section",
+        "source_url": url_used_a or url_a,
+        "accessed_at": get_write_timestamp(),
+        "http_status": 200,
+        "page_date": ld_str,
+        "final_url": url_used_a or url_a,
+        "snapshot_path": path_txt_a.relative_to(ROOT_DIR).as_posix(),
+        "snapshot_sha256": sha_a,
+        "outcome_source": "tier2b",
+        "issue_price_in_prediction": float(issue_price),
+        "official_opening_price": float(agreed_open),
+        "computed_listing_gain_pct": float(gain_pct),
+        "relative_difference_pct": round(rel_diff_pct, 4),
+        "second_source_name": "Groww Financial Research Listing News",
+        "second_source_url": url_b,
+        "second_source_open": price_b,
+        "verification_status": "VERIFIED_TIER2B_DUAL_SOURCE",
+    }
+    path_json_a.write_text(json.dumps(manifest_a, indent=2) + "\n", encoding="utf-8")
+
+    # 5. Update log
+    ok, message = update_actual_outcome(
+        company=company,
+        listing_date=ld_str,
+        actual_listing_price=float(agreed_open),
+        issue_price=float(issue_price),
+        source_url=url_used_a or url_a,
+        source_snapshot_path=path_txt_a.relative_to(ROOT_DIR).as_posix(),
+        outcome_source="tier2b",
+        log_path=log_path,
+    )
+    if not ok:
+        return {"status": "SKIPPED_FETCH_FAILED", "reason": f"Failed updating prediction log: {message}"}
+
+    return {
+        "status": "RECORDED",
+        "tier": "tier2b",
+        "official_opening_price": agreed_open,
+        "actual_gain_pct": float(gain_pct),
+        "manifest": manifest_a,
+        "evidence_files": [
+            path_txt_a.name, path_json_a.name,
+            path_txt_b.name, path_json_b.name,
+        ],
+        "message": message,
+    }
+
+
 def execute_two_tier_outcome_chain(
     *,
     company: str,
@@ -705,6 +890,8 @@ def execute_two_tier_outcome_chain(
     mock_second_source_text: Optional[str] = None,
     mock_nse_symbol: Optional[str] = None,
     mock_bse_code: Optional[str] = None,
+    mock_tier2b_source_b_text: Optional[str] = None,
+    mock_tier2b_source_b_url: Optional[str] = None,
 ) -> dict[str, Any]:
     """Execute two-tier outcome recording chain for due forward row (D-066, D-069)."""
     target_log = Path(log_path)
@@ -787,4 +974,32 @@ def execute_two_tier_outcome_chain(
     )
     if tier1_error and "manifest" in tier2_res:
         tier2_res["manifest"]["tier1_error"] = tier1_error
+
+    # Tier 2b fallback (D-096):
+    # When Tier 2 returns LISTING_DAY_BAR_MISSING or empty yfinance history, and listing date is in the past
+    st2 = tier2_res.get("status")
+    r2 = str(tier2_res.get("reason", ""))
+    from opi.discover import get_today_ist
+    try:
+        today_ist = datetime.strptime(get_today_ist(), "%Y-%m-%d").date()
+    except Exception:
+        today_ist = date.today()
+
+    if st2 in ("SKIPPED_NO_MATCH", "SKIPPED_FETCH_FAILED") and ("LISTING_DAY_BAR_MISSING" in r2 or "returned empty" in r2.lower()) and listing_date < today_ist:
+        tier2b_res = record_actual_from_tier2b(
+            company=company,
+            listing_date=listing_date,
+            issue_price=issue_price,
+            overview_url=overview_url,
+            quote_url=quote_url,
+            log_path=target_log,
+            mock_source_a_text=mock_second_source_text,
+            mock_source_b_text=mock_tier2b_source_b_text,
+            mock_source_b_url=mock_tier2b_source_b_url,
+        )
+        if tier2b_res.get("status") == "RECORDED":
+            return tier2b_res
+        if tier2b_res.get("status") == "SKIPPED_TIER2B_DISAGREE":
+            return tier2b_res
+
     return tier2_res

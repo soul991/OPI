@@ -1,7 +1,7 @@
 # Phase 14 Source Reachability & Viability Probe (D-068)
 
-**Execution Timestamp**: 2026-11-06T08:52:21.381256+00:00  
-**Environment**: Python 3.12.16 on linux (GitHub Actions run ID: 42190713193)  
+**Execution Timestamp**: 2026-10-30T21:08:15.122258+00:00  
+**Environment**: Python 3.12.15 on linux (GitHub Actions run ID: 41128632410)  
 **Target Candidates**: Jio Platforms Limited, Paras Healthcare Limited (Listed 2026-10-28)  
 
 ## 1. Symbol Resolution Grounding (Code-Fetched)
@@ -16,18 +16,18 @@ Symbols were resolved dynamically via HTTPS requests to Chittorgarh IPO overview
 
 | Company | Source / Channel | Endpoint / Ticker | HTTP / Status | Latency | Extracted Open / Price | Viability / Notes |
 |---|---|---|---|---|---|---|
-| Jio Platforms Limited | NSE Official API | `https://www.nseindia.com/api/quote-equity?symbol=JPL` | `403` | 145 ms | — | WAF/CDN block (Server: AkamaiGHost, HTTP 403) |
-| Jio Platforms Limited | BSE Official API | `https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w?scripcode=545004&flag=0&fromdate=&todate=&seriesid=` | `403` | 93 ms | — | WAF block (HTTP 403) |
-| Jio Platforms Limited | BSE Announcements | `https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w?strCat=-1&strPrevDate=&strScrip=545004&strSearch=P&strToDate=&strType=C` | `403` | 44 ms | — | HTTP 403 |
-| Jio Platforms Limited | yfinance (NSE) | `JPL.NS` | `200` | 1212 ms | 1358.0 | Success: 8 session(s) found. Earliest 2026-10-28 Open=1358.00 |
-| Jio Platforms Limited | yfinance (BSE) | `545004.BO` | `204` | 410 ms | — | Empty history returned (symbol may not be indexed on this exchange) |
-| Jio Platforms Limited | Chittorgarh Listing / Quote | `https://www.chittorgarh.com/stockpricequote/jio-platforms-limited/8102/` | `200` | 66 ms | 1358.0 | Parsed listing day Open price: ₹1358.00 |
-| Paras Healthcare Limited | NSE Official API | `https://www.nseindia.com/api/quote-equity?symbol=PARASHLTH` | `403` | 121 ms | — | WAF/CDN block (Server: AkamaiGHost, HTTP 403) |
-| Paras Healthcare Limited | BSE Official API | `https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w?scripcode=545005&flag=0&fromdate=&todate=&seriesid=` | `403` | 40 ms | — | WAF block (HTTP 403) |
-| Paras Healthcare Limited | BSE Announcements | `https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w?strCat=-1&strPrevDate=&strScrip=545005&strSearch=P&strToDate=&strType=C` | `403` | 43 ms | — | HTTP 403 |
-| Paras Healthcare Limited | yfinance (NSE) | `PARASHLTH.NS` | `200` | 109 ms | 721.0 | Success: 7 session(s) found. Earliest 2026-10-29 Open=721.00 |
-| Paras Healthcare Limited | yfinance (BSE) | `545005.BO` | `204` | 407 ms | — | Empty history returned (symbol may not be indexed on this exchange) |
-| Paras Healthcare Limited | Chittorgarh Listing / Quote | `https://www.chittorgarh.com/stockpricequote/paras-healthcare-limited/8103/` | `200` | 72 ms | 720.0 | Parsed listing day Open price: ₹720.00 |
+| Jio Platforms Limited | NSE Official API | `https://www.nseindia.com/api/quote-equity?symbol=JPL` | `403` | 146 ms | — | WAF/CDN block (Server: AkamaiGHost, HTTP 403) |
+| Jio Platforms Limited | BSE Official API | `https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w?scripcode=545004&flag=0&fromdate=&todate=&seriesid=` | `403` | 157 ms | — | WAF block (HTTP 403) |
+| Jio Platforms Limited | BSE Announcements | `https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w?strCat=-1&strPrevDate=&strScrip=545004&strSearch=P&strToDate=&strType=C` | `403` | 63 ms | — | HTTP 403 |
+| Jio Platforms Limited | yfinance (NSE) | `JPL.NS` | `200` | 1186 ms | 1410.0999755859375 | Success: 1 session(s) found. Earliest 2026-10-30 Open=1410.10 |
+| Jio Platforms Limited | yfinance (BSE) | `545004.BO` | `204` | 748 ms | — | Empty history returned (symbol may not be indexed on this exchange) |
+| Jio Platforms Limited | Chittorgarh Listing / Quote | `https://www.chittorgarh.com/stockpricequote/jio-platforms-limited/8102/` | `200` | 106 ms | 1358.0 | Parsed listing day Open price: ₹1358.00 |
+| Paras Healthcare Limited | NSE Official API | `https://www.nseindia.com/api/quote-equity?symbol=PARASHLTH` | `403` | 193 ms | — | WAF/CDN block (Server: AkamaiGHost, HTTP 403) |
+| Paras Healthcare Limited | BSE Official API | `https://api.bseindia.com/BseIndiaAPI/api/StockReachGraph/w?scripcode=545005&flag=0&fromdate=&todate=&seriesid=` | `403` | 59 ms | — | WAF block (HTTP 403) |
+| Paras Healthcare Limited | BSE Announcements | `https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w?strCat=-1&strPrevDate=&strScrip=545005&strSearch=P&strToDate=&strType=C` | `403` | 61 ms | — | HTTP 403 |
+| Paras Healthcare Limited | yfinance (NSE) | `PARASHLTH.NS` | `200` | 168 ms | 721.0 | Success: 2 session(s) found. Earliest 2026-10-29 Open=721.00 |
+| Paras Healthcare Limited | yfinance (BSE) | `545005.BO` | `204` | 738 ms | — | Empty history returned (symbol may not be indexed on this exchange) |
+| Paras Healthcare Limited | Chittorgarh Listing / Quote | `https://www.chittorgarh.com/stockpricequote/paras-healthcare-limited/8103/` | `200` | 110 ms | 720.0 | Parsed listing day Open price: ₹720.00 |
 
 ## 3. Preregistered Two-Tier Outcome Chain Analysis
 
