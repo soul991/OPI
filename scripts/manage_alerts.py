@@ -95,6 +95,30 @@ def list_open_alert_issues(repo: str, title_prefix: str) -> List[Dict[str, Any]]
         return []
 
 
+def infer_failing_step_from_output(output_text: str) -> Optional[str]:
+    """Extract specific failing check/step from watchdog or daily runner output (D-091)."""
+    if not output_text:
+        return None
+    m_fc = re.search(r"^FAILED_CHECK:\s*(.+)$", output_text, re.MULTILINE)
+    if m_fc:
+        return m_fc.group(1).strip()
+    if re.search(r"Check \(d\) \[Missing Listing Outcomes\]:\s*FAIL|Missing Listing Outcomes", output_text, re.IGNORECASE):
+        return "check (d) missing outcomes"
+    if re.search(r"Check \(f\) \[Verification Extra Guard\]:\s*FAIL|verify_extra\.py failed", output_text, re.IGNORECASE):
+        return "check (f) verify_extra"
+    if re.search(r"Check \(a\) \[Scheduled Run Freshness\]:\s*FAIL|Scheduled Run Staleness", output_text, re.IGNORECASE):
+        return "check (a) scheduled run freshness"
+    if re.search(r"Check \(b\) \[Dashboard Freshness\]:\s*FAIL|Dashboard Staleness", output_text, re.IGNORECASE):
+        return "check (b) dashboard freshness"
+    if re.search(r"Check \(c\) \[OpenRouter Free Models\]:\s*FAIL|OpenRouter", output_text, re.IGNORECASE):
+        return "check (c) openrouter free models"
+    if re.search(r"Check \(e\) \[Unlogged Closing IPO Coverage\]:\s*FAIL|Unlogged Closing", output_text, re.IGNORECASE):
+        return "check (e) unlogged closing ipos"
+    if re.search(r"Overdue & Coverage Audit FAILED", output_text, re.IGNORECASE):
+        return "Check overdue outcomes and coverage"
+    return None
+
+
 def handle_failure(
     repo: str,
     workflow_name: str,
@@ -112,8 +136,20 @@ def handle_failure(
 
     open_issues = list_open_alert_issues(repo, title_prefix)
 
-    # Sanitize all inputs before building body
-    clean_step = sanitize_text(failed_step or "Execution")
+    # D-091: If failed_step is unstated or generic Execution, infer the specific failing check from output/reason
+    effective_step = failed_step
+    if not effective_step or effective_step.strip() in ("", "Execution", "None"):
+        inferred = infer_failing_step_from_output(reason or "")
+        if inferred:
+            effective_step = inferred
+        else:
+            step_file = ROOT_DIR / "watchdog_failed_step.txt"
+            if step_file.exists():
+                try:
+                    effective_step = step_file.read_text(encoding="utf-8").strip()
+                except Exception:
+                    pass
+    clean_step = sanitize_text(effective_step or "Execution")
     clean_reason = sanitize_text(reason or "Workflow step returned non-zero exit code or validation failure")
     clean_run_id = sanitize_text(run_id or "unknown")
 

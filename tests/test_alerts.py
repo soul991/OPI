@@ -191,3 +191,62 @@ def test_daily_alert_includes_failed_step_name_and_trace(mock_gh, tmp_path):
     assert "id: verify_all" in wf_text
     assert "--failed-step" in wf_text
     assert "--reason-file" in wf_text
+
+
+@patch("scripts.manage_alerts.run_gh_command")
+def test_watchdog_alert_names_failing_check_from_reason_file(mock_gh, tmp_path):
+    """Phase 19 Workstream D (D-091): Watchdog alert names specific failing check (e.g. check (d) missing outcomes)."""
+    list_result = MagicMock()
+    list_result.returncode = 0
+    list_result.stdout = "[]"
+
+    create_result = MagicMock()
+    create_result.returncode = 0
+    create_result.stdout = "https://github.com/soul991/OPI/issues/135"
+
+    mock_gh.side_effect = [list_result, create_result]
+
+    watchdog_output = tmp_path / "watchdog_output.txt"
+    output_content = (
+        "==============================================================================\n"
+        "  OPI AUTOMATED WATCHDOG AUDIT\n"
+        "==============================================================================\n\n"
+        "Check (a) [Scheduled Run Freshness]: PASS\n\n"
+        "Check (b) [Dashboard Freshness]: PASS\n\n"
+        "Check (c) [OpenRouter Free Models]: PASS\n\n"
+        "Check (d) [Missing Listing Outcomes]: FAIL\n"
+        "  Overdue listing outcome(s) missing (> 2 days since listing):\n"
+        "    - BLS Polymers (listed 2026-11-03, 4 days ago): PENDING_REVIEW: Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%)\n\n"
+        "FAILED_CHECK: check (d) missing outcomes\n"
+        "SUMMARY: Watchdog FAILED with 1 issue(s):\n"
+        "  - Missing Listing Outcomes:\n"
+        "  Overdue listing outcome(s) missing (> 2 days since listing):\n"
+        "    - BLS Polymers (listed 2026-11-03, 4 days ago): PENDING_REVIEW: Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%)\n"
+    )
+    watchdog_output.write_text(output_content, encoding="utf-8")
+
+    from scripts.manage_alerts import main
+    # Scenario: invoked without explicit failed-step or with generic Execution
+    with patch("sys.argv", [
+        "manage_alerts.py",
+        "--on-failure",
+        "--workflow-name", "watchdog.yml",
+        "--run-id", "42259466958",
+        "--reason-file", str(watchdog_output),
+    ]):
+        ret = main()
+
+    assert ret == 0
+    assert mock_gh.call_count == 2
+    create_call_args = mock_gh.call_args_list[1][0][0]
+    assert "--body" in create_call_args
+    body_idx = create_call_args.index("--body")
+    issue_body = create_call_args[body_idx + 1]
+
+    # Must name specific check, not generic Execution
+    assert "- **Failed Step / Component**: `check (d) missing outcomes`" in issue_body
+    # Must name company, days overdue, and divergence reason
+    assert "BLS Polymers" in issue_body
+    assert "4 days ago" in issue_body
+    assert "diverge beyond 1.0%" in issue_body
+

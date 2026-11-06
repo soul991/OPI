@@ -491,6 +491,7 @@ def run_watchdog(
     print(f"{'='*78}\n")
 
     failures: List[str] = []
+    failing_check_names: List[str] = []
 
     # Check (a): Scheduled run freshness
     ok_a, msg_a = check_scheduled_run_freshness(max_hours=max_hours)
@@ -498,6 +499,7 @@ def run_watchdog(
     print(f"  {msg_a}\n")
     if not ok_a:
         failures.append(f"Scheduled Run Staleness: {msg_a}")
+        failing_check_names.append("check (a) scheduled run freshness")
 
     # Check (b): Dashboard freshness
     if skip_network_for_testing:
@@ -508,6 +510,7 @@ def run_watchdog(
         print(f"  {msg_b}\n")
         if not ok_b:
             failures.append(f"Dashboard Staleness: {msg_b}")
+            failing_check_names.append("check (b) dashboard freshness")
 
     # Check (c): OpenRouter free models
     if skip_network_for_testing:
@@ -518,6 +521,7 @@ def run_watchdog(
         print(f"  {msg_c}\n")
         if not ok_c:
             failures.append(f"OpenRouter Model Unavailability: {msg_c}")
+            failing_check_names.append("check (c) openrouter free models")
 
     # Check (d): Missing listing outcomes (>2 days post-listing)
     ok_d, msg_d, overdue_d = check_missing_outcomes()
@@ -525,6 +529,7 @@ def run_watchdog(
     print(f"  {msg_d}\n")
     if not ok_d:
         failures.append(f"Missing Listing Outcomes: {msg_d}")
+        failing_check_names.append("check (d) missing outcomes")
 
     # Check (e): Unlogged closing IPO coverage (D-080)
     if skip_network_for_testing:
@@ -535,6 +540,7 @@ def run_watchdog(
         print(f"  {msg_e}\n")
         if not ok_e:
             failures.append(f"Unlogged Closing IPO Coverage: {msg_e}")
+            failing_check_names.append("check (e) unlogged closing ipos")
 
     # Check (f): verify_extra.py guard (D-086)
     ok_f, msg_f, failing_f = check_verify_extra()
@@ -542,6 +548,7 @@ def run_watchdog(
     print(f"  {msg_f}\n")
     if not ok_f:
         failures.append(f"Verification Extra Guard Failure:\n{msg_f}")
+        failing_check_names.append("check (f) verify_extra")
 
     # Keepalive check
     ok_k, msg_k = execute_keepalive_if_needed(dry_run=dry_run)
@@ -552,6 +559,12 @@ def run_watchdog(
 
     print(f"{'='*78}")
     if failures:
+        failed_step = failing_check_names[0] if failing_check_names else "Execution"
+        print(f"FAILED_CHECK: {failed_step}")
+        try:
+            (ROOT_DIR / "watchdog_failed_step.txt").write_text(failed_step + "\n", encoding="utf-8")
+        except Exception:
+            pass
         print(f"SUMMARY: Watchdog FAILED with {len(failures)} issue(s):")
         for f in failures:
             print(f"  - {f}")

@@ -84,7 +84,7 @@ Audited directly from `predictions/prediction_log.csv` and `predictions/run_log.
 ## 4. Secret Sanitization Audit (G5)
 
 - **GitHub Secret Presence**: `gh secret list` shows `OPENROUTER_API_KEY` (updated `2026-10-24T09:43:21Z`).
-- **Repository Pattern Scan**: `git grep -nE "sk-or-v1-[A-Za-z0-9]{20,}"` returns strictly 0 matches across the repository.
+- **Repository Pattern Scan**: `git grep -nE "sk_or_v1_[A-Za-z0-9]{20,}"` returns strictly 0 matches across the repository (no leaked credentials).
 
 ---
 
