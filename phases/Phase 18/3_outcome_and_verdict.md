@@ -42,6 +42,13 @@ The following items in `DEFECTS.md` remain open, partial, or not fixed at the co
 
 ## 3. Forward Prediction Results Table
 
+From `scripts/forward_report.py`:
+- **Evaluated (Listed) Rows**: 11 of 30 target
+- **Pending (Unlisted) Rows**: 2
+- **Provisional Model MAE**: 5.09 percentage points (n=11)
+- **Prior Cohort Model MAE**: 5.99 percentage points (n=8)
+- **Provisional Raw GMP MAE**: 6.15 percentage points (n=7)
+
 | Company | Listing Date | Issue Price | Listing Price | Actual Gain | Model Estimate | Last Bidding Day GMP | Error Model (pp) | Error GMP (pp) | Tier | Status | Notes |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|---|
 | **HD Fire Protect Limited** | 2026-10-21 | ₹271.00 | ₹334.39 | **+23.39%** | +26.12% | +30.26% | **2.73 pp** | **6.87 pp** | unspecified | LISTED | Phase 9 Gate A9 V2: Scored post-bidding close with real write-time timestamp | Final subscription and final-day GMP backed by saved snapshots | Actual opening price verified via https://www.bseindia.com/stock-share-price/hd-fire-protect-ltd/hdfire/544994; snapshot=data/evidence/actuals/2026-10-21_hd-fire-protect-limited_1995cac2f37d.html |
@@ -53,10 +60,10 @@ The following items in `DEFECTS.md` remain open, partial, or not fixed at the co
 | **Jio Platforms Limited** | 2026-10-28 | ₹1119.00 | ₹1358.02 | **+21.36%** | +22.14% | +22.34% | **0.78 pp** | **0.98 pp** | unspecified | LISTED | Closed 2026-10-23; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-10-28 | Actual opening price verified via https://finance.yahoo.com/quote/JPL.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-10-28_jio-platforms-limited_679a4ce1c8e3.txt |
 | **Paras Healthcare Limited** | 2026-10-28 | ₹693.00 | ₹721.00 | **+4.04%** | -2.56% | +1.59% | **6.60 pp** | **2.45 pp** | unspecified | LISTED | Closed 2026-10-23; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-10-28 | Actual opening price verified via https://finance.yahoo.com/quote/PARASHLTH.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-10-28_paras-healthcare-limited_fe823e2ba992.txt |
 | **M.K.Sons Fine Jewels** | 2026-11-04 | ₹162.00 | ₹171.01 | **+5.56%** | +4.37% | None (NOT_RECORDED) | **1.19 pp** | N/A | unspecified | LISTED | Closed 2026-10-30; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-04 | Actual opening price verified via https://finance.yahoo.com/quote/MKJEWELS.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-11-04_m-k-sons-fine-jewels_120ad4c51741.txt |
-| **BLS Polymers** | 2026-11-03 | ₹150.00 | Pending | Pending | +53.28% | None (NOT_RECORDED) | Pending | N/A | unspecified | FORWARD | Closed 2026-10-29; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-03 |
+| **BLS Polymers** | 2026-11-03 | ₹150.00 | Pending | Pending | +53.28% | None (NOT_RECORDED) | Pending | N/A | unspecified | FORWARD | Closed 2026-10-29; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-03 | Status: PENDING_REVIEW (yfinance=248.0 vs second_source=244.1, diff=1.57% > 1.0% tolerance) |
 | **SFC Environmental Technologies** | 2026-11-03 | ₹330.00 | ₹355.11 | **+7.61%** | +5.49% | None (NOT_RECORDED) | **2.12 pp** | N/A | unspecified | LISTED | Closed 2026-10-29; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-03 | Actual opening price verified via https://finance.yahoo.com/quote/SFCTECH.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-11-03_sfc-environmental-technologies_c73079abd326.txt |
 | **EAAA India Alternatives** | 2026-11-02 | ₹1665.00 | ₹1675.49 | **+0.63%** | +5.35% | None (NOT_RECORDED) | **4.72 pp** | N/A | unspecified | LISTED | Closed 2026-10-28; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-02 | Actual opening price verified via https://finance.yahoo.com/quote/EDELALTS.NS; outcome_source=tier2; snapshot=data/evidence/actuals/2026-11-02_eaaa-india-alternatives_a8a32fe858d1.txt |
-| **Bombay Coated & Special Steels** | 2026-11-05 | ₹82.00 | Pending | Pending | +10.14% | +11.28% | Pending | Pending | unspecified | FORWARD | Closed 2026-11-02; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-05 |
+| **Bombay Coated & Special Steels** | 2026-11-05 | ₹82.00 | Pending | Pending | +10.14% | +11.28% | Pending | Pending | unspecified | FORWARD | Closed 2026-11-02; final subscription and GMP grounded via opi.ingest | Scheduled listing 2026-11-05 | Status: PENDING_REVIEW (yfinance=91.0 vs second_source=92.02, diff=1.12% > 1.0% tolerance) |
 
 ---
 
@@ -67,12 +74,12 @@ The following items in `DEFECTS.md` remain open, partial, or not fixed at the co
    - All 7 domain checks pass cleanly, including Nifty evidence parsing, BSE symbol hygiene, key absence, and champion coverage reconciliation.
 
 2. **`scripts/verify_all.py`**:
-   - Result: 0 failures across all core integrity checks.
-   - All 98 registered defects parsed; exactly 3 open/partial/not-fixed defects tracked in `DEFECTS.md` and reconciled with this verdict.
+   - Result: `SUMMARY: 81 pass, 0 warn, 0 fail`
+   - All 99 registered defects parsed; exactly 3 open/partial/not-fixed defects tracked in `DEFECTS.md` (D-013, D-026, D-085) and reconciled with this verdict.
    - Every `FIXED` defect has an existing and passing regression test.
 
 3. **`pytest`**:
-   - Complete local test suite: 237 passed, 1 skipped.
+   - Complete local test suite: 238 passed, 1 skipped.
 
 ---
 
