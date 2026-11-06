@@ -102,3 +102,4 @@
 | D-096 | 18 | Tier 2b (two independent non-Yahoo sources) is manual only; a late Yahoo bar leaves outcomes pending indefinitely. | High | FIXED | 18 | tests/test_actuals_job.py::test_tier2b_dual_source_agreement_recorded |
 | D-097 | 18 | Market (Nifty) evidence is written only for dates with a recorded outcome. | Medium | FIXED | 18 | tests/test_market_evidence_job.py::test_job_records_nifty_evidence_for_unrecorded_past_listing |
 | D-098 | 18 | The daily job cannot show which IPOs are pending and why; users learn of a stuck row only from an alert. | Medium | FIXED | 18 | tests/test_dashboard.py::test_dashboard_shows_pending_outcomes_table |
+| D-099 | 18 | Symbol resolution fails for new IPOs (Bombay Coated: "Could not resolve NSE/BSE symbols"). | Medium | FIXED | 18 | tests/test_actuals_symbol_resolution.py::test_symbol_resolution_fallbacks |

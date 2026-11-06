@@ -459,6 +459,15 @@ def resolve_company_symbols_and_urls(company: str, features: Optional[dict[str, 
                     m_b = re.search(r"BSE\s+Scrip\s+Code\s*</td>\s*<td[^>]*>([0-9]+)</td>", text, re.IGNORECASE)
                     if m_b:
                         result["bse_code"] = m_b.group(1).strip()
+                # D-099: Fallback regexes for Next.js JSON embeddings and modern issue pages
+                if not result["nse_symbol"]:
+                    m_n = re.search(r'\\*"(?:nse_symbol|il_nse_script_symbol)\\*":\s*\\*"([A-Za-z0-9_-]+)\\*"', text, re.IGNORECASE)
+                    if m_n and m_n.group(1).strip():
+                        result["nse_symbol"] = m_n.group(1).strip()
+                if not result["bse_code"]:
+                    m_b = re.search(r'\\*"(?:bse_scripcode|il_bse_script_code|bse_code)\\*":\s*\\*"?([0-9]{5,6})\\*"', text, re.IGNORECASE)
+                    if m_b and m_b.group(1).strip():
+                        result["bse_code"] = m_b.group(1).strip()
                 m_q = re.search(r'href="([^"]*/stockpricequote/[^"]+)"', text)
                 if m_q:
                     q_val = m_q.group(1)
