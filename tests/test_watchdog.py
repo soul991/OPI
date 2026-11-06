@@ -1,3 +1,4 @@
+import pandas as pd
 """Unit tests for watchdog staleness thresholds, checks, and keepalive logic (D-058)."""
 
 import datetime as dt
@@ -431,3 +432,83 @@ def test_watchdog_runs_verify_extra_and_reports_failure():
         assert "each listed date has a parsed Nifty evidence file" in msg
         assert "missing: 2026-11-02" in msg
 
+
+
+def test_missing_outcomes_alert_does_not_block_run_daily(tmp_path):
+    """D-095: Overdue outcomes or coverage alerts must not make run_daily raise.
+
+    (a) run_daily exits 0 and records MISSING_OUTCOME_ALERT in run_log.csv for overdue row.
+    (b) daily.yml runs check_overdue_outcomes_and_coverage after commit_and_push with no continue-on-error.
+    (c) Real exceptions inside discovery/scoring/outcomes still cause run_daily to fail.
+    """
+    from opi.run_daily import run_daily_forward_test
+    from scripts.watchdog import run_overdue_and_coverage_check
+
+    # 1. Setup synthetic environment with an overdue unrecorded listing (>2 days ago)
+    log_file = tmp_path / "prediction_log.csv"
+    run_log_file = tmp_path / "run_log.csv"
+    
+    overdue_df = pd.DataFrame([{
+        "scored_at": "2026-10-25T18:30:00+05:30",
+        "company": "Overdue Corp",
+        "open_date": "2026-10-20",
+        "close_date": "2026-10-24",
+        "listing_date": "2026-10-28",  # >2 days ago
+        "features_snapshot_json": '{"issue_price": 100.0}',
+        "pred_gain_pct": "12.0",
+        "pred_prob_gt10": "0.60",
+        "gmp_pct_at_scoring": "10.0",
+        "actual_gain_pct": "",
+        "status": "FORWARD",
+        "notes": "synthetic row"
+    }])
+    overdue_df.to_csv(log_file, index=False)
+
+    with patch("opi.log.LOG_PATH", log_file), \
+         patch("opi.log.RUN_LOG_PATH", run_log_file), \
+         patch("opi.discover.discover_ipos", return_value=[]), \
+         patch("opi.market.ensure_market_evidence_for_listed_dates", return_value={"status": "OK"}), \
+         patch("opi.report.render_dashboard_html", return_value=tmp_path / "dash.html"), \
+         patch("opi.report.render_pre_listing_markdown", return_value=""), \
+         patch("opi.actuals.execute_two_tier_outcome_chain", return_value={"status": "SKIPPED_NO_MATCH", "reason": "test mock"}):
+        
+        # run_daily must NOT raise RuntimeError
+        run_daily_forward_test(dry_run=False, log_path=log_file, run_log_path=run_log_file, missed_path=tmp_path / 'missed.csv')
+
+    # Verify run_log contains MISSING_OUTCOME_ALERT
+    assert run_log_file.exists()
+    rl_df = pd.read_csv(run_log_file)
+    alert_rows = rl_df[(rl_df["company"] == "Overdue Corp") & (rl_df["status"] == "MISSING_OUTCOME_ALERT")]
+    assert len(alert_rows) >= 1
+
+    # Verify watchdog CLI function returns 1 (alert condition exists)
+    with patch("opi.log.LOG_PATH", log_file), patch("opi.log.RUN_LOG_PATH", run_log_file):
+        missed_file = tmp_path / 'missed_forward.csv'
+        ret_alert = run_overdue_and_coverage_check(log_path=log_file, candidates=[], missed_path=missed_file)
+        assert ret_alert == 1
+
+    # 2. Workflow-order test
+    daily_wf = ROOT_DIR / ".github" / "workflows" / "daily.yml"
+    assert daily_wf.exists()
+    wf_text = daily_wf.read_text(encoding="utf-8")
+    assert "id: commit_and_push" in wf_text
+    assert "id: check_overdue_outcomes_and_coverage" in wf_text
+    assert "id: alert_on_failure" in wf_text
+    
+    idx_commit = wf_text.index("id: commit_and_push")
+    idx_alert_step = wf_text.index("id: check_overdue_outcomes_and_coverage")
+    idx_failure = wf_text.index("id: alert_on_failure")
+    
+    assert idx_commit < idx_alert_step < idx_failure, "Alert step must run after commit_and_push and before alert_on_failure"
+    
+    # Assert alert step has no continue-on-error
+    alert_step_block = wf_text[idx_alert_step:idx_failure]
+    assert "continue-on-error: true" not in alert_step_block
+
+    # 3. Verify real exception inside execution chain still fails run_daily
+    with patch("opi.log.LOG_PATH", log_file), \
+         patch("opi.log.RUN_LOG_PATH", run_log_file), \
+         patch("opi.discover.discover_ipos", return_value=[]), \
+         patch("opi.run_daily.execute_two_tier_outcome_chain", side_effect=RuntimeError("Simulated outcome crash")):
+        with pytest.raises(RuntimeError, match="Simulated outcome crash"):
+            run_daily_forward_test(dry_run=False, log_path=log_file, run_log_path=run_log_file, missed_path=tmp_path / 'missed.csv')

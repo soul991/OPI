@@ -561,12 +561,56 @@ def run_watchdog(
     return 0
 
 
+def run_overdue_and_coverage_check(
+    log_path: Optional[Path] = None,
+    candidates: Optional[List[Dict[str, Any]]] = None,
+    missed_path: Optional[Path] = None,
+) -> int:
+    """Run overdue outcomes check and unlogged closing coverage check (D-095).
+
+    Returns 0 if both pass, 1 if any alert condition exists.
+    """
+    print(f"\n{'='*78}")
+    print("  OPI OVERDUE OUTCOMES & COVERAGE AUDIT")
+    print(f"{'='*78}\n")
+
+    failures: List[str] = []
+
+    # Check overdue listing outcomes (>2 days post-listing)
+    ok_d, msg_d, overdue_d = check_missing_outcomes(log_path=log_path)
+    print(f"Check [Missing Listing Outcomes]: {'PASS' if ok_d else 'FAIL'}")
+    print(f"  {msg_d}\n")
+    if not ok_d:
+        failures.append(f"Missing Listing Outcomes:\n{msg_d}")
+
+    # Check unlogged closing IPO coverage
+    ok_e, msg_e, urgent_e = check_unlogged_closing_ipos(candidates=candidates, log_path=log_path, missed_path=missed_path)
+    print(f"Check [Unlogged Closing IPO Coverage]: {'PASS' if ok_e else 'FAIL'}")
+    print(f"  {msg_e}\n")
+    if not ok_e:
+        failures.append(f"Unlogged Closing IPO Coverage:\n{msg_e}")
+
+    print(f"{'='*78}")
+    if failures:
+        print(f"SUMMARY: Overdue & Coverage Audit FAILED with {len(failures)} alert(s):")
+        for f in failures:
+            print(f"  - {f}")
+        return 1
+
+    print("SUMMARY: Overdue & Coverage Audit ALL CHECKS PASSED.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="OPI Watchdog and Freshness Auditor")
     parser.add_argument("--max-hours", type=float, default=MAX_STALENESS_HOURS, help="Maximum allowed staleness in hours")
     parser.add_argument("--dry-run", action="store_true", help="Do not commit keepalive heartbeat")
     parser.add_argument("--skip-network-for-testing", action="store_true", help="Skip remote network checks during offline testing")
+    parser.add_argument("--check-overdue-and-coverage", action="store_true", help="Audit overdue listing outcomes and unlogged closing coverage only")
     args = parser.parse_args()
+
+    if args.check_overdue_and_coverage:
+        return run_overdue_and_coverage_check()
 
     return run_watchdog(
         max_hours=args.max_hours,

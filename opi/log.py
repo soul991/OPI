@@ -71,11 +71,12 @@ def serialize_features_snapshot(features: Dict[str, Any], model_version: Optiona
     return json.dumps(clean, ensure_ascii=False, sort_keys=True)
 
 
-def append_run_log(run_id: str, action: str, company: str, status: str, details: str = ""):
+def append_run_log(run_id: str, action: str, company: str, status: str, details: str = "", run_log_path: Optional[Path] = None):
     """Record operational execution status to predictions/run_log.csv."""
-    RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = RUN_LOG_PATH.exists()
-    with open(RUN_LOG_PATH, "a", newline="", encoding="utf-8") as f:
+    target_path = Path(run_log_path) if run_log_path else RUN_LOG_PATH
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = target_path.exists()
+    with open(target_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow(["timestamp", "run_id", "action", "company", "status", "details"])
