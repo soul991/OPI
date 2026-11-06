@@ -1,0 +1,14 @@
+{
+  "close": 24536.599609375,
+  "date": "2026-11-05",
+  "day_return_pct": 2.4,
+  "fetched_at": "2026-11-06T12:31:29.197970+00:00",
+  "high": 24579.900390625,
+  "low": 24296.30078125,
+  "open": 24378.05078125,
+  "prev_close": 23960.599609375,
+  "source": "^NSEI / ^INDIAVIX via yfinance (public exchange data)",
+  "symbol": "^NSEI",
+  "vix_close": 15.58,
+  "volume": 534600
+}
