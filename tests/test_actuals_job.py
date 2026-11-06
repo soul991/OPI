@@ -354,3 +354,75 @@ def test_runner_probe_committed_and_verified():
     assert "linux" in content.lower()
     assert "GitHub Actions run ID:" in content
     assert "403" in content
+
+
+def test_tier2b_dual_source_agreement_recorded(synthetic_env, monkeypatch):
+    """D-096: When Tier 2 primary source lacks listing-day bar, Tier 2b dual independent non-Yahoo sources record outcome."""
+    mock_hist = pd.DataFrame(
+        [{"Open": 721.0, "High": 785.0, "Low": 720.0, "Close": 775.0, "Volume": 1000}],
+        index=[pd.Timestamp("2026-10-29 00:00:00+05:30")]
+    )
+    mock_sec_a = "<html><body><h1>Synthetic Corp</h1><table><tr><td>Open</td><td>₹120.00</td></tr></table></body></html>"
+    mock_sec_b = "<html><body><h1>Synthetic Corp</h1><p>Shares listed at ₹120.50 on NSE</p></body></html>"
+
+    monkeypatch.setattr("opi.actuals.ROOT_DIR", synthetic_env["root"])
+    monkeypatch.setattr("opi.log.ROOT_DIR", synthetic_env["root"])
+
+    res = execute_two_tier_outcome_chain(
+        company=synthetic_env["company"],
+        log_path=synthetic_env["log_path"],
+        current_dt=datetime(2026, 10, 30, 18, 0, tzinfo=IST),
+        mock_yfinance_history=mock_hist,
+        mock_second_source_text=mock_sec_a,
+        mock_tier2b_source_b_text=mock_sec_b,
+        mock_tier2b_source_b_url="https://groww.in/blog/synthetic-corp-lists",
+        mock_nse_symbol="SYNTH",
+    )
+
+    assert res["status"] == "RECORDED"
+    assert res["tier"] == "tier2b"
+    assert res["official_opening_price"] == 120.25
+    assert res["actual_gain_pct"] == 20.25
+
+    df = pd.read_csv(synthetic_env["log_path"], keep_default_na=False)
+    assert float(df.iloc[0]["actual_gain_pct"]) == 20.25
+    assert "outcome_source=tier2b" in df.iloc[0]["notes"]
+
+    ev_dir = synthetic_env["ev_dir"]
+    txt_a = ev_dir / "2026-10-28_synthetic-corp_chittorgarh_tier2b.txt"
+    json_a = ev_dir / "2026-10-28_synthetic-corp_chittorgarh_tier2b.json"
+    txt_b = ev_dir / "2026-10-28_synthetic-corp_groww_tier2b.txt"
+    json_b = ev_dir / "2026-10-28_synthetic-corp_groww_tier2b.json"
+
+    assert txt_a.exists()
+    assert json_a.exists()
+    assert txt_b.exists()
+    assert json_b.exists()
+
+
+def test_tier2b_divergence_beyond_tolerance_rejected(synthetic_env, monkeypatch):
+    """D-096: Tier 2b sources diverging > 1.0% return SKIPPED_TIER2B_DISAGREE and record nothing."""
+    mock_hist = pd.DataFrame(
+        [{"Open": 721.0, "High": 785.0, "Low": 720.0, "Close": 775.0, "Volume": 1000}],
+        index=[pd.Timestamp("2026-10-29 00:00:00+05:30")]
+    )
+    mock_sec_a = "<html><body><h1>Synthetic Corp</h1><table><tr><td>Open</td><td>₹120.00</td></tr></table></body></html>"
+    mock_sec_b = "<html><body><h1>Synthetic Corp</h1><p>Shares listed at ₹125.00 on NSE</p></body></html>"
+
+    monkeypatch.setattr("opi.actuals.ROOT_DIR", synthetic_env["root"])
+    monkeypatch.setattr("opi.log.ROOT_DIR", synthetic_env["root"])
+
+    res = execute_two_tier_outcome_chain(
+        company=synthetic_env["company"],
+        log_path=synthetic_env["log_path"],
+        current_dt=datetime(2026, 10, 30, 18, 0, tzinfo=IST),
+        mock_yfinance_history=mock_hist,
+        mock_second_source_text=mock_sec_a,
+        mock_tier2b_source_b_text=mock_sec_b,
+        mock_tier2b_source_b_url="https://groww.in/blog/synthetic-corp-lists",
+        mock_nse_symbol="SYNTH",
+    )
+
+    assert res["status"] == "SKIPPED_TIER2B_DISAGREE"
+    df = pd.read_csv(synthetic_env["log_path"], keep_default_na=False)
+    assert df.iloc[0]["actual_gain_pct"] == ""

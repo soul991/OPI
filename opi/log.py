@@ -168,7 +168,7 @@ def update_actual_outcome(
         allowed_domains = (
             "nseindia.com", "bseindia.com",
             "finance.yahoo.com", "query1.finance.yahoo.com", "query2.finance.yahoo.com",
-            "chittorgarh.com"
+            "chittorgarh.com", "groww.in"
         )
         official_host = source_parts.scheme == "https" and any(
             source_host == domain or source_host.endswith("." + domain)
@@ -194,7 +194,12 @@ def update_actual_outcome(
         return False, "A readable evidence manifest for the exchange snapshot is required."
     rel_snapshot = snapshot_resolved.relative_to(ROOT_DIR).as_posix()
     if (
-        manifest.get("verification_status") not in ("VERIFIED_IN_SNAPSHOT", "VERIFIED_TIER2_CROSS_CHECKED")
+        manifest.get("verification_status") not in (
+            "VERIFIED_IN_SNAPSHOT",
+            "VERIFIED_TIER2_CROSS_CHECKED",
+            "VERIFIED_TIER2B_DUAL_SOURCE",
+            "VERIFIED_TIER2B_CROSS_CHECKED",
+        )
         or manifest.get("snapshot_path") != rel_snapshot
         or manifest.get("snapshot_sha256") != snapshot_hash
         or manifest.get("final_url") != source_url
