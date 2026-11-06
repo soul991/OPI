@@ -49,7 +49,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml" --reason-file watchdog_output.txt
+          FAILED_STEP="Execution"
+          if [ -f watchdog_failed_step.txt ]; then
+            FAILED_STEP=$(cat watchdog_failed_step.txt | tr -d '\r\n')
+          elif grep -q '^FAILED_CHECK:' watchdog_output.txt 2>/dev/null; then
+            FAILED_STEP=$(grep -m1 '^FAILED_CHECK:' watchdog_output.txt | cut -d: -f2- | xargs)
+          fi
+          python scripts/manage_alerts.py --on-failure --run-id "${{ github.run_id }}" --workflow-name "watchdog.yml" --failed-step "$FAILED_STEP" --reason-file watchdog_output.txt
 
       - name: Close Open Alerts on Success
         if: success()

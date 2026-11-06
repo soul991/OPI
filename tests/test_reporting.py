@@ -355,3 +355,26 @@ def test_verify_all_allows_in_progress_phase(tmp_path, monkeypatch):
     va.check_phases_and_defects()
     statuses = {name: (status, detail) for status, name, detail in va.R}
     assert statuses["Phase 4: three required files"][0] == "FAIL"
+
+
+def test_forward_report_chronological_first_9_mae():
+    """Phase 19: Prior cohort MAE evaluates the first 9 listed IPOs sorted chronologically by listing_date (5.85 pp)."""
+    from pathlib import Path
+    import pandas as pd
+    from opi.outcomes import get_effective_predictions_df
+
+    root = Path(__file__).resolve().parents[1]
+    log_path = root / "predictions" / "prediction_log.csv"
+    df = get_effective_predictions_df(log_path=log_path)
+    forward_df = df[df["status"] == "FORWARD"].copy()
+    forward_df["actual_clean"] = pd.to_numeric(forward_df["actual_gain_pct"], errors="coerce")
+    forward_df["pred_clean"] = pd.to_numeric(forward_df["pred_gain_pct"], errors="coerce")
+    evaluated = forward_df[forward_df["actual_clean"].notna()].copy()
+    evaluated["err_model"] = (evaluated["pred_clean"] - evaluated["actual_clean"]).abs()
+
+    # Sorted chronologically by listing_date then scored_at
+    eval_chrono = evaluated.sort_values(by=["listing_date", "scored_at"]).copy()
+    assert len(eval_chrono) >= 9
+    first_9 = eval_chrono.iloc[:9]
+    mae_9 = float(first_9["err_model"].mean())
+    assert round(mae_9, 2) == 5.85, f"Expected first 9 chronological MAE to be 5.85 pp, got {mae_9:.4f}"

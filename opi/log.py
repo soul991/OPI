@@ -199,6 +199,7 @@ def update_actual_outcome(
             "VERIFIED_TIER2_CROSS_CHECKED",
             "VERIFIED_TIER2B_DUAL_SOURCE",
             "VERIFIED_TIER2B_CROSS_CHECKED",
+            "VERIFIED_TIER2_ARBITRATED",
         )
         or manifest.get("snapshot_path") != rel_snapshot
         or manifest.get("snapshot_sha256") != snapshot_hash
