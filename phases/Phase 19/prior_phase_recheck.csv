@@ -1,0 +1,17 @@
+claim_id,claim_text,file_checked,audit_result,evidence_notes
+C-01,"Claim (Defect): D-099 status OPEN in Phase 18",DEFECTS.md,VERIFIED,"DEFECTS.md line 105 records D-099 with status OPEN and test tests/test_actuals_symbol_resolution.py::test_symbol_resolution_fallbacks"
+C-02,"Claim (IPO): Fusion CX Limited Issue ₹289.00, Listing ₹305.01, Actual Gain +5.54%, Model Estimate +4.33%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 7: Fusion CX Limited has pred_gain_pct 4.33, actual_gain_pct 5.54; issue ₹289.00, listing ₹305.01 (+5.54%)"
+C-03,"Claim (Run ID): D-098 verified with Cloud proof Actions run 42218253536, committed dashboard and markdown with Listed, outcome pending table",phases/Phase 18/3_outcome_and_verdict.md,VERIFIED,"phases/Phase 18/3_outcome_and_verdict.md Section 2 table row D-098 cites Actions run 42218253536; commit 993b5c0 updated dashboard/index.html with Pending Outcomes table"
+C-04,"Claim (IPO): Sahajanand Medical Technologies Limited Issue ₹344.00, Listing ₹371.14, Actual Gain +7.89%, Model Estimate +8.32%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 9: SMT issue ₹344.00, listing ₹371.14, actual_gain_pct 7.89, pred_gain_pct 8.32"
+C-05,"Claim (Verify quote): Phase 18 Section 4 quotes verify_extra.py SUMMARY: 7 pass, 0 warn, 0 fail",phases/Phase 18/verify_extra_end.txt,VERIFIED,"phases/Phase 18/verify_extra_end.txt verbatim SUMMARY line is 'SUMMARY: 7 pass, 0 warn, 0 fail'"
+C-06,"Claim (IPO): Jio Platforms Limited Issue ₹1119.00, Listing ₹1358.02, Actual Gain +21.36%, Model Estimate +22.14%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 12: Jio Platforms issue ₹1119.00, listing ₹1358.02, actual_gain_pct 21.36, pred_gain_pct 22.14"
+C-07,"Claim (IPO): Bombay Coated & Special Steels Issue ₹82.00, Status SKIPPED_NO_MATCH (BCSSL.NS failed: LISTING_DAY_BAR_MISSING)",predictions/run_log.csv,VERIFIED,"predictions/run_log.csv line 748 records Bombay Coated & Special Steels with SKIPPED_NO_MATCH: Tier 2 primary source (BCSSL.NS) failed: LISTING_DAY_BAR_MISSING"
+C-08,"Claim (IPO): BLS Polymers Issue ₹150.00, Status PENDING_REVIEW (yfinance=248.0 vs second_source=244.1, diff=1.57%)",predictions/run_log.csv,VERIFIED,"predictions/run_log.csv line 770 records BLS Polymers PENDING_REVIEW with yfinance=248.0 vs second_source=244.1 (diff=1.57%)"
+C-09,"Claim (Defect): D-096 status OPEN in Phase 18",DEFECTS.md,VERIFIED,"DEFECTS.md line 102 records D-096 with status OPEN and test tests/test_actuals_job.py::test_tier2b_dual_source_agreement_recorded"
+C-10,"Claim (IPO): SFC Environmental Technologies Issue ₹330.00, Listing ₹355.11, Actual Gain +7.61%, Model Estimate +5.49%",predictions/prediction_log.csv,VERIFIED,"prediction_log.csv row 18: SFC Environmental Technologies issue ₹330.00, listing ₹355.11, actual_gain_pct 7.61, pred_gain_pct 5.49"
+
+headline_id,metric_name,verdict_claimed,recomputed_raw,status
+H-01,Overall Prospective Model MAE (n=11 listed),5.09 pp,5.0873 pp,"PASS (Recomputed raw: 5.0873 pp, rounds to 5.09 pp)"
+H-02,Prior Cohort Model MAE (first 9 listed),5.85 pp,5.4578 pp,"MISMATCH (Raw first 9 MAE is 5.4578 pp due to D-073 Paras correction; prior cohort of 8 is 5.9913 pp)"
+H-03,Provisional Raw GMP MAE (n=7 with GMP),6.15 pp,6.1471 pp,"PASS (Recomputed raw: 6.1471 pp, rounds to 6.15 pp)"
+H-04,Master Dataset Row Count (ipo_master.csv),740 rows,740 rows,"PASS (Exact match: 740 rows)"
