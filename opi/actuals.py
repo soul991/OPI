@@ -170,6 +170,136 @@ def _extract_table_open(content: str, listing_date: date) -> Decimal | None:
     return None
 
 
+def make_yfinance_source_value(
+    symbol: str,
+    target_date: date,
+    open_price: float,
+) -> dict[str, Any]:
+    """Create a structured source value record for Yahoo Finance (D-101)."""
+    sym_upper = symbol.upper()
+    if sym_upper.endswith(".NS"):
+        exch = "NSE"
+    elif sym_upper.endswith(".BO"):
+        exch = "BSE"
+    else:
+        exch = "UNKNOWN"
+    return {
+        "publisher": "Yahoo Finance",
+        "exchange": exch,
+        "quantity": "open",
+        "bar_date": target_date.isoformat(),
+        "value": float(open_price),
+    }
+
+
+def parse_source_value_metadata(
+    content: str | bytes,
+    target_date: date,
+    publisher: str,
+    extracted_price: Optional[float] = None,
+    url: str = "",
+) -> dict[str, Any]:
+    """Extract and strictly label source value metadata from HTML or text (D-101).
+
+    Workstream A: labels must come from verified page content; if the exchange
+    cannot be definitively read from the page, record UNKNOWN. Never guess.
+    """
+    text = content.decode("utf-8", errors="replace") if isinstance(content, bytes) else (content or "")
+    price = extracted_price
+
+    if price is None:
+        t_open = _extract_table_open(text, target_date)
+        if t_open is not None:
+            price = float(t_open)
+        else:
+            m_open = re.search(r"<tr><td>Open</td><td>(?:₹|&#8377;)?(?:<!-- -->)?\s*([0-9,.]+)", text, re.IGNORECASE)
+            if m_open:
+                price = float(m_open.group(1).replace(",", ""))
+            else:
+                m_badge = re.search(r"<span>O\s*<b[^>]*>([0-9,.]+)</b></span>", text)
+                if m_badge:
+                    price = float(m_badge.group(1).replace(",", ""))
+                else:
+                    m_txt = re.search(
+                        r"(?:listed at|shares listed at|opening price of|open|listed on (?:nse|bse) at)\s*(?:₹|&#8377;|Rs\.?)?\s*([0-9]+(?:\.[0-9]+)?)",
+                        text,
+                        re.IGNORECASE,
+                    )
+                    if m_txt:
+                        price = float(m_txt.group(1))
+
+    exchange = "UNKNOWN"
+    quantity = "open"
+
+    if price is not None:
+        price_patterns = [
+            re.escape(f"{price:.2f}"),
+            re.escape(f"{price:.1f}"),
+            re.escape(str(price)),
+        ]
+        # 1. BeautifulSoup structural inspection if HTML
+        if "<" in text and ">" in text:
+            try:
+                soup = BeautifulSoup(text, "html.parser")
+                for el in soup.find_all(["tr", "div", "section", "p", "article"]):
+                    el_text = el.get_text(separator=" ", strip=True)
+                    if any(re.search(pat, el_text) for pat in price_patterns):
+                        context_str = el_text
+                        parent = el.parent
+                        if parent:
+                            context_str += " " + parent.get_text(separator=" ", strip=True)[:300]
+                        has_nse = bool(re.search(r"\bNSE\b", context_str, re.IGNORECASE))
+                        has_bse = bool(re.search(r"\bBSE\b", context_str, re.IGNORECASE))
+                        if has_nse and not has_bse:
+                            exchange = "NSE"
+                            break
+                        elif has_bse and not has_nse:
+                            exchange = "BSE"
+                            break
+            except Exception:
+                pass
+
+        # 2. Regex matching around price string in raw text if not yet resolved
+        if exchange == "UNKNOWN":
+            for pat in price_patterns:
+                m_nse = re.search(r"(?:\bNSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bNSE\b)", text, re.IGNORECASE)
+                m_bse = re.search(r"(?:\bBSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bBSE\b)", text, re.IGNORECASE)
+                if m_nse and not m_bse:
+                    exchange = "NSE"
+                    break
+                elif m_bse and not m_nse:
+                    exchange = "BSE"
+                    break
+
+        # Determine quantity: listing_price vs open
+        for pat in price_patterns:
+            m_lp = re.search(r"(?:listing\s+price|listed\s+at|listed\s+on\s+(?:nse|bse)\s+at|debuted\s+at)\s*(?:₹|Rs\.?)?\s*" + pat, text, re.IGNORECASE)
+            if m_lp:
+                quantity = "listing_price"
+                break
+            m_op = re.search(r"(?:open|opening\s+price|first\s+traded)\s*(?:price)?\s*(?:₹|Rs\.?)?\s*" + pat, text, re.IGNORECASE)
+            if m_op:
+                quantity = "open"
+                break
+
+    resolved_pub = publisher
+    if not resolved_pub or resolved_pub == "Unknown":
+        if "chittorgarh.com" in url:
+            resolved_pub = "Chittorgarh"
+        elif "groww.in" in url:
+            resolved_pub = "Groww"
+        elif "finance.yahoo.com" in url:
+            resolved_pub = "Yahoo Finance"
+
+    return {
+        "publisher": resolved_pub,
+        "exchange": exchange,
+        "quantity": quantity,
+        "bar_date": target_date.isoformat(),
+        "value": float(price) if price is not None else None,
+    }
+
+
 def _verify_page(
     page_text: str,
     company_quote: str,
@@ -312,6 +442,18 @@ def record_actual_from_exchange(
         "final_url": final_url,
         "source_host": urlsplit(final_url).hostname,
         "exchange_used": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
+        "exchange": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
+        "quantity": "open",
+        "source_publisher": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
+        "source_values": [
+            {
+                "publisher": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
+                "exchange": "NSE" if "nseindia.com" in source_url else ("BSE" if "bseindia.com" in source_url else "UNKNOWN"),
+                "quantity": "open",
+                "bar_date": listing_date.isoformat(),
+                "value": float(price),
+            }
+        ],
         "content_type": content_type,
         "snapshot_path": snapshot_path.relative_to(ROOT_DIR).as_posix(),
         "snapshot_sha256": content_hash,
@@ -654,6 +796,14 @@ def record_actual_from_tier2(
         snapshot_path.write_bytes(yf_raw)
 
     gain_pct = ((Decimal(str(yf_open)) - issue_price) / issue_price * Decimal("100")).quantize(Decimal("0.01"))
+    yf_source_val = make_yfinance_source_value(ticker_sym, listing_date, yf_open)
+    sec_meta = parse_source_value_metadata(
+        sec_raw or "",
+        target_date=listing_date,
+        publisher="Chittorgarh",
+        extracted_price=sec_open,
+        url=sec_url or overview_url,
+    )
     manifest = {
         "company": company,
         "listing_date": listing_date.isoformat(),
@@ -662,7 +812,11 @@ def record_actual_from_tier2(
         "source_url": yf_url,
         "final_url": yf_url,
         "source_host": "finance.yahoo.com",
-        "exchange_used": "NSE" if ".NS" in ticker_sym else "BSE",
+        "exchange_used": yf_source_val["exchange"],
+        "exchange": yf_source_val["exchange"],
+        "quantity": yf_source_val["quantity"],
+        "source_publisher": yf_source_val["publisher"],
+        "source_values": [yf_source_val, sec_meta],
         "content_type": "text/plain",
         "snapshot_path": snapshot_path.relative_to(ROOT_DIR).as_posix(),
         "snapshot_sha256": content_hash,
@@ -815,6 +969,21 @@ def record_actual_from_tier2b(
     path_json_b = evidence_dir / f"{ld_str}_{slug}_groww_tier2b.json"
     path_txt_b.write_bytes(raw_b)
 
+    meta_a = parse_source_value_metadata(
+        raw_a,
+        target_date=listing_date,
+        publisher="Chittorgarh",
+        extracted_price=price_a,
+        url=url_used_a or url_a,
+    )
+    meta_b = parse_source_value_metadata(
+        raw_b,
+        target_date=listing_date,
+        publisher="Groww",
+        extracted_price=price_b,
+        url=url_b,
+    )
+
     manifest_b = {
         "company": company,
         "listing_date": ld_str,
@@ -824,6 +993,10 @@ def record_actual_from_tier2b(
         "accessed_at": get_write_timestamp(),
         "http_status": 200,
         "content_sha256": sha_b,
+        "exchange": meta_b["exchange"],
+        "quantity": meta_b["quantity"],
+        "source_publisher": meta_b["publisher"],
+        "source_values": [meta_b],
         "parsed_listing_price": price_b,
     }
     path_json_b.write_text(json.dumps(manifest_b, indent=2) + "\n", encoding="utf-8")
@@ -841,6 +1014,10 @@ def record_actual_from_tier2b(
         "snapshot_path": path_txt_a.relative_to(ROOT_DIR).as_posix(),
         "snapshot_sha256": sha_a,
         "outcome_source": "tier2b",
+        "exchange": meta_a["exchange"] if meta_a["exchange"] == meta_b["exchange"] else "UNKNOWN",
+        "quantity": meta_a["quantity"],
+        "source_publisher": "Chittorgarh / Groww (Tier 2b)",
+        "source_values": [meta_a, meta_b],
         "issue_price_in_prediction": float(issue_price),
         "official_opening_price": float(agreed_open),
         "computed_listing_gain_pct": float(gain_pct),

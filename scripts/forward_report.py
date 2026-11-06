@@ -127,10 +127,23 @@ def generate_forward_report(log_path: str = LOG_PATH) -> dict | None:
             mae_gmp = float(has_gmp["err_gmp"].mean())
 
         print(f"Provisional Model MAE      : {mae_model:.2f} percentage points (n={n_eval})")
+        # Disaggregate arbitrated vs unarbitrated outcomes if present (Phase 19 Workstream B)
+        notes_series = evaluated["notes"].fillna("").astype(str) if "notes" in evaluated.columns else pd.Series("", index=evaluated.index)
+        is_arbitrated = notes_series.str.contains("tier2_arbitrated", case=False)
+        if is_arbitrated.any():
+            unarb = evaluated[~is_arbitrated]
+            if len(unarb) > 0:
+                mae_unarb = float((unarb["pred_clean"] - unarb["actual_clean"]).abs().mean())
+                print(f"Model MAE (ex-arbitrated)  : {mae_unarb:.2f} percentage points (n={len(unarb)}) [provisional]")
+            mae_with_arb = float((evaluated["pred_clean"] - evaluated["actual_clean"]).abs().mean())
+            print(f"Model MAE (with arbitrated): {mae_with_arb:.2f} percentage points (n={len(evaluated)}) [provisional]")
+
+        # Chronological prior cohort of the first 9 listed IPOs (Phase 17 cohort)
+        eval_chrono = evaluated.sort_values(by=["listing_date", "scored_at"]).copy()
         if n_eval >= 9:
-            first_8 = evaluated.iloc[:8]
-            mae_8 = float((first_8["pred_clean"] - first_8["actual_clean"]).abs().mean())
-            print(f"Prior Cohort Model MAE     : {mae_8:.2f} percentage points (n=8)")
+            first_9 = eval_chrono.iloc[:9]
+            mae_9 = float((first_9["pred_clean"] - first_9["actual_clean"]).abs().mean())
+            print(f"Prior Cohort Model MAE     : {mae_9:.2f} percentage points (n=9)")
         if mae_gmp is not None:
             print(f"Provisional Raw GMP MAE    : {mae_gmp:.2f} percentage points (n={len(has_gmp)})")
         print("-" * 86)

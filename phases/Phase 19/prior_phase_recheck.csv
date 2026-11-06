@@ -13,5 +13,6 @@ C-10,"Claim (IPO): SFC Environmental Technologies Issue ₹330.00, Listing ₹35
 headline_id,metric_name,verdict_claimed,recomputed_raw,status
 H-01,Overall Prospective Model MAE (n=11 listed),5.09 pp,5.0873 pp,"PASS (Recomputed raw: 5.0873 pp, rounds to 5.09 pp)"
 H-02,Prior Cohort Model MAE (first 9 listed),5.85 pp,5.4578 pp,"MISMATCH (Raw first 9 MAE is 5.4578 pp due to D-073 Paras correction; prior cohort of 8 is 5.9913 pp)"
+H-02-ERRATA,Prior Cohort Model MAE (first 9 listed chronologically),5.85 pp,5.8500 pp,"CORRECTED (The 5.4578 pp figure resulted from taking .iloc[:9] in prediction_log.csv order, which took M.K.Sons [row 14, listed 2026-11-04, err 1.19 pp] instead of EAAA India Alternatives [row 17, listed 2026-11-02, err 4.72 pp]. When sorted chronologically by listing_date, the first 9 listed IPOs are HD Fire, Fusion CX, Zetwerk, SMT, Tonbo, Bonfiglioli, Jio, Paras, and EAAA India Alternatives, yielding MAE = (2.73+1.21+6.23+0.43+8.99+21.10+0.78+6.46+4.72)/9 = 52.65/9 = 5.8500 pp. Phase 17's 5.85 pp figure was correct.)"
 H-03,Provisional Raw GMP MAE (n=7 with GMP),6.15 pp,6.1471 pp,"PASS (Recomputed raw: 6.1471 pp, rounds to 6.15 pp)"
 H-04,Master Dataset Row Count (ipo_master.csv),740 rows,740 rows,"PASS (Exact match: 740 rows)"
