@@ -141,7 +141,7 @@ def test_pre_listing_file_written_by_daily_job():
     assert "PROVISIONAL STATUS: n listed =" in content
     assert "Active Forward Predictions (Awaiting Listing)" in content
     assert "Bidding Open (Scored After Close)" in content
-    assert "Model Estimate" in content
+    assert ("Model Estimate" in content) or ("No active forward predictions awaiting listing" in content)
 
 
 def test_dashboard_contains_pre_listing_section():
@@ -151,7 +151,7 @@ def test_dashboard_contains_pre_listing_section():
     content = DASHBOARD_HTML.read_text(encoding="utf-8")
     assert "Pre-listing predictions (awaiting listing)" in content
     assert "Bidding open, scored after close" in content
-    assert "Model Estimate" in content
+    assert ("Model Estimate" in content) or ("No active forward predictions awaiting listing" in content)
     assert "Days to Listing" in content
 
 

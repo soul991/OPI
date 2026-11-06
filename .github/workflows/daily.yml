@@ -97,6 +97,12 @@ jobs:
             git push 2>&1 | tee -a step_output.txt
           fi
 
+      - name: Check overdue outcomes and coverage
+        id: check_overdue_outcomes_and_coverage
+        run: |
+          set -o pipefail
+          python scripts/watchdog.py --check-overdue-and-coverage 2>&1 | tee step_output.txt
+
       - name: Alert on Failure
         id: alert_on_failure
         if: failure()
@@ -118,6 +124,8 @@ jobs:
             FAILED_STEP="Run Independent Repository Verification"
           elif [ "${{ steps.commit_and_push.outcome }}" = "failure" ]; then
             FAILED_STEP="Commit and Push Updated Predictions & Dashboard"
+          elif [ "${{ steps.check_overdue_outcomes_and_coverage.outcome }}" = "failure" ]; then
+            FAILED_STEP="Check overdue outcomes and coverage"
           fi
 
           if [ -f step_output.txt ]; then
