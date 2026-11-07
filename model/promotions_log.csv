@@ -1,2 +1,4 @@
 decided_at,candidate,champion,n_pairs,mae_candidate,mae_champion,delta,ci_low,ci_high,decision,reason
 2026-11-07T21:55:41.497766+05:30,v4.1.0-202611,v4.0.0-champion,0,,,,,,NOT_ENOUGH_PAIRS,Only 0 prospective paired predictions available (threshold >= 20)
+2026-11-07T22:04:38.914774+05:30,v4.1.0-202611,v4.0.0-champion,0,,,,,,NOT_ENOUGH_PAIRS,Only 0 prospective paired predictions available (threshold >= 20)
+2026-11-07T22:04:38.914774+05:30,v4.2.0-202611,v4.0.0-champion,0,,,,,,NOT_ENOUGH_PAIRS,Only 0 prospective paired predictions available (threshold >= 20)

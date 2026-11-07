@@ -58,6 +58,18 @@
       "sha256": "e00b2c5fdaf25fe236470381e4d84d35c26ad168273760e40d8f8fab419d36ee",
       "conformal_half_width_80": 10.39,
       "description": "Retrained HistGradientBoosting shadow model on 594 master rows (2010-01-04 to 2026-11-04)"
+    },
+    "v4.2.0-202611": {
+      "model_version": "v4.2.0-202611",
+      "artifact_path": "model/challengers/v4.2.0-202611.joblib",
+      "training_window": "2010-01-04 to 2026-11-04",
+      "train_rows": 594,
+      "created_at": "2026-11-07T22:04:38.751457+05:30",
+      "champion": false,
+      "role": "shadow",
+      "sha256": "5acf4ad0902a99774058cf3fc678abef9f46a66aae3efad41a0951495686da44",
+      "conformal_half_width_80": 10.39,
+      "description": "Retrained HistGradientBoosting shadow model on 594 master rows (2010-01-04 to 2026-11-04)"
     }
   }
 }
