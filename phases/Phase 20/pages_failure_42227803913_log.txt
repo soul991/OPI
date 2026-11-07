@@ -1,0 +1,108 @@
+deploy	UNKNOWN STEP	﻿2026-11-06T13:44:04.2819539Z Current runner version: '2.338.2'
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2855138Z ##[group]Runner Image Provisioner
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2856588Z Hosted Compute Agent
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2857819Z Version: 20261028.624
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2859120Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2860378Z Build Date: 2026-10-28T21:51:42Z
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2861560Z Worker ID: {c8e81f3e-9d4c-4d28-bee7-ec08c63aee8c}
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2862974Z Region: eastus
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2863937Z Cloud: Azure
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2864936Z ##[endgroup]
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2867727Z ##[group]Operating System
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2868822Z Ubuntu
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2870011Z 24.04.5
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2870986Z LTS
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2872186Z ##[endgroup]
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2873240Z ##[group]Runner Image
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2874438Z Image: ubuntu-24.04
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2875556Z Version: 20261101.360.1
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2878274Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261101.360/images/ubuntu/Ubuntu2404-Readme.md
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2881172Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261101.360
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2883100Z ##[endgroup]
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2885280Z ##[group]GITHUB_TOKEN Permissions
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2888603Z Contents: read
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2889720Z Metadata: read
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2891453Z Pages: write
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2892434Z ##[endgroup]
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2895799Z Secret source: Actions
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2897865Z Cache mode: read
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.2899281Z Prepare workflow directory
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.3328332Z Prepare all required actions
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.3373904Z Getting action download info
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.4846373Z Download action repository 'actions/deploy-pages@v5' (SHA:368f82528645a54fb793d4d04e342629a3f51346)
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.8361296Z Complete job name: deploy
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9282866Z ##[group]Run actions/deploy-pages@v5
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9283827Z with:
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9287780Z   token: ***
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9288273Z   timeout: 600000
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9288711Z   error_count: 10
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9289173Z   reporting_interval: 5000
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9289698Z   artifact_name: github-pages
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9290217Z   preview: false
+deploy	UNKNOWN STEP	2026-11-06T13:44:04.9291016Z ##[endgroup]
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.3414037Z (node:2326) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.3416750Z (Use `node --trace-deprecation ...` to show where the warning was created)
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.4225897Z Fetching artifact metadata for "github-pages" in this workflow run
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5108418Z Found 1 artifact(s)
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5189291Z Creating Pages deployment with payload:
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5190717Z {
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5191750Z 	"artifact_id": 13505883404,
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5193405Z 	"pages_build_version": "27e21836677b753b9c709be8cd6be6af18925b56",
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5292542Z 	"oidc_token": "***"
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.5293666Z }
+deploy	UNKNOWN STEP	2026-11-06T13:44:05.9589732Z Created deployment for 27e21836677b753b9c709be8cd6be6af18925b56, ID: 27e21836677b753b9c709be8cd6be6af18925b56
+deploy	UNKNOWN STEP	2026-11-06T13:44:10.0138048Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:44:10.1749717Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:44:17.0766092Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:44:17.2292044Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:44:26.9072489Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:44:27.0707955Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:44:43.0815260Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:44:43.2413311Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:45:10.4266193Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:45:10.5787817Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:45:44.9953752Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:45:45.1629376Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:46:14.7108345Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:46:14.8892480Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:46:41.8167156Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:46:41.9946626Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:47:06.7519249Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:47:06.8967047Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:47:34.4140208Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:47:34.6036444Z Current status: deployment_queued
+deploy	UNKNOWN STEP	2026-11-06T13:48:10.0131299Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:48:10.1903873Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:48:44.6222229Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:48:44.8251261Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:49:10.1013886Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:49:10.2812092Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:49:39.8233624Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:49:39.9890312Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:50:08.1052572Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:50:08.2645348Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:50:34.7858615Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:50:34.9571147Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:51:00.4735682Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:51:00.6383915Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:51:24.9991630Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:51:25.1437332Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:51:55.7805935Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:51:55.9209261Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:52:26.3457963Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:52:26.4841781Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:52:52.6622565Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:52:52.8417222Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:53:25.7582424Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:53:25.9410721Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:53:54.2396941Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:53:54.4210227Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:54:19.9882510Z Getting Pages deployment status...
+deploy	UNKNOWN STEP	2026-11-06T13:54:20.1325630Z Current status: syncing_files
+deploy	UNKNOWN STEP	2026-11-06T13:54:20.1345397Z ##[error]Timeout reached, aborting!
+deploy	UNKNOWN STEP	2026-11-06T13:54:20.1353883Z ##[error]Timeout reached, aborting!
+deploy	UNKNOWN STEP	2026-11-06T13:54:20.1354641Z Canceling Pages deployment...
+deploy	UNKNOWN STEP	2026-11-06T13:54:21.1579478Z Canceled deployment with ID 27e21836677b753b9c709be8cd6be6af18925b56
+deploy	UNKNOWN STEP	2026-11-06T13:54:21.1913546Z Evaluate and set environment url
+deploy	UNKNOWN STEP	2026-11-06T13:54:21.1918293Z Evaluated environment url: https://soul991.github.io/OPI/
+deploy	UNKNOWN STEP	2026-11-06T13:54:21.1919226Z Cleaning up orphan processes
