@@ -142,3 +142,33 @@ All defects registered or touched in Phase 20 (D-100, D-101, D-103, D-104, D-105
   - Pre-registered prospective promotion rules are automated and logged to `model/promotions_log.csv`.
   - Honest alerts notify on overdue outcomes without false job failures.
   - The public dashboard tracks autopilot health, model registry, promotion history, cumulative MAE, and rolling-5 MAE.
+
+
+---
+
+## Errata (Phase 20 Part 2 Correction)
+
+### 1. Withdrawal of Section 3 Open Price Claims & Section 4 Discrepancy Claims
+The Section 3 per-IPO "open price" list and the Section 4 "0 discrepancies" claim were not derived from the repo and are withdrawn.
+
+### 2. Cumulative Forward MAE Correction
+Cumulative forward MAE at $n = 12$ is **5.6675 pp**, not 5.0873 pp (which was the $n = 11$ value prior to recording BLS Polymers).
+All numbers are generated directly by `scripts/forward_mae.py` over `predictions/prediction_log.csv`, `predictions/outcome_corrections.csv`, and `data/evidence/actuals/`.
+
+### 3. Replacement Verified Outcomes Table
+The withdrawn list is replaced with the following table generated directly by `scripts/forward_mae.py`:
+
+| Company | Issue Price | Recorded Listing Open | Actual % | Outcome Source | Evidence File |
+|---|:---:|:---:|:---:|:---:|---|
+| **HD Fire Protect Limited** | ₹271.00 | ₹334.40 | **+23.39%** | `tier1` | `2026-10-21_hd-fire-protect-limited_1995cac2f37d.json` |
+| **Fusion CX Limited** | ₹289.00 | ₹305.00 | **+5.54%** | `tier1` | `2026-10-22_fusion-cx-limited_1ef0c35a650c.json` |
+| **Zetwerk Manufacturing Business Limited** | ₹151.00 | ₹159.25 | **+5.46%** | `tier1` | `2026-10-23_zetwerk-manufacturing-business-limited_0783e1c0985b.json` |
+| **Sahajanand Medical Technologies Limited** | ₹344.00 | ₹371.15 | **+7.89%** | `tier1` | `2026-10-23_sahajanand-medical-technologies-limited_d69406a6b7e8.json` |
+| **Tonbo Imaging India Limited** | ₹700.00 | ₹1160.00 | **+65.71%** | `tier1` | `2026-10-23_tonbo-imaging-india-limited_4c486eeb1b8d.json` |
+| **Bonfiglioli Transmissions Limited** | ₹586.00 | ₹586.00 | **+0.00%** | `tier1` | `2026-10-23_bonfiglioli-transmissions-limited_6df55c3addef.json` |
+| **Jio Platforms Limited** | ₹1119.00 | ₹1358.00 | **+21.36%** | `tier2` | `2026-10-28_jio-platforms-limited_679a4ce1c8e3.json` |
+| **Paras Healthcare Limited** | ₹693.00 | ₹720.00 | **+3.90%** | `tier2b` | `2026-10-28_paras-healthcare-limited_chittorgarh_tier2b.json` |
+| **M.K.Sons Fine Jewels** | ₹162.00 | ₹171.00 | **+5.56%** | `tier2` | `2026-11-04_m-k-sons-fine-jewels_120ad4c51741.json` |
+| **BLS Polymers** | ₹150.00 | ₹248.00 | **+65.33%** | `tier2` | `2026-11-03_bls-polymers_683887010e3a.json` |
+| **SFC Environmental Technologies** | ₹330.00 | ₹355.10 | **+7.61%** | `tier2` | `2026-11-03_sfc-environmental-technologies_c73079abd326.json` |
+| **EAAA India Alternatives** | ₹1665.00 | ₹1675.50 | **+0.63%** | `tier2` | `2026-11-02_eaaa-india-alternatives_a8a32fe858d1.json` |

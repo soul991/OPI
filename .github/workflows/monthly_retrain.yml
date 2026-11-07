@@ -67,6 +67,9 @@ jobs:
             git add model/promotions_log.csv
           fi
           git add docs/monthly_challenger_comparison.md
+          if [ -f dashboard/index.html ]; then
+            git add dashboard/index.html
+          fi
 
           if git diff --staged --quiet; then
             echo "No changes staged. Working tree is clean; nothing to push."

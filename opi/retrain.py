@@ -510,7 +510,16 @@ def run_monthly_retrain_cli():
         print(f"  Candidate: {d['candidate']} vs Champion: {d['champion']}")
         print(f"    Pairs: {d['n_pairs']} | Decision: {d['decision']} | Reason: {d['reason']}")
 
-    print("\n[Step 3] Monthly retraining execution complete.")
+    # 3. Update dashboard with new shadow model and count
+    print("\n[Step 3] Updating dashboard with new model registry and shadow count...")
+    try:
+        from opi.report import render_dashboard_html
+        render_dashboard_html()
+        print("  Dashboard successfully updated.")
+    except Exception as e:
+        print(f"  Warning: dashboard update encountered: {e}")
+
+    print("\n[Step 4] Monthly retraining execution complete.")
     return 0
 
 

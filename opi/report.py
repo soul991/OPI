@@ -15,6 +15,8 @@ from opi.score import check_feature_ranges
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
+CORRECTIONS_PATH = ROOT_DIR / "predictions" / "outcome_corrections.csv"
+EVIDENCE_DIR = ROOT_DIR / "data" / "evidence" / "actuals"
 DEFECTS_PATH = ROOT_DIR / "DEFECTS.md"
 REGISTRY_PATH = ROOT_DIR / "model" / "registry.json"
 DASHBOARD_DIR = ROOT_DIR / "dashboard"
@@ -579,6 +581,14 @@ def generate_dashboard_data() -> Dict[str, Any]:
 
             data["mae_model"] = round(float(model_errors.mean()), 2)
             data["mae_model_cumulative"] = round(float(cum_mae_series.iloc[-1]), 2)
+            try:
+                from scripts.forward_mae import compute_forward_cohort_mae
+                fwd_cohort = compute_forward_cohort_mae(LOG_PATH, CORRECTIONS_PATH, EVIDENCE_DIR)
+                data["mae_model_cumulative_exact"] = fwd_cohort["mae"]
+                data["mae_model_cumulative_str"] = f"{fwd_cohort['mae']:.4f} pp"
+            except Exception:
+                data["mae_model_cumulative_exact"] = round(float(cum_mae_series.iloc[-1]), 4)
+                data["mae_model_cumulative_str"] = f"{data['mae_model_cumulative_exact']:.4f} pp"
             data["mae_model_rolling5"] = round(float(rolling_series.iloc[-1]), 2)
 
             co_cum_mae = {}
@@ -994,7 +1004,8 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             </div>
             <p class="stats" style="margin-top: 14px;">
                 Completed outcomes: <strong>{n_listed} of 30</strong> · listed, outcome pending: <strong>{d.get('listed_outcome_pending_count', 0)}</strong>{f" ({', '.join(d.get('listed_outcome_pending_names', []))})" if d.get('listed_outcome_pending_count', 0) > 0 else ""} · Total pending: <strong>{d['pending_forward_count']}</strong> · 
-                Provisional Model Cumulative MAE: <strong>{f"{d.get('mae_model_cumulative', d.get('mae_model')):.2f} pp" if d.get('mae_model') is not None else "—"}</strong> · 
+                Provisional Model Cumulative MAE: <strong>{d.get('mae_model_cumulative_str', f"{d.get('mae_model_cumulative', d.get('mae_model')):.4f} pp") if d.get('mae_model') is not None else "—"}</strong> · 
+                Cumulative MAE ({n_listed} of 30): <strong>{d.get('mae_model_cumulative_str', f"{d.get('mae_model_cumulative', d.get('mae_model')):.4f} pp") if d.get('mae_model') is not None else "—"}</strong> · 
                 Rolling-5 MAE: <strong>{f"{d.get('mae_model_rolling5'):.2f} pp" if d.get('mae_model_rolling5') is not None else "—"}</strong> · 
                 Provisional GMP MAE: <strong>{f"{d.get('mae_gmp'):.2f} pp" if d.get('mae_gmp') is not None else "—"}</strong>
             </p>
