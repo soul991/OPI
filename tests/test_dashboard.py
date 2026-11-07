@@ -3,7 +3,7 @@
 
 import re
 from pathlib import Path
-from opi.report import parse_defects_summary, render_dashboard_html, generate_dashboard_data
+from opi.report import parse_defects_summary, render_dashboard_html, generate_dashboard_data, count_valid_shadow_models
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -158,3 +158,61 @@ def test_dashboard_shows_cumulative_and_rolling_mae():
     assert "Provisional Model Cumulative MAE:" in content
     assert "Rolling-5 MAE:" in content
     assert re.search(r"n listed = \d+ of 30", content)
+
+
+def test_dashboard_shadow_models_counts_only_valid_existing_artifacts(tmp_path):
+    """Phase 20 final cleanup: Shadow Models count only includes role='shadow' models whose joblib file exists and matches sha256."""
+    import hashlib
+
+    # 1. Verify on production registry: v4.1.0-202611 is retired/missing, v4.2.0-202611 is shadow and valid -> exactly 1
+    d = generate_dashboard_data()
+    assert d["autopilot"]["shadow_count"] == 1
+
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    content = dash_path.read_text(encoding="utf-8")
+    m_shadow = re.search(r"Shadow Models.*?<div class=\"card-num\"[^>]*>\s*(\d+)\s*</div>", content, re.DOTALL)
+    assert m_shadow is not None
+    assert int(m_shadow.group(1)) == 1
+
+    # 2. Test edge cases with isolated dummy models
+    dummy_file = tmp_path / "model.joblib"
+    dummy_bytes = b"sample-model-bytes"
+    dummy_file.write_bytes(dummy_bytes)
+    correct_sha = hashlib.sha256(dummy_bytes).hexdigest()
+
+    models_test = {
+        # Valid shadow
+        "v-valid": {
+            "role": "shadow",
+            "artifact_path": str(dummy_file.relative_to(tmp_path)),
+            "sha256": correct_sha,
+        },
+        # Missing file
+        "v-missing": {
+            "role": "shadow",
+            "artifact_path": "non_existent.joblib",
+            "sha256": correct_sha,
+        },
+        # Corrupted SHA
+        "v-corrupted": {
+            "role": "shadow",
+            "artifact_path": str(dummy_file.relative_to(tmp_path)),
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        },
+        # Role retired (even if file exists and sha matches)
+        "v-retired": {
+            "role": "retired",
+            "artifact_path": str(dummy_file.relative_to(tmp_path)),
+            "sha256": correct_sha,
+        },
+        # Champion model
+        "v-champion": {
+            "role": "champion",
+            "artifact_path": str(dummy_file.relative_to(tmp_path)),
+            "sha256": correct_sha,
+        },
+    }
+
+    # Only v-valid should be counted
+    assert count_valid_shadow_models(models_test, root_dir=tmp_path) == 1

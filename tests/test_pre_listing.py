@@ -106,7 +106,7 @@ def test_bidding_open_ipo_appears_without_numbers(tmp_path: Path):
     assert "pred_gain_pct" not in cand
     assert "probability_gt10" not in cand
 
-    md = render_pre_listing_markdown(data=data, log_path=dummy_log)
+    md = render_pre_listing_markdown(data=data, log_path=dummy_log, output_path=tmp_path / 'test.md')
     assert "Open Candidate Ltd" in md
     assert "BIDDING_OPEN" in md
     assert "scored after close on 2026-11-02" in md

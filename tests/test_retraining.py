@@ -220,3 +220,78 @@ def test_monthly_retrain_trains_and_registers_shadow(tmp_path: Path):
     assert new_model_meta["champion"] == False
     assert new_model_meta["sha256"] == result["sha256"]
     assert new_model_meta["train_rows"] == result["train_rows"]
+
+
+def test_retrain_refuses_registration_when_artifact_is_git_ignored(tmp_path, monkeypatch):
+    """Phase 20 final cleanup: refuse to register shadow model when artifact is git-ignored."""
+    import opi.retrain
+    test_reg_path = tmp_path / "registry.json"
+    init_registry = {
+        "active_champion": "v4.0.0-champion",
+        "models": {
+            "v4.0.0-champion": {"champion": True, "artifact_path": "model/ipo_model_phase4.joblib"}
+        }
+    }
+    test_reg_path.write_text(json.dumps(init_registry, indent=2), encoding="utf-8")
+    test_challengers_dir = tmp_path / "challengers"
+
+    # Simulate git check-ignore returning True
+    monkeypatch.setattr(opi.retrain, "check_artifact_git_ignored", lambda *args, **kwargs: True)
+
+    with pytest.raises(RuntimeError, match="is git-ignored"):
+        train_monthly_shadow_model(
+            master_path=ROOT / "data" / "ipo_master.csv",
+            holdout_path=ROOT / "data" / "ipo_holdout_test.csv",
+            registry_path=test_reg_path,
+            challengers_dir=test_challengers_dir,
+            as_of_date=date(2026, 11, 1),
+        )
+
+    # Verify registry was NOT modified
+    current_reg = json.loads(test_reg_path.read_text(encoding="utf-8"))
+    assert list(current_reg["models"].keys()) == ["v4.0.0-champion"]
+
+
+def test_retrain_refuses_registration_when_artifact_is_missing(tmp_path, monkeypatch):
+    """Phase 20 final cleanup: refuse to register shadow model when artifact file is missing."""
+    import joblib
+    test_reg_path = tmp_path / "registry.json"
+    init_registry = {
+        "active_champion": "v4.0.0-champion",
+        "models": {
+            "v4.0.0-champion": {"champion": True, "artifact_path": "model/ipo_model_phase4.joblib"}
+        }
+    }
+    test_reg_path.write_text(json.dumps(init_registry, indent=2), encoding="utf-8")
+    test_challengers_dir = tmp_path / "challengers"
+
+    real_dump = joblib.dump
+    def dump_and_delete(obj, path, *args, **kwargs):
+        real_dump(obj, path, *args, **kwargs)
+        # Delete right after dump so verification or missing check catches it
+        if Path(path).exists():
+            Path(path).unlink()
+
+    monkeypatch.setattr(joblib, "dump", dump_and_delete)
+
+    with pytest.raises(RuntimeError, match="(missing|failed)"):
+        train_monthly_shadow_model(
+            master_path=ROOT / "data" / "ipo_master.csv",
+            holdout_path=ROOT / "data" / "ipo_holdout_test.csv",
+            registry_path=test_reg_path,
+            challengers_dir=test_challengers_dir,
+            as_of_date=date(2026, 11, 1),
+        )
+
+    # Verify registry was NOT modified
+    current_reg = json.loads(test_reg_path.read_text(encoding="utf-8"))
+    assert list(current_reg["models"].keys()) == ["v4.0.0-champion"]
+
+
+def test_check_artifact_git_ignored_live():
+    """Phase 20 final cleanup: verify check_artifact_git_ignored accurately tests git rules."""
+    from opi.retrain import check_artifact_git_ignored
+    # other/dummy.joblib should be ignored (*.joblib)
+    assert check_artifact_git_ignored("other/dummy.joblib") is True
+    # model/challengers/*.joblib is explicitly allowed (!model/challengers/*.joblib)
+    assert check_artifact_git_ignored("model/challengers/v4.2.0-202611.joblib") is False
