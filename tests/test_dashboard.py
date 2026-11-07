@@ -116,3 +116,45 @@ def test_dashboard_shows_pending_outcomes_table():
         "| Company | Listing Date | Days Since Listing | Last Logged Status | Reason / Detail |" in md_content
         or "No listed IPOs currently awaiting outcome." in md_content
     )
+
+
+def test_dashboard_shows_autopilot_health_block():
+    """D-110: Verify dashboard displays Autopilot & Operational Health block."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists()
+    content = dash_path.read_text(encoding="utf-8")
+
+    assert "Autopilot & Operational Health" in content
+    assert "Daily Discovery & Scoring" in content
+    assert "Outcome Watchdog" in content
+    assert "Monthly Retraining" in content
+    assert "Active Champion" in content
+    assert "Shadow Models" in content
+
+
+def test_dashboard_shows_model_versions_and_promotion_history():
+    """D-110: Verify dashboard displays Model Registry and Prospective Promotion ledger."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists()
+    content = dash_path.read_text(encoding="utf-8")
+
+    assert "Model Registry & Promotion History" in content
+    assert "Registered Models" in content
+    assert "v4.0.0-champion" in content
+    assert "Prospective Promotion Decisions" in content
+    assert "Pre-registered rule requires &ge; 20 paired prospective predictions" in content
+
+
+def test_dashboard_shows_cumulative_and_rolling_mae():
+    """D-110: Verify dashboard displays cumulative MAE, rolling-5 MAE, and dynamic provisional count."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists()
+    content = dash_path.read_text(encoding="utf-8")
+
+    assert "<th>Cumulative MAE</th>" in content
+    assert "Provisional Model Cumulative MAE:" in content
+    assert "Rolling-5 MAE:" in content
+    assert re.search(r"n listed = \d+ of 30", content)

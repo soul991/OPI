@@ -31,6 +31,7 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 
 ### 4a. Champion Replay and Live Accuracy Dashboard
 - **Live Public Dashboard**: [https://soul991.github.io/OPI/dashboard/](https://soul991.github.io/OPI/dashboard/) (served via GitHub Pages from branch `main`, verified HTTP 200).
+- **Autopilot Operations Guide**: [docs/AUTOPILOT.md](docs/AUTOPILOT.md) (autonomous cloud operations, scheduled pipelines, alert explanations, and human intervention points).
 - **Operational Runbook**: [docs/RUNBOOK.md](docs/RUNBOOK.md) (maintainer operational manual, alerting guide, key rotation, and monthly handover checklist).
 - The registered champion remains `v4.0.0-champion`, with a training window ending 2021-12-31; its artifact hash matches the registry. The master contains 333 IPOs through 2021 and 398 later rows. No training or model promotion was performed for this replay.
 - `predictions/champion_replay_v4.0.0-champion.csv` records inference-only comparisons across the 396 eligible Mainboard rows in `data/ipo_master.csv` dated 2022 onward. The two InvIT/REIT rows are excluded by the model's Mainboard eligibility rule. Replay MAE is 7.98 percentage points and positive/non-positive direction matched 84.3% of the time.

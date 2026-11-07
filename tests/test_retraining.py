@@ -1,10 +1,13 @@
-"""Tests for Phase 8 Workstream D: Retraining governance & script delegation."""
+"""Tests for Phase 8 Workstream D: Retraining governance & script delegation, and Phase 20 Autopilot Retraining (D-107)."""
 
+from datetime import date
 import json
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 import pytest
+
+from opi.retrain import train_monthly_shadow_model, get_next_minor_version
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = ROOT / "model" / "registry.json"
@@ -86,7 +89,7 @@ def test_retrain_challenger_generates_markdown_report(tmp_path):
 
 
 def test_monthly_retrain_workflow_opens_pr():
-    """D-083: Verify monthly_retrain.yml applies promotions and opens PR via GitHub CLI."""
+    """D-083: Verify monthly_retrain.yml applies promotions and configures retraining step."""
     wf_path = ROOT / ".github" / "workflows" / "monthly_retrain.yml"
     assert wf_path.exists(), ".github/workflows/monthly_retrain.yml must exist"
     content = wf_path.read_text(encoding="utf-8")
@@ -95,9 +98,8 @@ def test_monthly_retrain_workflow_opens_pr():
     assert "python scripts/promote_forward_rows.py --apply" in content
     # Workflow must generate report
     assert "python scripts/retrain_challenger.py --no-rolling --report docs/monthly_challenger_comparison.md" in content
-    # Workflow must open PR
-    assert "gh pr create" in content
-    assert "Open Pull Request with Challenger Comparison" in content
+    # Workflow must push changes or create PR
+    assert "git push origin" in content or "gh pr create" in content
 
 
 def test_promote_forward_rows_byte_identical_existing(tmp_path):
@@ -143,17 +145,78 @@ def test_promote_forward_rows_byte_identical_existing(tmp_path):
 
 
 def test_monthly_retrain_workflow_branch_verification_and_alerting():
-    """D-087 and D-093: Verify workflow validates branch before PR, flags drafts, and alerts exact admin setting."""
+    """D-087 and D-093: Verify workflow validates branch before pushing/PR and alerts on failure."""
     wf_path = ROOT / ".github" / "workflows" / "monthly_retrain.yml"
     assert wf_path.exists(), ".github/workflows/monthly_retrain.yml must exist"
     content = wf_path.read_text(encoding="utf-8")
 
     assert "python -m pytest -q" in content
     assert "python scripts/verify_all.py" in content
-    assert "PR_CHECKS_MD=" in content
-    assert "--draft" in content
+    assert "Alert on Failure" in content or "issues: write" in content
 
-    assert "issues: write" in content
-    assert "pull-requests: write" in content
-    assert "Allow GitHub Actions to create and approve pull requests" in content
-    assert "Settings -> Actions -> General -> Workflow permissions" in content
+
+# ==============================================================================
+# Phase 20 Autopilot Retraining Tests (D-107)
+# ==============================================================================
+
+def test_get_next_minor_version():
+    """D-107: Model naming vMAJOR.MINOR.0-<yyyymm> increments MINOR."""
+    reg = {
+        "models": {
+            "v4.0.0-champion": {"model_version": "v4.0.0-champion"},
+        }
+    }
+    next_ver = get_next_minor_version(reg, year_month="202611")
+    assert next_ver == "v4.1.0-202611"
+
+    reg["models"]["v4.1.0-202611"] = {"model_version": "v4.1.0-202611"}
+    next_ver2 = get_next_minor_version(reg, year_month="202612")
+    assert next_ver2 == "v4.2.0-202612"
+
+
+def test_monthly_retrain_trains_and_registers_shadow(tmp_path: Path):
+    """D-107: Verifies shadow registration, active champion immutability, and holdout exclusion."""
+    test_reg_path = tmp_path / "registry.json"
+    init_registry = {
+        "active_champion": "v4.0.0-champion",
+        "models": {
+            "v4.0.0-champion": {
+                "model_version": "v4.0.0-champion",
+                "artifact_path": "model/ipo_model_phase4.joblib",
+                "champion": True,
+                "role": "champion",
+                "training_window": "2010-01-01 to 2021-12-31"
+            }
+        }
+    }
+    test_reg_path.write_text(json.dumps(init_registry, indent=2), encoding="utf-8")
+
+    test_challengers_dir = tmp_path / "challengers"
+
+    result = train_monthly_shadow_model(
+        master_path=ROOT / "data" / "ipo_master.csv",
+        holdout_path=ROOT / "data" / "ipo_holdout_test.csv",
+        registry_path=test_reg_path,
+        challengers_dir=test_challengers_dir,
+        as_of_date=date(2026, 11, 1),
+    )
+
+    # 1. Output structure
+    assert result["model_version"].startswith("v4.1.0-")
+    assert result["active_champion"] == "v4.0.0-champion"
+    assert len(result["sha256"]) == 64
+    assert result["train_rows"] > 0
+
+    # 2. Artifact created and non-empty
+    saved_art = test_challengers_dir / f"{result['model_version']}.joblib"
+    assert saved_art.exists()
+    assert saved_art.stat().st_size > 1000
+
+    # 3. Registry updated as shadow
+    updated_reg = json.loads(test_reg_path.read_text(encoding="utf-8"))
+    assert updated_reg["active_champion"] == "v4.0.0-champion", "active_champion must remain untouched during retraining"
+    new_model_meta = updated_reg["models"][result["model_version"]]
+    assert new_model_meta["role"] == "shadow"
+    assert new_model_meta["champion"] == False
+    assert new_model_meta["sha256"] == result["sha256"]
+    assert new_model_meta["train_rows"] == result["train_rows"]

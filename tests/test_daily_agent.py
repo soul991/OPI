@@ -57,6 +57,7 @@ def test_score_ipo_calls_research_agent_for_missing_fields(tmp_path, monkeypatch
     synthetic_pred_log = tmp_path / "prediction_log.csv"
     monkeypatch.setattr("opi.log.RUN_LOG_PATH", synthetic_run_log)
     monkeypatch.setattr("opi.log.LOG_PATH", synthetic_pred_log)
+    monkeypatch.setattr("opi.log.MODEL_VERSIONS_PATH", tmp_path / "model_versions.csv")
     monkeypatch.setattr("scripts.score_ipo.render_dashboard_html", lambda: None)
 
     with patch("scripts.score_ipo.ingest_ipo_data", return_value=mock_parsed):
@@ -109,6 +110,7 @@ def test_research_agent_failure_falls_back_to_deterministic(tmp_path, monkeypatc
     synthetic_pred_log = tmp_path / "prediction_log.csv"
     monkeypatch.setattr("opi.log.RUN_LOG_PATH", synthetic_run_log)
     monkeypatch.setattr("opi.log.LOG_PATH", synthetic_pred_log)
+    monkeypatch.setattr("opi.log.MODEL_VERSIONS_PATH", tmp_path / "model_versions.csv")
     monkeypatch.setattr("scripts.score_ipo.render_dashboard_html", lambda: None)
 
     with patch("scripts.score_ipo.ingest_ipo_data", return_value=mock_parsed):

@@ -578,10 +578,12 @@ def run_overdue_and_coverage_check(
     log_path: Optional[Path] = None,
     candidates: Optional[List[Dict[str, Any]]] = None,
     missed_path: Optional[Path] = None,
+    current_date: Optional[dt.date] = None,
 ) -> int:
-    """Run overdue outcomes check and unlogged closing coverage check (D-095).
+    """Run overdue outcomes check and unlogged closing coverage check (D-095, D-109).
 
-    Returns 0 if both pass, 1 if any alert condition exists.
+    D-109: Overdue outcomes between 3 and 7 days show a notice/dashboard banner,
+    but do NOT fail the workflow. Day 8 or later (>7 days) triggers a hard failure.
     """
     print(f"\n{'='*78}")
     print("  OPI OVERDUE OUTCOMES & COVERAGE AUDIT")
@@ -590,11 +592,16 @@ def run_overdue_and_coverage_check(
     failures: List[str] = []
 
     # Check overdue listing outcomes (>2 days post-listing)
-    ok_d, msg_d, overdue_d = check_missing_outcomes(log_path=log_path)
-    print(f"Check [Missing Listing Outcomes]: {'PASS' if ok_d else 'FAIL'}")
+    ok_d, msg_d, overdue_d = check_missing_outcomes(log_path=log_path, current_date=current_date)
+    critical_overdue = [o for o in overdue_d if o.get("days_overdue", 0) > 7]
+
+    print(f"Check [Missing Listing Outcomes]: {'PASS' if (not critical_overdue) else 'FAIL'}")
     print(f"  {msg_d}\n")
-    if not ok_d:
-        failures.append(f"Missing Listing Outcomes:\n{msg_d}")
+    if critical_overdue:
+        crit_msg = "\n".join(f"  - {o['company']} (listed {o['listing_date']}, {o['days_overdue']} days ago)" for o in critical_overdue)
+        failures.append(f"Critical Missing Listing Outcomes (> 7 days):\n{crit_msg}")
+    elif overdue_d:
+        print(f"  [D-109 NOTICE] {len(overdue_d)} outcome(s) pending review (3-7 days overdue); dashboard banner active, workflow continues.")
 
     # Check unlogged closing IPO coverage
     ok_e, msg_e, urgent_e = check_unlogged_closing_ipos(candidates=candidates, log_path=log_path, missed_path=missed_path)

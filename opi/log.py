@@ -14,6 +14,18 @@ import pandas as pd
 ROOT_DIR = Path(__file__).resolve().parents[1]
 LOG_PATH = ROOT_DIR / "predictions" / "prediction_log.csv"
 RUN_LOG_PATH = ROOT_DIR / "predictions" / "run_log.csv"
+MODEL_VERSIONS_PATH = ROOT_DIR / "predictions" / "model_versions.csv"
+
+MODEL_VERSIONS_COLUMNS = [
+    "scored_at",
+    "company",
+    "listing_date",
+    "model_version",
+    "role",
+    "pred_gain_pct",
+    "pred_prob_gt10",
+    "backfilled",
+]
 
 IST = timezone(timedelta(hours=5, minutes=30))
 _TEST_FIXTURE_CLOCK: Optional[Callable[[], str]] = None
@@ -136,11 +148,119 @@ def append_prediction_log(
         if not file_exists:
             writer.writerow(LOG_COLUMNS)
         writer.writerow([row_dict[col] for col in LOG_COLUMNS])
+
+    if status == "FORWARD":
+        champ_ver = model_version or "v4.0.0-champion"
+        try:
+            append_model_version_log(
+                scored_at=timestamp,
+                company=company,
+                listing_date=listing_date,
+                model_version=champ_ver,
+                role="champion",
+                pred_gain_pct=pred_gain_pct,
+                pred_prob_gt10=pred_prob_gt10,
+                backfilled=False,
+            )
+            _score_and_record_shadow_models(
+                scored_at=timestamp,
+                company=company,
+                listing_date=listing_date,
+                features=features,
+            )
+        except Exception:
+            pass
         
     return row_dict
 
 
 from typing import Dict, Any, Optional, Tuple, Union
+
+def append_model_version_log(
+    scored_at: str,
+    company: str,
+    listing_date: str,
+    model_version: str,
+    role: str,
+    pred_gain_pct: float,
+    pred_prob_gt10: float,
+    backfilled: bool = False,
+    versions_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+    """Append a row to predictions/model_versions.csv (D-106)."""
+    target = Path(versions_path) if versions_path else MODEL_VERSIONS_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = target.exists()
+    row_dict = {
+        "scored_at": scored_at,
+        "company": company,
+        "listing_date": listing_date,
+        "model_version": model_version,
+        "role": role,
+        "pred_gain_pct": round(float(pred_gain_pct), 2),
+        "pred_prob_gt10": round(float(pred_prob_gt10), 4),
+        "backfilled": bool(backfilled),
+    }
+    with open(target, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(MODEL_VERSIONS_COLUMNS)
+        writer.writerow([row_dict[c] for c in MODEL_VERSIONS_COLUMNS])
+    return row_dict
+
+
+def _score_and_record_shadow_models(
+    scored_at: str,
+    company: str,
+    listing_date: str,
+    features: Dict[str, Any],
+    versions_path: Optional[Path] = None,
+):
+    """Score candidate with all active shadow models in registry and record to model_versions.csv (D-106)."""
+    reg_path = ROOT_DIR / "model" / "registry.json"
+    if not reg_path.exists():
+        return
+    try:
+        with open(reg_path, "r", encoding="utf-8") as f:
+            registry = json.load(f)
+    except Exception:
+        return
+
+    active_champ = registry.get("active_champion")
+    models = registry.get("models", {})
+
+    from opi.score import score_ipo
+    import joblib
+
+    for mod_name, mod_meta in models.items():
+        if mod_name == active_champ:
+            continue
+        role = mod_meta.get("role") or ("champion" if mod_meta.get("champion") else "shadow")
+        if role != "shadow":
+            continue
+        art_rel = mod_meta.get("artifact_path")
+        if not art_rel:
+            continue
+        art_path = ROOT_DIR / art_rel
+        if not art_path.exists():
+            continue
+        try:
+            art = joblib.load(art_path)
+            res = score_ipo(features, custom_artifact=art, custom_model_version=mod_name)
+            append_model_version_log(
+                scored_at=scored_at,
+                company=company,
+                listing_date=listing_date,
+                model_version=mod_name,
+                role="shadow",
+                pred_gain_pct=res["predicted_gain_pct"],
+                pred_prob_gt10=res["prob_gt10"],
+                backfilled=False,
+                versions_path=versions_path,
+            )
+        except Exception:
+            pass
+
 
 def update_actual_outcome(
     company: str,

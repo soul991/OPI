@@ -1,0 +1,14 @@
+scored_at,company,listing_date,model_version,role,pred_gain_pct,pred_prob_gt10,backfilled
+2026-10-16T21:22:23.195683+05:30,HD Fire Protect Limited,2026-10-21,v4.0.0-champion,champion,26.12,0.9547,True
+2026-10-17T10:19:43.346052+05:30,Fusion CX Limited,2026-10-22,v4.0.0-champion,champion,4.33,0.301,True
+2026-10-20T14:01:40.288712+05:30,Zetwerk Manufacturing Business Limited,2026-10-23,v4.0.0-champion,champion,-0.77,0.0644,True
+2026-10-20T14:01:41.673105+05:30,Sahajanand Medical Technologies Limited,2026-10-23,v4.0.0-champion,champion,8.32,0.2483,True
+2026-10-20T14:01:43.147178+05:30,Tonbo Imaging India Limited,2026-10-23,v4.0.0-champion,champion,74.7,0.9257,True
+2026-10-20T14:01:44.574829+05:30,Bonfiglioli Transmissions Limited,2026-10-23,v4.0.0-champion,champion,21.1,0.8615,True
+2026-10-24T02:41:48.417752+05:30,Jio Platforms Limited,2026-10-28,v4.0.0-champion,champion,22.14,0.9095,True
+2026-10-24T02:42:12.112584+05:30,Paras Healthcare Limited,2026-10-28,v4.0.0-champion,champion,-2.56,0.0433,True
+2026-11-01T22:31:30.391126+05:30,M.K.Sons Fine Jewels,2026-11-04,v4.0.0-champion,champion,4.37,0.4075,True
+2026-11-01T22:31:31.606356+05:30,BLS Polymers,2026-11-03,v4.0.0-champion,champion,53.28,0.8887,True
+2026-11-01T22:31:32.678180+05:30,SFC Environmental Technologies,2026-11-03,v4.0.0-champion,champion,5.49,0.3764,True
+2026-11-01T22:31:33.797722+05:30,EAAA India Alternatives,2026-11-02,v4.0.0-champion,champion,5.35,0.3635,True
+2026-11-02T20:23:48.605942+05:30,Bombay Coated & Special Steels,2026-11-05,v4.0.0-champion,champion,10.14,0.544,True
