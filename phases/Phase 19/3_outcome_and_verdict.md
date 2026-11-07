@@ -24,6 +24,26 @@ When forward rows are sorted chronologically by `(listing_date, scored_at)`, the
 4. Regression test `tests/test_reporting.py::test_forward_report_chronological_first_9_mae` has been added.
 5. Across the full current cohort of $n = 11$ listed forward IPOs, the provisional model MAE is **5.0909 percentage points** ($56.00 / 11$).
 
+### Phase 20 Gate Audit Corrections (D-103)
+
+1. **Missing Evidence Files and Price Citation Error**:
+   No evidence files exist for BLS Polymers or Bombay Coated under `data/evidence/actuals/` at Phase 19. The cited Bombay Coated price of 89.00 was never observed or logged; the execution logs record only 91.0 and 92.02.
+
+2. **Actions Run IDs and Status Corrections**:
+   - The GitHub Pages deployment failure was workflow run `42227803913` (run #79, timeout at 10m52s). The previously quoted run ID `42190760462` is HTTP 404 (does not exist).
+   - Workflow run `42286425753` was triggered by `schedule`, not `workflow_dispatch`.
+   - Workflow runs `42218253536` and `42297601919` both concluded with overall status `failure`.
+
+3. **Cohort MAE Figure**:
+   The Phase 19 MAE figure of 5.0909 pp was wrong; the correct value is 5.0873 pp.
+
+4. **Defect Register Status Corrections (D-100 & D-101)**:
+   - D-100 status is corrected to `PARTIAL`: arbitration rules and unit tests were implemented, but no real-world row was resolved or recorded.
+   - D-101 status is corrected to `PARTIAL`: source value metadata labelling was implemented and tested on synthetic fixtures only; no real evidence manifest with exchange labels has been committed by cloud execution.
+
+5. **Unverified Third-Party Quote Claim**:
+   The claim that Groww quotes NSE 248.0 and Chittorgarh quotes BSE 244.1 for BLS Polymers has no saved evidence snapshot in the repository.
+
 ---
 
 ## 1. Targets Missed & Unfixed Items

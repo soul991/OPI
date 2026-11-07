@@ -10,7 +10,7 @@
 1. **Primary Exchange Principle**: For any IPO listed on the National Stock Exchange (NSE), the official outcome is defined strictly as the **first-session opening price on NSE**.
 2. **Sole BSE Listing Exception**: For any IPO listed exclusively on the Bombay Stock Exchange (BSE) without an NSE listing (e.g. HD Fire Protect, BSE scrip 544994), the official outcome is the **first-session opening price on BSE**.
 3. **Strict Exchange Isolation**: NSE and BSE price quotes are never blended, mixed, or averaged across exchanges.
-4. **Master Dataset Consistency**: The historical master dataset (`data/ipo_master.csv`) reflects dual-listed (BOTH: 723 issues) opening prices primarily from NSE, with sole BSE listings (BSE: 15 issues) recorded from BSE. This pre-registered rule codifies the historical convention.
+4. **Master Dataset Consistency**: The historical master dataset (`data/ipo_master.csv`) contains 723 BOTH, 15 BSE-only and 2 NSE-only rows; opening prices reflect first-session open primarily from NSE for dual-listed issues, with sole BSE listings recorded from BSE. This pre-registered rule codifies the historical convention.
 
 ---
 
