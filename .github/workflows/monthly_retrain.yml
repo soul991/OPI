@@ -1,4 +1,4 @@
-name: Monthly Challenger Model Evaluation
+name: Monthly Retraining & Autopilot Model Evaluation
 
 on:
   schedule:
@@ -8,11 +8,10 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   issues: write
 
 jobs:
-  evaluate-challenger:
+  monthly-retrain:
     runs-on: ubuntu-24.04
 
     steps:
@@ -36,96 +35,61 @@ jobs:
         run: |
           python scripts/promote_forward_rows.py --apply
 
-      - name: Execute Governed Challenger Evaluation
+      - name: Execute Monthly Retraining, Shadow Registration & Promotion Engine
+        run: |
+          python -m opi.retrain --execute
+
+      - name: Execute Walk-Forward Comparison Report
         run: |
           python scripts/retrain_challenger.py --no-rolling --report docs/monthly_challenger_comparison.md
 
-      - name: Verify Zero Automatic Model Promotion
+      - name: Run Test Suite and Independent Verification (D-093, D-107)
         run: |
-          # Governance check: ensure champion model artifact in model/ was NOT modified
-          if [ -n "$(git status --porcelain model/)" ]; then
-            echo "ERROR: Challenger script modified model/ directory! Automatic promotion is strictly prohibited."
-            exit 1
-          fi
-          echo "Governance verified: Champion model was preserved untouched."
+          set -o pipefail
+          python -m pytest -q
+          python scripts/verify_all.py
 
-      - name: Open Pull Request with Challenger Comparison
+      - name: Direct Push Retrained Shadow Model and Decisions to main (D-107, D-108)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          BRANCH_NAME="retrain/challenger-$(date +%Y%m%d-%H%M%S)"
-          git checkout -b "$BRANCH_NAME"
-          git add docs/monthly_challenger_comparison.md
+          git add data/ipo_master.csv
           if [ -f data/promotions.csv ]; then
             git add data/promotions.csv
           fi
-          if [ -f data/ipo_master.csv ]; then
-            git add data/ipo_master.csv
+          git add model/registry.json
+          if [ -d model/challengers ]; then
+            git add model/challengers/
           fi
-          
-          PROMO_COUNT=$(git diff --staged data/promotions.csv 2>/dev/null | grep -c "^+" || true)
-          if [ "$PROMO_COUNT" -le 1 ]; then
-            PROMO_NOTE="Empty promotion set: 0 new forward rows were eligible for promotion. Evaluated on existing master dataset."
+          if [ -f model/promotions_log.csv ]; then
+            git add model/promotions_log.csv
+          fi
+          git add docs/monthly_challenger_comparison.md
+
+          if git diff --staged --quiet; then
+            echo "No changes staged. Working tree is clean; nothing to push."
           else
-            PROMO_NOTE="Promoted eligible completed forward prediction rows into master training data."
-          fi
-          
-          git commit -m "retrain: monthly challenger evaluation and forward promotion"
-          git push origin "$BRANCH_NAME"
-
-          # D-093: Run test suite and independent verification on PR branch
-          set +e
-          python -m pytest -q > pytest_output.txt 2>&1
-          PYTEST_EXIT=$?
-          python scripts/verify_all.py > verify_output.txt 2>&1
-          VERIFY_EXIT=$?
-          set -e
-
-          PYTEST_SUMMARY=$(grep -E "(passed|failed|skipped)" pytest_output.txt | tail -n 1 || echo "pytest completed with code $PYTEST_EXIT")
-          VERIFY_SUMMARY=$(grep "^SUMMARY:" verify_output.txt || echo "verify_all completed with code $VERIFY_EXIT")
-
-          CHECKS_PASSED=true
-          if [ $PYTEST_EXIT -ne 0 ] || [ $VERIFY_EXIT -ne 0 ]; then
-            CHECKS_PASSED=false
+            git commit -m "retrain(auto): monthly shadow model retraining and promotion evaluation [skip ci]"
+            git push origin main
+            echo "Successfully pushed retrained shadow model and promotion log directly to main."
           fi
 
-          PR_CHECKS_MD="## Automated Branch Verification (D-093)\n- **pytest**: \`$PYTEST_SUMMARY\` (exit: $PYTEST_EXIT)\n- **verify_all**: \`$VERIFY_SUMMARY\` (exit: $VERIFY_EXIT)\n"
-
-          echo -e "$PROMO_NOTE\n\n$PR_CHECKS_MD\n\n$(cat docs/monthly_challenger_comparison.md)" > pr_body.txt
-
-          if [ "$CHECKS_PASSED" = "true" ]; then
-            PR_TITLE="Monthly Challenger Evaluation - $(date +%Y-%m)"
-            DRAFT_FLAG=""
-          else
-            PR_TITLE="FAILING CHECKS: Monthly Challenger Evaluation - $(date +%Y-%m)"
-            DRAFT_FLAG="--draft"
-            gh issue create --title "Monthly retrain checks failed on PR branch: $BRANCH_NAME" \
-                            --body "Monthly retraining branch verification failed before PR creation.\n\n$PR_CHECKS_MD\nSee workflow run logs for full failure output." || true
-          fi
-
-          # D-087: Attempt gh pr create, catch permission errors and alert exact setting
-          set +e
-          PR_OUT=$(gh pr create --title "$PR_TITLE" \
-                               --body-file pr_body.txt \
-                               --base main \
-                               --head "$BRANCH_NAME" \
-                               $DRAFT_FLAG 2>&1)
-          PR_CREATE_EXIT=$?
-          set -e
-
-          if [ $PR_CREATE_EXIT -ne 0 ]; then
-            echo "ERROR: Failed to open Pull Request via gh pr create: $PR_OUT"
-            gh issue create --title "Monthly retrain failed to open PR: missing GitHub Actions permissions" \
-                            --body "GitHub Actions was unable to open a pull request for branch \`$BRANCH_NAME\`.\n\nError output:\n\`\`\`\n$PR_OUT\n\`\`\`\n\n**Action Required by Repository Admin**:\nEnable the required workflow permission in GitHub settings:\n\`Settings -> Actions -> General -> Workflow permissions -> Allow GitHub Actions to create and approve pull requests\`." || true
-            exit 1
-          fi
-          echo "Successfully created PR: $PR_OUT"
+      - name: Alert on Failure (D-091, D-107)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --title "ALERT: Monthly retraining workflow failed on main" \
+                          --body "The scheduled monthly retraining run \`${{ github.run_id }}\` failed.\n\nCheck workflow execution logs for details: https://github.com/soul991/OPI/actions/runs/${{ github.run_id }}" || true
 
       - name: Archive Challenger Evaluation Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: challenger-evaluation-report
           path: |
-            docs/
+            docs/monthly_challenger_comparison.md
+            model/promotions_log.csv
+            model/registry.json

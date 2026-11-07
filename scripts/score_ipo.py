@@ -224,9 +224,11 @@ def score_and_log_ipo(
                 if not dry_run:
                     append_run_log(run_id, "RESEARCH_AGENT", company, "SKIPPED_NO_KEY", "No API key configured")
         except Exception as ag_err:
-            print(f"  [Research Agent Warning] Failed: {ag_err}")
+            err_msg = str(ag_err)[:100]
+            print(f"  [ALERT] [Research Agent Failure] {company}: {ag_err}")
             if not dry_run:
-                append_run_log(run_id, "RESEARCH_AGENT", company, "FAILED", f"error={str(ag_err)[:100]}")
+                append_run_log(run_id, "RESEARCH_AGENT", company, "FAILED", f"error={err_msg}")
+                append_run_log(run_id, "ALERT", company, "RESEARCH_AGENT_ALERT", f"error={err_msg}")
 
     # 4. Score with Champion Model
     res = score_ipo(features)

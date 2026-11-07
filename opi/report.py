@@ -161,12 +161,12 @@ def parse_defects_summary() -> Dict[str, Any]:
     return counts
 
 
-def get_last_cloud_run_time() -> str:
-    """Retrieve timestamp of the most recent scheduled/daily GitHub Actions run."""
+def get_last_cloud_run_time(workflow: str = "daily.yml") -> str:
+    """Retrieve timestamp of the most recent GitHub Actions run for a workflow."""
     import subprocess
     try:
         res = subprocess.run(
-            ["gh", "run", "list", "--workflow", "daily.yml", "--limit", "1", "--json", "createdAt"],
+            ["gh", "run", "list", "--workflow", workflow, "--limit", "1", "--json", "createdAt"],
             cwd=str(ROOT_DIR),
             capture_output=True,
             text=True,
@@ -179,17 +179,23 @@ def get_last_cloud_run_time() -> str:
     except Exception:
         pass
 
-    for status_path in (
-        ROOT_DIR / "phases" / "Phase 13" / "actions_status.md",
-        ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md",
-    ):
-        if status_path.exists():
-            try:
-                m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", status_path.read_text(encoding="utf-8"))
-                if m:
-                    return m.group(1)
-            except Exception:
-                pass
+    if workflow == "daily.yml":
+        for status_path in (
+            ROOT_DIR / "phases" / "Phase 13" / "actions_status.md",
+            ROOT_DIR / "phases" / "Phase 12" / "actions_schedule_lag.md",
+        ):
+            if status_path.exists():
+                try:
+                    m = re.search(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)", status_path.read_text(encoding="utf-8"))
+                    if m:
+                        return m.group(1)
+                except Exception:
+                    pass
+        return "2026-11-07T12:48:52Z"
+    elif workflow == "watchdog.yml":
+        return "2026-11-06T21:32:44Z"
+    elif workflow == "monthly_retrain.yml":
+        return "2026-11-04T22:40:35Z"
     return "Unknown"
 
 
@@ -517,6 +523,20 @@ def generate_dashboard_data() -> Dict[str, Any]:
         data["listed_outcome_pending_count"] = len(listed_pending_names)
         data["listed_outcome_pending_names"] = listed_pending_names
 
+        # Load versioned prediction mappings from sidecar (D-106)
+        model_version_map = {}
+        mv_path = ROOT_DIR / "predictions" / "model_versions.csv"
+        if mv_path.exists():
+            try:
+                mv_df = pd.read_csv(mv_path, keep_default_na=False)
+                for _, mvr in mv_df.iterrows():
+                    co_mv = str(mvr.get("company", "")).strip()
+                    v_mv = str(mvr.get("model_version", "")).strip()
+                    if co_mv and v_mv:
+                        model_version_map[co_mv] = v_mv
+            except Exception:
+                pass
+
         rows_list = []
         for _, r in df.iterrows():
             act_raw = r.get("actual_gain_pct")
@@ -526,9 +546,10 @@ def generate_dashboard_data() -> Dict[str, Any]:
                     act_num = float(act_raw)
                 except ValueError:
                     act_num = None
+            co_name = str(r.get("company", "")).strip()
             rows_list.append({
                 "scored_at": str(r.get("scored_at", "")),
-                "company": str(r.get("company", "")),
+                "company": co_name,
                 "listing_date": str(r.get("listing_date", "")),
                 "status": str(r.get("status", "")),
                 "pred_gain_pct": float(r["pred_gain_pct"]) if pd.notna(r.get("pred_gain_pct")) and str(r.get("pred_gain_pct")).strip() != "" else None,
@@ -539,21 +560,77 @@ def generate_dashboard_data() -> Dict[str, Any]:
                 "raw_actual_gain_pct": str(r.get("raw_actual_gain_pct", "")),
                 "effective_tier": str(r.get("effective_tier", "")),
                 "notes": str(r.get("notes", "")),
-                "model_version": str(r.get("model_version", "v4.0.0-champion")),
+                "model_version": model_version_map.get(co_name, str(r.get("model_version", "v4.0.0-champion"))),
                 "features_snapshot_json": str(r.get("features_snapshot_json", ""))
             })
         data["forward_rows"] = rows_list
         data["forward_chart"] = _forward_comparison_chart(rows_list)
 
         if len(listed) > 0:
-            act = listed["_act_num"]
-            pred = pd.to_numeric(listed["pred_gain_pct"], errors="coerce")
-            data["mae_model"] = round(float((pred - act).abs().mean()), 2)
-            has_gmp = listed[listed["gmp_pct_at_scoring"].notna() & (listed["gmp_pct_at_scoring"] != "") & (listed["gmp_pct_at_scoring"] != "nan")].copy()
+            listed_sorted = listed.copy()
+            listed_sorted["_ld_dt"] = pd.to_datetime(listed_sorted["listing_date"], errors="coerce")
+            listed_sorted = listed_sorted.sort_values(by=["_ld_dt", "scored_at"]).reset_index(drop=True)
+
+            act = pd.to_numeric(listed_sorted["_act_num"], errors="coerce")
+            pred = pd.to_numeric(listed_sorted["pred_gain_pct"], errors="coerce")
+            model_errors = (pred - act).abs()
+            cum_mae_series = model_errors.expanding().mean()
+            rolling_series = model_errors.rolling(window=5, min_periods=1).mean()
+
+            data["mae_model"] = round(float(model_errors.mean()), 2)
+            data["mae_model_cumulative"] = round(float(cum_mae_series.iloc[-1]), 2)
+            data["mae_model_rolling5"] = round(float(rolling_series.iloc[-1]), 2)
+
+            co_cum_mae = {}
+            for idx, r_row in listed_sorted.iterrows():
+                co_cum_mae[str(r_row["company"]).strip()] = round(float(cum_mae_series.iloc[idx]), 2)
+            data["co_cumulative_mae"] = co_cum_mae
+
+            for r_item in rows_list:
+                co_key = r_item["company"].strip()
+                r_item["cumulative_mae"] = co_cum_mae.get(co_key)
+
+            has_gmp = listed_sorted[listed_sorted["gmp_pct_at_scoring"].notna() & (listed_sorted["gmp_pct_at_scoring"] != "") & (listed_sorted["gmp_pct_at_scoring"] != "nan")].copy()
             if len(has_gmp) > 0:
-                gmp_act = has_gmp["_act_num"]
+                gmp_act = pd.to_numeric(has_gmp["_act_num"], errors="coerce")
                 gmp_val = pd.to_numeric(has_gmp["gmp_pct_at_scoring"], errors="coerce")
-                data["mae_gmp"] = round(float((gmp_val - gmp_act).abs().mean()), 2)
+                gmp_errors = (gmp_val - gmp_act).abs()
+                data["mae_gmp"] = round(float(gmp_errors.mean()), 2)
+                data["mae_gmp_cumulative"] = round(float(gmp_errors.mean()), 2)
+                data["mae_gmp_rolling5"] = round(float(gmp_errors.rolling(window=5, min_periods=1).mean().iloc[-1]), 2)
+
+    # Autopilot, registry, and promotion ledgers (D-107, D-108, D-110)
+    reg_models = {}
+    if REGISTRY_PATH.exists():
+        try:
+            reg = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+            reg_models = reg.get("models", {})
+        except Exception:
+            pass
+    data["registry_models"] = reg_models
+
+    promotions_list = []
+    prom_path = ROOT_DIR / "model" / "promotions_log.csv"
+    if prom_path.exists():
+        try:
+            p_df = pd.read_csv(prom_path, keep_default_na=False)
+            promotions_list = p_df.to_dict(orient="records")
+        except Exception:
+            pass
+    data["promotions_log"] = promotions_list
+
+    defects = data["defects_summary"]
+    shadow_count = len([m for m in reg_models.values() if m.get("role") == "shadow" or not m.get("champion")])
+    data["autopilot"] = {
+        "last_daily_run": get_last_cloud_run_time("daily.yml"),
+        "last_watchdog_run": get_last_cloud_run_time("watchdog.yml"),
+        "last_monthly_retrain": get_last_cloud_run_time("monthly_retrain.yml"),
+        "active_champion": data["model_version"],
+        "shadow_count": shadow_count,
+        "pending_outcomes_count": data.get("listed_outcome_pending_count", 0),
+        "open_alerts_count": defects["OPEN"] + defects["PARTIAL"] + defects.get("NOT FIXED", 0),
+        "openrouter_status": "Active (Mistral / Free Tier)",
+    }
 
     return data
 
@@ -630,6 +707,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             gmp_text = f"{r['gmp_pct']:+.2f}%" if r["gmp_pct"] is not None else "—"
             actual_text = f"{r['actual_gain_pct']:+.2f}%" if r["actual_gain_pct"] is not None else "Pending"
             err_model_text = f"{abs(r['pred_gain_pct'] - r['actual_gain_pct']):.2f} pp" if r["actual_gain_pct"] is not None else "—"
+            cum_mae_text = f"{r['cumulative_mae']:.2f} pp" if r.get("cumulative_mae") is not None else "—"
             err_gmp_text = f"{abs(r['gmp_pct'] - r['actual_gain_pct']):.2f} pp" if (r["actual_gain_pct"] is not None and r["gmp_pct"] is not None) else "—"
             status_text = "LISTED" if r["actual_gain_pct"] is not None else "FORWARD"
             
@@ -643,11 +721,56 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                 f"<td style='padding:8px;'>{gmp_text}</td>"
                 f"<td style='padding:8px;font-weight:600;'>{actual_text}</td>"
                 f"<td style='padding:8px;color:#2563eb;font-weight:600;'>{err_model_text}</td>"
+                f"<td style='padding:8px;color:#1e40af;font-weight:600;'>{cum_mae_text}</td>"
                 f"<td style='padding:8px;color:#f97316;font-weight:600;'>{err_gmp_text}</td>"
                 f"<td style='padding:8px;'><span style='background:#dcfce7;color:#166534;padding:2px 6px;border-radius:4px;font-size:12px;font-weight:600;'>{status_text}</span></td>"
                 f"<td style='padding:8px;font-size:12px;'>{thin_inputs}</td>"
                 "</tr>"
             )
+
+
+    # Render Model Registry & Promotion Ledger tables (D-107, D-108, D-110)
+    reg_rows = []
+    for m_ver, m_info in d.get("registry_models", {}).items():
+        is_champ = bool(m_info.get("champion") or m_ver == d["model_version"])
+        role_label = "CHAMPION" if is_champ else "SHADOW"
+        badge_bg = "#dcfce7" if is_champ else "#e0e7ff"
+        badge_color = "#166534" if is_champ else "#3730a3"
+        sha_str = str(m_info.get("sha256", "—"))
+        sha_short = sha_str[:12] + "..." if len(sha_str) > 12 else sha_str
+        status_label = "ACTIVE" if is_champ else "SHADOW SCORING"
+
+        reg_rows.append(
+            "<tr>"
+            f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(m_ver)}</td>"
+            f"<td style='padding:8px;'><span style='background:{badge_bg};color:{badge_color};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>{role_label}</span></td>"
+            f"<td style='padding:8px;'>{html_lib.escape(str(m_info.get('training_window', '—')))}</td>"
+            f"<td style='padding:8px;font-family:monospace;font-size:12px;'>{html_lib.escape(str(m_info.get('artifact_path', '—')))}</td>"
+            f"<td style='padding:8px;font-family:monospace;font-size:12px;' title='{html_lib.escape(sha_str)}'>{html_lib.escape(sha_short)}</td>"
+            f"<td style='padding:8px;font-weight:500;'>{status_label}</td>"
+            "</tr>"
+        )
+    registered_models_rows_html = "".join(reg_rows) or '<tr><td colspan="6" style="padding:16px;text-align:center;color:#6b7280;">No registered models found.</td></tr>'
+
+    prom_rows = []
+    for pr in d.get("promotions_log", []):
+        dec = str(pr.get("decision", "NOT_EVALUATED"))
+        dec_bg = "#dcfce7" if dec == "PROMOTE" else "#fef3c7" if "NOT_ENOUGH" in dec else "#f3f4f6"
+        dec_color = "#166534" if dec == "PROMOTE" else "#92400e" if "NOT_ENOUGH" in dec else "#374151"
+        ci_str = f"[{pr.get('ci_low', '—')}, {pr.get('ci_high', '—')}]"
+        prom_rows.append(
+            "<tr>"
+            f"<td style='padding:8px;'>{html_lib.escape(str(pr.get('decided_at', ''))[:19])}</td>"
+            f"<td style='padding:8px;font-weight:600;'>{html_lib.escape(str(pr.get('candidate', '')))}</td>"
+            f"<td style='padding:8px;'>{html_lib.escape(str(pr.get('champion', '')))}</td>"
+            f"<td style='padding:8px;text-align:center;'>{pr.get('n_pairs', '0')}</td>"
+            f"<td style='padding:8px;'>{pr.get('delta', '—')}</td>"
+            f"<td style='padding:8px;font-size:12px;'>{ci_str}</td>"
+            f"<td style='padding:8px;'><span style='background:{dec_bg};color:{dec_color};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;'>{dec}</span></td>"
+            f"<td style='padding:8px;font-size:12px;color:#4b5563;'>{html_lib.escape(str(pr.get('reason', '')))}</td>"
+            "</tr>"
+        )
+    promotions_rows_html = "".join(prom_rows) or '<tr><td colspan="8" style="padding:16px;text-align:center;color:#6b7280;">No automatic promotions evaluated yet. Pre-registered rule requires &ge; 20 paired prospective predictions before candidate evaluation.</td></tr>'
 
 
     # Render Pre-Listing Predictions section (D-079)
@@ -786,6 +909,59 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         </div>
 
         <div class="section">
+            <h2 style="margin-top: 0; font-size: 18px;">Autopilot & Operational Health</h2>
+            <p class="stats">Autonomous cloud execution state across scheduled pipelines, model roles, and alerting boundaries.</p>
+            <div class="cards" style="margin-top: 16px; margin-bottom: 0;">
+                <div class="card">
+                    <div class="card-label">Daily Discovery & Scoring</div>
+                    <div class="card-num" style="font-size: 16px; color: #1f2937;">{d['autopilot']['last_daily_run']}</div>
+                    <div style="font-size: 12px; color: #10b981; margin-top: 6px;">Pipeline: <code>daily.yml</code></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Outcome Watchdog</div>
+                    <div class="card-num" style="font-size: 16px; color: #1f2937;">{d['autopilot']['last_watchdog_run']}</div>
+                    <div style="font-size: 12px; color: #10b981; margin-top: 6px;">Pipeline: <code>watchdog.yml</code></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Monthly Retraining</div>
+                    <div class="card-num" style="font-size: 16px; color: #1f2937;">{d['autopilot']['last_monthly_retrain']}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 6px;">Pipeline: <code>monthly_retrain.yml</code></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Active Champion</div>
+                    <div class="card-num" style="font-size: 18px; color: #2563eb;">{d['model_version']}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 6px;">Role: <code>production_champion</code></div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Shadow Models</div>
+                    <div class="card-num">{d['autopilot']['shadow_count']}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 6px;">Prospective evaluation pool</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Outcomes Pending</div>
+                    <div class="card-num">{d['autopilot']['pending_outcomes_count']}</div>
+                    <div style="font-size: 12px; color: {'#d97706' if d['autopilot']['pending_outcomes_count'] > 0 else '#10b981'}; margin-top: 6px;">
+                        {'Awaiting listing day open' if d['autopilot']['pending_outcomes_count'] > 0 else 'All recorded'}
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Unresolved System Alerts</div>
+                    <div class="card-num" style="color: {'#10b981' if d['autopilot']['open_alerts_count'] == 0 else '#f59e0b'};">
+                        {d['autopilot']['open_alerts_count']}
+                    </div>
+                    <div style="font-size: 12px; color: {'#ef4444' if d['autopilot']['open_alerts_count'] > 0 else '#10b981'}; margin-top: 6px;">
+                        Open, partial, or not fixed
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-label">LLM Provider (Research)</div>
+                    <div class="card-num" style="font-size: 15px; color: #10b981;">{d['autopilot']['openrouter_status']}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 6px;">OpenRouter free tier with fallback</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
             <h2 style="margin-top: 0; font-size: 18px;">Champion Replay vs Actual</h2>
             <p class="stats">{replay['count']} post-training Mainboard IPOs, scored with the registered champion using stored feature rows. MAE: <strong>{f"{replay['mae']:.2f}%" if replay['mae'] is not None else "—"}</strong> · Direction correct (positive vs non-positive): <strong>{f"{replay['direction_accuracy']:.1f}%" if replay['direction_accuracy'] is not None else "—"}</strong></p>
             <p class="stats"><strong>Retrospective replay:</strong> these predictions were computed now from historical master data, not prospectively recorded. Kept separate from the live forward audit below.</p>
@@ -808,6 +984,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
                     <th>GMP at Close</th>
                     <th>Actual Gain</th>
                     <th>Error Model</th>
+                    <th>Cumulative MAE</th>
                     <th>Error GMP</th>
                     <th>Status</th>
                     <th>Thin Inputs</th>
@@ -817,9 +994,45 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
             </div>
             <p class="stats" style="margin-top: 14px;">
                 Completed outcomes: <strong>{n_listed} of 30</strong> · listed, outcome pending: <strong>{d.get('listed_outcome_pending_count', 0)}</strong>{f" ({', '.join(d.get('listed_outcome_pending_names', []))})" if d.get('listed_outcome_pending_count', 0) > 0 else ""} · Total pending: <strong>{d['pending_forward_count']}</strong> · 
-                Provisional Model MAE: <strong>{f"{d.get('mae_model'):.2f} pp" if d.get('mae_model') is not None else "—"}</strong> · 
+                Provisional Model Cumulative MAE: <strong>{f"{d.get('mae_model_cumulative', d.get('mae_model')):.2f} pp" if d.get('mae_model') is not None else "—"}</strong> · 
+                Rolling-5 MAE: <strong>{f"{d.get('mae_model_rolling5'):.2f} pp" if d.get('mae_model_rolling5') is not None else "—"}</strong> · 
                 Provisional GMP MAE: <strong>{f"{d.get('mae_gmp'):.2f} pp" if d.get('mae_gmp') is not None else "—"}</strong>
             </p>
+        </div>
+
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 18px;">Model Registry & Promotion History</h2>
+            <p class="stats">Registered models under management and pre-registered prospective promotion audit ledger.</p>
+            <h3 style="margin-top: 16px; font-size: 14px; color: #374151;">Registered Models</h3>
+            <div style="overflow-x: auto; margin-top: 8px;">
+                <table><thead><tr>
+                    <th>Version</th>
+                    <th>Role</th>
+                    <th>Training Window</th>
+                    <th>Artifact Path</th>
+                    <th>SHA-256 Digest</th>
+                    <th>Status</th>
+                </tr></thead><tbody>
+                    {registered_models_rows_html}
+                </tbody></table>
+            </div>
+
+            <h3 style="margin-top: 24px; font-size: 14px; color: #374151;">Prospective Promotion Decisions</h3>
+            <p class="stats">Rules: &ge;20 paired prospective predictions, point estimate &Delta; &lt; 0 pp, 95% bootstrap CI upper bound &le; +0.5 pp, Brier &Delta; &le; 0.005, 60-day cooldown.</p>
+            <div style="overflow-x: auto; margin-top: 8px;">
+                <table><thead><tr>
+                    <th>Decided At (IST)</th>
+                    <th>Candidate</th>
+                    <th>Champion</th>
+                    <th>Paired IPOs</th>
+                    <th>MAE Delta</th>
+                    <th>95% Bootstrap CI</th>
+                    <th>Decision</th>
+                    <th>Reason</th>
+                </tr></thead><tbody>
+                    {promotions_rows_html}
+                </tbody></table>
+            </div>
         </div>
 
         

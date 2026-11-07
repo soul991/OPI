@@ -64,3 +64,23 @@ When promotion criteria are satisfied:
    - Set `"champion": true` on the new version and `"champion": false` on the retired model.
 3. **Artifact Persistence**: Save the new artifact under `model/` (e.g. `model/ipo_model_v5.joblib`). Never overwrite historical joblib artifacts.
 4. **Dashboard & Errata**: Document the model version transition in `dashboard/` and log the rationale in the corresponding phase outcome document.
+
+---
+
+## 6. Owner Authorization & Autopilot Addendum (2026-11-07)
+
+On 2026-11-07, the project owner explicitly authorized fully automated monthly retraining, shadow scoring, and rule-based prospective promotion in the cloud (Phase 20).
+
+This addendum supersedes the "no automatic retraining or promotion in CI" restriction above **strictly** according to the following pre-registered constraints:
+1. **Automated Monthly Retraining**: Runs on the 1st of every month via `.github/workflows/monthly_retrain.yml`. Newly verified forward test rows are appended to `data/ipo_master.csv` via `scripts/promote_forward_rows.py --apply`. The model is retrained on all verified rows except `data/ipo_holdout_test.csv` using the unchanged `model/train.py` recipe. The artifact is saved under `model/challengers/vMAJOR.MINOR.0-<yyyymm>.joblib` and registered with role `shadow` in `model/registry.json`. `active_champion` is never altered during retraining.
+2. **Dual-Scoring**: Every newly discovered IPO is scored prospectively prior to listing by the active champion and by every registered shadow model. All prospective estimates are recorded in `predictions/model_versions.csv`.
+3. **Automated Promotion Safeguards**: A shadow model may be promoted to `active_champion` automatically if and only if ALL of the following criteria are met on paired prospective forward predictions:
+   - At least 20 listed IPOs scored by both models prior to listing.
+   - Models are never evaluated on rows they were trained on or on holdout rows.
+   - Paired point estimate $\Delta\text{MAE} = \text{MAE}_{\text{candidate}} - \text{MAE}_{\text{champion}} < 0$.
+   - 95% paired bootstrap interval (2,000 resamples, seed 42) upper bound $\le +0.5$ percentage points.
+   - Candidate Brier score not worse than champion by $> 0.005$.
+   - Cooldown period: At least 60 days have elapsed since the prior model promotion.
+4. **Promotion Logging**: Every evaluation cycle (including `NOT_ENOUGH_PAIRS`, `KEEP`, and `PROMOTE`) is logged to `model/promotions_log.csv`. On `PROMOTE`, the candidate is elevated to `active_champion` in `model/registry.json` and the prior champion is marked `retired`.
+5. **Direct CI Push**: When monthly retraining, shadow registration, promotion evaluation, unit tests (`pytest`), and independent verification (`verify_all.py`) all pass cleanly, `github-actions[bot]` commits and pushes directly to `main` without opening pull requests. If any verification fails, nothing is pushed and an alert issue is raised.
+

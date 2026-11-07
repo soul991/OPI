@@ -512,3 +512,35 @@ def test_missing_outcomes_alert_does_not_block_run_daily(tmp_path):
          patch("opi.run_daily.execute_two_tier_outcome_chain", side_effect=RuntimeError("Simulated outcome crash")):
         with pytest.raises(RuntimeError, match="Simulated outcome crash"):
             run_daily_forward_test(dry_run=False, log_path=log_file, run_log_path=run_log_file, missed_path=tmp_path / 'missed.csv')
+
+def test_overdue_outcomes_alert_thresholds(tmp_path):
+    """D-109: Overdue outcomes between 3-7 days do not fail watchdog; 8+ days fail."""
+    from scripts.watchdog import run_overdue_and_coverage_check
+    import datetime as dt
+    log_file = tmp_path / "prediction_log.csv"
+    cur_date = dt.date(2026, 11, 10)
+
+    # 1. 3 days overdue (listed 2026-11-07 vs cur_date 2026-11-10): PASS (returns 0)
+    df_3d = pd.DataFrame([{
+        "scored_at": "2026-11-05T18:30:00+05:30",
+        "company": "Three Day Corp",
+        "listing_date": "2026-11-07",
+        "status": "FORWARD",
+        "actual_gain_pct": "",
+    }])
+    df_3d.to_csv(log_file, index=False)
+    ret_3d = run_overdue_and_coverage_check(log_path=log_file, candidates=[], missed_path=tmp_path / "m1.csv", current_date=cur_date)
+    assert ret_3d == 0, "3 days overdue outcome must not fail the workflow"
+
+    # 2. 8 days overdue (listed 2026-11-02 vs cur_date 2026-11-10): FAIL (returns 1)
+    df_8d = pd.DataFrame([{
+        "scored_at": "2026-10-31T18:30:00+05:30",
+        "company": "Eight Day Corp",
+        "listing_date": "2026-11-02",
+        "status": "FORWARD",
+        "actual_gain_pct": "",
+    }])
+    df_8d.to_csv(log_file, index=False)
+    ret_8d = run_overdue_and_coverage_check(log_path=log_file, candidates=[], missed_path=tmp_path / "m2.csv", current_date=cur_date)
+    assert ret_8d == 1, "8 days overdue outcome must fail the workflow"
+

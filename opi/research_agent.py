@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import json
 import logging
 from datetime import datetime, date
@@ -240,6 +241,38 @@ Sources:
         return json.loads(raw_text)
 
 
+def sanitize_proposed_numeric_value(val: Any, target_type: type) -> Any:
+    """Sanitize currency symbols, commas, unit suffixes, and price ranges (D-111).
+
+    Handles strings such as '₹82', '₹78 to ₹82', '182 Shares', '1,450.00 Cr'.
+    """
+    if val is None or not isinstance(val, str):
+        return val
+
+    s = val.strip()
+    if target_type in (float, int):
+        # Range matching: e.g. '78 to 82', '₹78 - ₹82' -> select upper bound 82
+        m_range = re.search(r"(?:to|-)\s*(?:[₹$]|Rs\.?|&#8377;)?\s*([0-9,.]+)", s, re.IGNORECASE)
+        if m_range:
+            num_part = m_range.group(1).replace(",", "")
+            try:
+                return float(num_part) if target_type == float else int(float(num_part))
+            except ValueError:
+                pass
+
+        # Strip currency symbols, commas, and unit words
+        cleaned = re.sub(r"[₹$]|Rs\.?|&#8377;|Shares?|Cr(?:ores?)?|x|%", "", s, flags=re.IGNORECASE)
+        cleaned = cleaned.replace(",", "").strip()
+        m_num = re.search(r"[-+]?[0-9]*\.?[0-9]+", cleaned)
+        if m_num:
+            try:
+                num_val = float(m_num.group(0))
+                return num_val if target_type == float else int(num_val)
+            except ValueError:
+                pass
+    return val
+
+
 def ground_field_proposal(
     field_name: str,
     raw_proposal: Optional[Dict[str, Any]],
@@ -256,6 +289,9 @@ def ground_field_proposal(
     url = raw_proposal.get("url") or raw_proposal.get("source_url") or "https://mock.chittorgarh.com"
     quote = raw_proposal.get("quote") or raw_proposal.get("verbatim_quote")
     pdate = raw_proposal.get("page_date")
+
+    # Sanitize currency symbols and unit strings (D-111)
+    val = sanitize_proposed_numeric_value(val, target_type)
 
     # Cast to target type if possible
     try:
