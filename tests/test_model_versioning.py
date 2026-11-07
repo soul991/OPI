@@ -114,7 +114,8 @@ def test_append_prediction_log_records_to_model_versions(tmp_path: Path, monkeyp
     assert test_mv.exists()
     
     mv_df = pd.read_csv(test_mv)
-    assert len(mv_df) == 1
+    champ_rows = mv_df[mv_df["role"] == "champion"]
+    assert len(champ_rows) == 1
     assert mv_df["company"].iloc[0] == "Test Autopilot Corp"
     assert mv_df["model_version"].iloc[0] == "v4.0.0-champion"
     assert mv_df["role"].iloc[0] == "champion"

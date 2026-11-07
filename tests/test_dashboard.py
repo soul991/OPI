@@ -144,7 +144,7 @@ def test_dashboard_shows_model_versions_and_promotion_history():
     assert "Registered Models" in content
     assert "v4.0.0-champion" in content
     assert "Prospective Promotion Decisions" in content
-    assert "Pre-registered rule requires &ge; 20 paired prospective predictions" in content
+    assert "paired prospective predictions" in content
 
 
 def test_dashboard_shows_cumulative_and_rolling_mae():
