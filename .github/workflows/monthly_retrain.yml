@@ -63,7 +63,7 @@ jobs:
           fi
           git add model/registry.json
           if [ -d model/challengers ]; then
-            git add model/challengers/
+            git add -f model/challengers/
           fi
           if [ -f model/promotions_log.csv ]; then
             git add model/promotions_log.csv
