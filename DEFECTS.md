@@ -114,3 +114,4 @@
 | D-108 | 20 | No automatic promotion path exists, and `docs/retraining_policy.md` forbids one. | High | OPEN | 20 | tests/test_retraining.py::test_automatic_promotion_rule |
 | D-109 | 20 | Daily and watchdog runs go red (and send emails) for any IPO more than 2 days without an outcome, though data was committed correctly. | Medium | OPEN | 20 | tests/test_watchdog.py::test_overdue_outcomes_alert_thresholds |
 | D-110 | 20 | The dashboard does not show accuracy over time or per model version. | Medium | OPEN | 20 | tests/test_dashboard.py::test_dashboard_shows_model_version_accuracy_and_history |
+| D-111 | 20 | The research agent (opi/research_agent.py) failed schema validation on 2026-11-02 for Bombay Coated (2 validation errors for IPOCandidateSchema: currency symbols or non-numeric strings in numeric fields) and has not run since. | High | OPEN | 20 | tests/test_research_agent_schema.py::test_bombay_coated_schema_validation_reproduced |

@@ -378,3 +378,48 @@ def test_forward_report_chronological_first_9_mae():
     first_9 = eval_chrono.iloc[:9]
     mae_9 = float(first_9["err_model"].mean())
     assert round(mae_9, 2) == 5.85, f"Expected first 9 chronological MAE to be 5.85 pp, got {mae_9:.4f}"
+
+
+def test_phase20_quoted_paths_and_run_ids_exist():
+    """D-103: Every concrete data/evidence/... path in phases/Phase 20/*.md exists on disk;
+    every 11-digit run ID in those files appears in phases/Phase 20/run_ids_raw.json."""
+    import json
+    import re
+
+    root = Path(__file__).resolve().parents[1]
+    phase20_dir = root / "phases" / "Phase 20"
+    raw_json_path = phase20_dir / "run_ids_raw.json"
+    assert raw_json_path.exists(), "run_ids_raw.json must exist in phases/Phase 20"
+
+    with open(raw_json_path, encoding="utf-8") as f:
+        raw_runs = json.load(f)
+    known_run_ids = {str(k) for k in raw_runs.keys()}
+
+    md_files = list(phase20_dir.glob("*.md"))
+    assert md_files, "No markdown files found in phases/Phase 20"
+
+    missing_paths = []
+    missing_run_ids = []
+
+    for md_file in md_files:
+        content = md_file.read_text(encoding="utf-8")
+
+        tokens = re.findall(r"`?(data/evidence/[^\s`\"\')>]+)", content)
+        for token in tokens:
+            clean_token = token.rstrip(".,;:)'\"")
+            if "<" in clean_token or ">" in clean_token:
+                continue
+            # Directory paths that will be created / populated by actions
+            if clean_token.rstrip("/").endswith("pending"):
+                continue
+            target = root / clean_token
+            if not target.exists():
+                missing_paths.append((md_file.name, clean_token))
+
+        run_ids = re.findall(r"\b(\d{11})\b", content)
+        for rid in run_ids:
+            if rid not in known_run_ids:
+                missing_run_ids.append((md_file.name, rid))
+
+    assert not missing_paths, f"Quoted evidence paths missing on disk: {missing_paths}"
+    assert not missing_run_ids, f"Quoted 11-digit run IDs not in run_ids_raw.json: {missing_run_ids}"
