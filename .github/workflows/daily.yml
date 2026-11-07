@@ -19,6 +19,7 @@ concurrency:
 permissions:
   contents: write
   issues: write
+  pages: write
 
 jobs:
   run-forward-test:
@@ -85,6 +86,8 @@ jobs:
       - name: Commit and Push Updated Predictions & Dashboard
         id: commit_and_push
         if: always() && steps.run_tests.outcome == 'success' && steps.run_daily.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           git config user.name "github-actions[bot]"
@@ -93,8 +96,12 @@ jobs:
           if git diff --staged --quiet; then
             echo "No new forward predictions or actuals to commit." | tee step_output.txt
           else
-            git commit -m "chore(auto): daily forward test predictions and dashboard update [skip ci]" 2>&1 | tee step_output.txt
+            git commit -m "chore(auto): daily forward test predictions and dashboard update" 2>&1 | tee step_output.txt
             git push 2>&1 | tee -a step_output.txt
+            if git diff-tree --no-commit-id --name-only -r HEAD | grep -q "^dashboard/"; then
+              echo "Dashboard modified in push; requesting GitHub Pages deployment..."
+              gh api --method POST /repos/${{ github.repository }}/pages/builds || echo "Pages build request returned non-zero, continuing."
+            fi
           fi
 
       - name: Check overdue outcomes and coverage

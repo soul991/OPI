@@ -202,6 +202,37 @@ def get_last_cloud_run_time(workflow: str = "daily.yml") -> str:
     return "Unknown"
 
 
+def get_repo_freshness_info() -> Tuple[str, str]:
+    """Retrieve current commit short SHA and formatted UTC timestamp for dashboard freshness."""
+    import os, subprocess
+    from datetime import datetime, timezone
+
+    sha = ""
+    try:
+        res = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(ROOT_DIR),
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            sha = res.stdout.strip()
+    except Exception:
+        pass
+
+    if not sha:
+        env_sha = os.environ.get("GITHUB_SHA", "").strip()
+        if env_sha:
+            sha = env_sha[:7]
+
+    if not sha:
+        sha = "unknown"
+
+    utc_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    return sha, utc_now
+
+
 
 def get_pre_listing_data(
     log_path: Path = LOG_PATH,
@@ -658,6 +689,10 @@ def generate_dashboard_data() -> Dict[str, Any]:
 
     defects = data["defects_summary"]
     shadow_count = count_valid_shadow_models(reg_models, ROOT_DIR)
+    commit_sha, published_utc = get_repo_freshness_info()
+    data["commit_short_sha"] = commit_sha
+    data["published_utc"] = published_utc
+
     data["autopilot"] = {
         "last_daily_run": get_last_cloud_run_time("daily.yml"),
         "last_watchdog_run": get_last_cloud_run_time("watchdog.yml"),
@@ -1169,6 +1204,7 @@ def render_dashboard_html(output_dir: Optional[Path] = None) -> Path:
         </div>
 
         <div class="footer">
+            <p style="margin: 0 0 8px 0; font-weight: 500;">Published from commit {d['commit_short_sha']} at {d['published_utc']}</p>
             Generated automatically by <code>opi.report</code> at {d['generated_at']} IST · Last cloud run: <strong>{d['last_cloud_run']}</strong>.<br>
             Strictly append-only audit provenance. Relative repository links only.
         </div>

@@ -9,6 +9,7 @@ on:
 permissions:
   contents: write
   issues: write
+  pages: write
 
 jobs:
   monthly-retrain:
@@ -76,9 +77,13 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes staged. Working tree is clean; nothing to push."
           else
-            git commit -m "retrain(auto): monthly shadow model retraining and promotion evaluation [skip ci]"
+            git commit -m "retrain(auto): monthly shadow model retraining and promotion evaluation"
             git push origin main
             echo "Successfully pushed retrained shadow model and promotion log directly to main."
+            if git diff-tree --no-commit-id --name-only -r HEAD | grep -q "^dashboard/"; then
+              echo "Dashboard modified in push; requesting GitHub Pages deployment..."
+              gh api --method POST /repos/${{ github.repository }}/pages/builds || echo "Pages build request returned non-zero, continuing."
+            fi
           fi
 
       - name: Alert on Failure (D-091, D-107)
