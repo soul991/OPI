@@ -17,17 +17,47 @@
         "max": 0.882
       },
       "features": [
-        "issue_size_cr", "fresh_issue_pct", "ofs_pct", "lot_size",
-        "sub_qib", "sub_nii", "sub_retail", "sub_total",
-        "nifty_30d_return", "india_vix", "recent_ipo_avg_gain",
-        "sector", "exchange",
-        "sub_retail_vs_qib", "sub_hni_vs_retail", "log_issue_size", "is_high_vix",
-        "log_sub_total", "log_sub_qib", "log_sub_nii", "log_sub_retail", "qib_demand_share",
-        "gmp_pct", "gmp_vs_recent_avg", "gmp_x_sub"
+        "issue_size_cr",
+        "fresh_issue_pct",
+        "ofs_pct",
+        "lot_size",
+        "sub_qib",
+        "sub_nii",
+        "sub_retail",
+        "sub_total",
+        "nifty_30d_return",
+        "india_vix",
+        "recent_ipo_avg_gain",
+        "sector",
+        "exchange",
+        "sub_retail_vs_qib",
+        "sub_hni_vs_retail",
+        "log_issue_size",
+        "is_high_vix",
+        "log_sub_total",
+        "log_sub_qib",
+        "log_sub_nii",
+        "log_sub_retail",
+        "qib_demand_share",
+        "gmp_pct",
+        "gmp_vs_recent_avg",
+        "gmp_x_sub"
       ],
       "calibration": "platt_logistic",
       "conformal_half_width_80": 23.13,
       "description": "Production HistGradientBoostingRegressor + calibrated HistGradientBoostingClassifier trained on pre-2022 issues with Platt scaling"
+    },
+    "v4.1.0-202611": {
+      "model_version": "v4.1.0-202611",
+      "artifact_path": "model/challengers/v4.1.0-202611.joblib",
+      "training_window": "2010-01-04 to 2026-11-04",
+      "train_rows": 594,
+      "created_at": "2026-11-07T21:55:41.398408+05:30",
+      "champion": false,
+      "role": "shadow",
+      "sha256": "e00b2c5fdaf25fe236470381e4d84d35c26ad168273760e40d8f8fab419d36ee",
+      "conformal_half_width_80": 10.39,
+      "description": "Retrained HistGradientBoosting shadow model on 594 master rows (2010-01-04 to 2026-11-04)"
     }
   }
 }
