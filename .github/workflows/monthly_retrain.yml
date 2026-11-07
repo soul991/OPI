@@ -44,6 +44,8 @@ jobs:
           python scripts/retrain_challenger.py --no-rolling --report docs/monthly_challenger_comparison.md
 
       - name: Run Test Suite and Independent Verification (D-093, D-107)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -o pipefail
           python -m pytest -q
