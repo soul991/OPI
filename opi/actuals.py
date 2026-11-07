@@ -194,44 +194,176 @@ def make_yfinance_source_value(
     }
 
 
+def _extract_exchange_column_table_open(content: str) -> dict[str, float]:
+    """Extract exchange-mapped opening prices from HTML table with exchange column headers (D-112).
+
+    Handles tables such as Chittorgarh's 'Price Details | BSE | NSE' where column headers
+    label the exchanges and rows contain metrics such as 'Open'.
+    """
+    if "<table" not in content.lower():
+        return {}
+    try:
+        soup = BeautifulSoup(content, "html.parser")
+        for table in soup.find_all("table"):
+            header_tr = table.find("thead")
+            if header_tr:
+                header_tr = header_tr.find("tr")
+            if not header_tr:
+                header_tr = table.find("tr")
+            if not header_tr:
+                continue
+            cells = [c.get_text(strip=True).upper() for c in header_tr.find_all(["th", "td"])]
+            col_map: dict[int, str] = {}
+            for idx, c in enumerate(cells):
+                if re.search(r"\bNSE\b", c):
+                    col_map[idx] = "NSE"
+                elif re.search(r"\bBSE\b", c):
+                    col_map[idx] = "BSE"
+            if not col_map:
+                continue
+            for tr in table.find_all("tr"):
+                tds = tr.find_all(["td", "th"])
+                if not tds:
+                    continue
+                first = tds[0].get_text(strip=True).lower()
+                if first == "open" or re.search(r"^\s*open\s*$", first, re.I):
+                    prices: dict[str, float] = {}
+                    for idx, exch in col_map.items():
+                        if idx < len(tds):
+                            val_str = re.sub(r"[^\d.]", "", tds[idx].get_text(strip=True))
+                            if val_str:
+                                try:
+                                    prices[exch] = float(val_str)
+                                except ValueError:
+                                    pass
+                    if prices:
+                        return prices
+    except Exception:
+        pass
+    return {}
+
+
 def parse_source_value_metadata(
     content: str | bytes,
     target_date: date,
     publisher: str,
     extracted_price: Optional[float] = None,
     url: str = "",
+    preferred_exchange: Optional[str] = None,
+    nse_symbol: Optional[str] = None,
+    bse_code: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Extract and strictly label source value metadata from HTML or text (D-101).
+    """Extract and strictly label source value metadata from HTML or text (D-101, D-112).
 
-    Workstream A: labels must come from verified page content; if the exchange
-    cannot be definitively read from the page, record UNKNOWN. Never guess.
+    Workstream A & D-112: labels must come from verified page content; if the exchange
+    cannot be definitively read from the page, record UNKNOWN. When tables provide
+    exchange column headers (e.g. BSE | NSE), the exchange and price follow the
+    primary exchange policy (NSE for NSE-listed IPOs, BSE for BSE-only listings).
     """
     text = content.decode("utf-8", errors="replace") if isinstance(content, bytes) else (content or "")
     price = extracted_price
-
-    if price is None:
-        t_open = _extract_table_open(text, target_date)
-        if t_open is not None:
-            price = float(t_open)
-        else:
-            m_open = re.search(r"<tr><td>Open</td><td>(?:₹|&#8377;)?(?:<!-- -->)?\s*([0-9,.]+)", text, re.IGNORECASE)
-            if m_open:
-                price = float(m_open.group(1).replace(",", ""))
-            else:
-                m_badge = re.search(r"<span>O\s*<b[^>]*>([0-9,.]+)</b></span>", text)
-                if m_badge:
-                    price = float(m_badge.group(1).replace(",", ""))
-                else:
-                    m_txt = re.search(
-                        r"(?:listed at|shares listed at|opening price of|open|listed on (?:nse|bse) at)\s*(?:₹|&#8377;|Rs\.?)?\s*([0-9]+(?:\.[0-9]+)?)",
-                        text,
-                        re.IGNORECASE,
-                    )
-                    if m_txt:
-                        price = float(m_txt.group(1))
-
     exchange = "UNKNOWN"
     quantity = "open"
+
+    exch_prices = _extract_exchange_column_table_open(text)
+    if exch_prices:
+        # Determine target exchange per Phase 20 exchange policy
+        if preferred_exchange:
+            target_exch = preferred_exchange.upper()
+        elif nse_symbol or bse_code:
+            target_exch = "NSE" if (nse_symbol and str(nse_symbol).strip()) else "BSE"
+        elif price is not None:
+            matched = [e for e, p in exch_prices.items() if abs(p - price) < 0.01]
+            if len(matched) == 1:
+                target_exch = matched[0]
+            elif "NSE" in matched:
+                target_exch = "NSE"
+            elif "BSE" in matched:
+                target_exch = "BSE"
+            else:
+                target_exch = "NSE" if "NSE" in exch_prices else "BSE"
+        else:
+            target_exch = "NSE" if "NSE" in exch_prices else "BSE"
+
+        if target_exch in exch_prices:
+            chosen_exch = target_exch
+            chosen_price = exch_prices[target_exch]
+        elif len(exch_prices) == 1:
+            chosen_exch = next(iter(exch_prices))
+            chosen_price = exch_prices[chosen_exch]
+        else:
+            chosen_exch = "NSE" if "NSE" in exch_prices else "BSE"
+            chosen_price = exch_prices[chosen_exch]
+
+        exchange = chosen_exch
+        if price is None:
+            price = chosen_price
+        else:
+            for e, p in exch_prices.items():
+                if abs(p - price) < 0.01:
+                    exchange = e
+                    break
+    else:
+        if price is None:
+            t_open = _extract_table_open(text, target_date)
+            if t_open is not None:
+                price = float(t_open)
+            else:
+                m_open = re.search(r"<tr><td>Open</td><td>(?:₹|&#8377;)?(?:<!-- -->)?\s*([0-9,.]+)", text, re.IGNORECASE)
+                if m_open:
+                    price = float(m_open.group(1).replace(",", ""))
+                else:
+                    m_badge = re.search(r"<span>O\s*<b[^>]*>([0-9,.]+)</b></span>", text)
+                    if m_badge:
+                        price = float(m_badge.group(1).replace(",", ""))
+                    else:
+                        m_txt = re.search(
+                            r"(?:listed at|shares listed at|opening price of|open|listed on (?:nse|bse) at)\s*(?:₹|&#8377;|Rs\.?)?\s*([0-9]+(?:\.[0-9]+)?)",
+                            text,
+                            re.IGNORECASE,
+                        )
+                        if m_txt:
+                            price = float(m_txt.group(1))
+
+        if price is not None:
+            price_patterns = [
+                re.escape(f"{price:.2f}"),
+                re.escape(f"{price:.1f}"),
+                re.escape(str(price)),
+            ]
+            # 1. BeautifulSoup structural inspection if HTML
+            if "<" in text and ">" in text:
+                try:
+                    soup = BeautifulSoup(text, "html.parser")
+                    for el in soup.find_all(["tr", "div", "section", "p", "article"]):
+                        el_text = el.get_text(separator=" ", strip=True)
+                        if any(re.search(pat, el_text) for pat in price_patterns):
+                            context_str = el_text
+                            parent = el.parent
+                            if parent:
+                                context_str += " " + parent.get_text(separator=" ", strip=True)[:300]
+                            has_nse = bool(re.search(r"\bNSE\b", context_str, re.IGNORECASE))
+                            has_bse = bool(re.search(r"\bBSE\b", context_str, re.IGNORECASE))
+                            if has_nse and not has_bse:
+                                exchange = "NSE"
+                                break
+                            elif has_bse and not has_nse:
+                                exchange = "BSE"
+                                break
+                except Exception:
+                    pass
+
+            # 2. Regex matching around price string in raw text if not yet resolved
+            if exchange == "UNKNOWN":
+                for pat in price_patterns:
+                    m_nse = re.search(r"(?:\bNSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bNSE\b)", text, re.IGNORECASE)
+                    m_bse = re.search(r"(?:\bBSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bBSE\b)", text, re.IGNORECASE)
+                    if m_nse and not m_bse:
+                        exchange = "NSE"
+                        break
+                    elif m_bse and not m_nse:
+                        exchange = "BSE"
+                        break
 
     if price is not None:
         price_patterns = [
@@ -239,40 +371,6 @@ def parse_source_value_metadata(
             re.escape(f"{price:.1f}"),
             re.escape(str(price)),
         ]
-        # 1. BeautifulSoup structural inspection if HTML
-        if "<" in text and ">" in text:
-            try:
-                soup = BeautifulSoup(text, "html.parser")
-                for el in soup.find_all(["tr", "div", "section", "p", "article"]):
-                    el_text = el.get_text(separator=" ", strip=True)
-                    if any(re.search(pat, el_text) for pat in price_patterns):
-                        context_str = el_text
-                        parent = el.parent
-                        if parent:
-                            context_str += " " + parent.get_text(separator=" ", strip=True)[:300]
-                        has_nse = bool(re.search(r"\bNSE\b", context_str, re.IGNORECASE))
-                        has_bse = bool(re.search(r"\bBSE\b", context_str, re.IGNORECASE))
-                        if has_nse and not has_bse:
-                            exchange = "NSE"
-                            break
-                        elif has_bse and not has_nse:
-                            exchange = "BSE"
-                            break
-            except Exception:
-                pass
-
-        # 2. Regex matching around price string in raw text if not yet resolved
-        if exchange == "UNKNOWN":
-            for pat in price_patterns:
-                m_nse = re.search(r"(?:\bNSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bNSE\b)", text, re.IGNORECASE)
-                m_bse = re.search(r"(?:\bBSE\b[^0-9\n]{0,50}" + pat + r"|" + pat + r"[^0-9\n]{0,50}\bBSE\b)", text, re.IGNORECASE)
-                if m_nse and not m_bse:
-                    exchange = "NSE"
-                    break
-                elif m_bse and not m_nse:
-                    exchange = "BSE"
-                    break
-
         # Determine quantity: listing_price vs open
         for pat in price_patterns:
             m_lp = re.search(r"(?:listing\s+price|listed\s+at|listed\s+on\s+(?:nse|bse)\s+at|debuted\s+at)\s*(?:₹|Rs\.?)?\s*" + pat, text, re.IGNORECASE)
@@ -300,7 +398,6 @@ def parse_source_value_metadata(
         "bar_date": target_date.isoformat(),
         "value": float(price) if price is not None else None,
     }
-
 
 
 
@@ -830,6 +927,9 @@ def fetch_second_source_open(
     quote_url: Optional[str],
     target_date: date,
     mock_text: Optional[str] = None,
+    preferred_exchange: Optional[str] = None,
+    nse_symbol: Optional[str] = None,
+    bse_code: Optional[str] = None,
 ) -> tuple[Optional[float], Optional[str], Optional[str], Optional[bytes]]:
     """Fetch independent second source listing/opening price from Chittorgarh overview or quote page."""
     if mock_text is not None:
@@ -846,6 +946,19 @@ def fetch_second_source_open(
             raw_bytes = r.content
         except Exception as exc:
             return None, None, f"Second source request failed: {exc}", None
+
+    # 1. Check for exchange column table (e.g. Price Details | BSE | NSE) (D-112)
+    exch_prices = _extract_exchange_column_table_open(body)
+    if exch_prices:
+        target_exch = (
+            preferred_exchange.upper()
+            if preferred_exchange
+            else ("NSE" if (nse_symbol and str(nse_symbol).strip()) or (not bse_code and not nse_symbol) else "BSE")
+        )
+        if target_exch in exch_prices:
+            return exch_prices[target_exch], url_used, None, raw_bytes
+        elif len(exch_prices) == 1:
+            return next(iter(exch_prices.values())), url_used, None, raw_bytes
 
     m_open = re.search(r"<tr><td>Open</td><td>(?:₹|&#8377;)?(?:<!-- -->)?\s*([0-9,.]+)", body, re.IGNORECASE)
     if m_open:
@@ -866,6 +979,17 @@ def fetch_second_source_open(
             rq = requests.get(quote_url, headers=DEFAULT_HEADERS, timeout=12)
             if rq.status_code == 200:
                 q_text = rq.text
+                q_exch_prices = _extract_exchange_column_table_open(q_text)
+                if q_exch_prices:
+                    target_exch = (
+                        preferred_exchange.upper()
+                        if preferred_exchange
+                        else ("NSE" if (nse_symbol and str(nse_symbol).strip()) or (not bse_code and not nse_symbol) else "BSE")
+                    )
+                    if target_exch in q_exch_prices:
+                        return q_exch_prices[target_exch], quote_url, None, rq.content
+                    elif len(q_exch_prices) == 1:
+                        return next(iter(q_exch_prices.values())), quote_url, None, rq.content
                 m_b = re.search(r"<span>O\s*<b[^>]*>([0-9,.]+)</b></span>", q_text)
                 if m_b:
                     return float(m_b.group(1).replace(",", "")), quote_url, None, rq.content
@@ -909,13 +1033,28 @@ def record_actual_from_tier2(
     yf_source_val["url"] = yf_url
     yf_source_val["raw_bytes"] = yf_raw
 
+    preferred_exchange = "NSE" if (nse_symbol and str(nse_symbol).strip()) else "BSE"
     sec_open, sec_url, sec_err, sec_raw = fetch_second_source_open(
-        overview_url, quote_url, listing_date, mock_text=mock_second_source_text
+        overview_url,
+        quote_url,
+        listing_date,
+        mock_text=mock_second_source_text,
+        preferred_exchange=preferred_exchange,
+        nse_symbol=nse_symbol,
+        bse_code=bse_code,
     )
     if sec_err or sec_open is None or sec_url is None:
         sec_m = None
         if sec_raw:
-            sec_m = parse_source_value_metadata(sec_raw, target_date=listing_date, publisher="Chittorgarh", url=overview_url)
+            sec_m = parse_source_value_metadata(
+                sec_raw,
+                target_date=listing_date,
+                publisher="Chittorgarh",
+                url=overview_url,
+                preferred_exchange=preferred_exchange,
+                nse_symbol=nse_symbol,
+                bse_code=bse_code,
+            )
             sec_m["raw_bytes"] = sec_raw
         return {
             "status": "PENDING_REVIEW",
@@ -929,6 +1068,9 @@ def record_actual_from_tier2(
         publisher="Chittorgarh",
         extracted_price=sec_open,
         url=sec_url or overview_url,
+        preferred_exchange=preferred_exchange,
+        nse_symbol=nse_symbol,
+        bse_code=bse_code,
     )
     sec_meta["raw_bytes"] = sec_raw
 
@@ -962,6 +1104,9 @@ def record_actual_from_tier2(
         publisher="Chittorgarh",
         extracted_price=sec_open,
         url=sec_url or overview_url,
+        preferred_exchange=preferred_exchange,
+        nse_symbol=nse_symbol,
+        bse_code=bse_code,
     )
     manifest = {
         "company": company,
@@ -1029,12 +1174,22 @@ def record_actual_from_tier2b(
     mock_source_b_text: Optional[str] = None,
     mock_source_a_url: Optional[str] = None,
     mock_source_b_url: Optional[str] = None,
+    nse_symbol: Optional[str] = None,
+    bse_code: Optional[str] = None,
+    preferred_exchange: Optional[str] = None,
 ) -> dict[str, Any]:
     """Execute Tier 2b (two independent non-Yahoo sources <= 1.0% tolerance) (D-096)."""
     # 1. Source A (Chittorgarh)
     url_a = mock_source_a_url or overview_url
+    pref_exch = preferred_exchange or ("NSE" if (nse_symbol and str(nse_symbol).strip()) else "BSE")
     price_a, url_used_a, err_a, raw_a = fetch_second_source_open(
-        overview_url, quote_url, listing_date, mock_text=mock_source_a_text
+        overview_url,
+        quote_url,
+        listing_date,
+        mock_text=mock_source_a_text,
+        preferred_exchange=pref_exch,
+        nse_symbol=nse_symbol,
+        bse_code=bse_code,
     )
     if err_a or price_a is None or raw_a is None:
         return {
@@ -1134,6 +1289,9 @@ def record_actual_from_tier2b(
         publisher="Chittorgarh",
         extracted_price=price_a,
         url=url_used_a or url_a,
+        preferred_exchange=pref_exch,
+        nse_symbol=nse_symbol,
+        bse_code=bse_code,
     )
     meta_b = parse_source_value_metadata(
         raw_b,
@@ -1299,6 +1457,9 @@ def record_actual_from_tier2_arbitrated(
                         target_date=listing_date,
                         publisher="Chittorgarh Quote",
                         url=quote_url,
+                        preferred_exchange=primary_exchange,
+                        nse_symbol=nse_symbol,
+                        bse_code=bse_code,
                     )
                     if q_meta.get("value") is not None:
                         q_meta["source_url"] = quote_url
@@ -1638,9 +1799,27 @@ def execute_two_tier_outcome_chain(
                 yf_sv["url"] = f"https://finance.yahoo.com/quote/{t_sym}"
                 yf_sv["raw_bytes"] = yf_r
                 init_sources.append(yf_sv)
-        sec_o, sec_u, sec_e, sec_r = fetch_second_source_open(overview_url, quote_url, listing_date, mock_text=mock_second_source_text)
+        pref_exch = "NSE" if (nse_sym and str(nse_sym).strip()) else "BSE"
+        sec_o, sec_u, sec_e, sec_r = fetch_second_source_open(
+            overview_url,
+            quote_url,
+            listing_date,
+            mock_text=mock_second_source_text,
+            preferred_exchange=pref_exch,
+            nse_symbol=nse_sym,
+            bse_code=bse_code,
+        )
         if sec_o is not None or sec_r is not None:
-            sec_sv = parse_source_value_metadata(sec_r or "", target_date=listing_date, publisher="Chittorgarh", extracted_price=sec_o, url=sec_u or overview_url)
+            sec_sv = parse_source_value_metadata(
+                sec_r or "",
+                target_date=listing_date,
+                publisher="Chittorgarh",
+                extracted_price=sec_o,
+                url=sec_u or overview_url,
+                preferred_exchange=pref_exch,
+                nse_symbol=nse_sym,
+                bse_code=bse_code,
+            )
             sec_sv["raw_bytes"] = sec_r
             init_sources.append(sec_sv)
 
