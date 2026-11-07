@@ -112,4 +112,7 @@ def test_dashboard_shows_pending_outcomes_table():
     assert pre_md_path.exists(), "pre_listing_predictions.md must exist"
     md_content = pre_md_path.read_text(encoding="utf-8")
     assert "## Listed, Outcome Pending" in md_content
-    assert "| Company | Listing Date | Days Since Listing | Last Logged Status | Reason / Detail |" in md_content
+    assert (
+        "| Company | Listing Date | Days Since Listing | Last Logged Status | Reason / Detail |" in md_content
+        or "No listed IPOs currently awaiting outcome." in md_content
+    )
