@@ -1,0 +1,43 @@
+{
+  "company": "BLS Polymers",
+  "listing_date": "2026-11-03",
+  "page_date": "2026-11-03",
+  "accessed_at": "2026-11-07T18:19:34.652554+05:30",
+  "source_url": "https://finance.yahoo.com/quote/BLSPOLY.NS",
+  "final_url": "https://finance.yahoo.com/quote/BLSPOLY.NS",
+  "source_host": "finance.yahoo.com",
+  "exchange_used": "NSE",
+  "exchange": "NSE",
+  "quantity": "open",
+  "source_publisher": "Yahoo Finance",
+  "source_values": [
+    {
+      "publisher": "Yahoo Finance",
+      "exchange": "NSE",
+      "quantity": "open",
+      "bar_date": "2026-11-03",
+      "value": 248.0
+    },
+    {
+      "publisher": "Chittorgarh",
+      "exchange": "NSE",
+      "quantity": "open",
+      "bar_date": "2026-11-03",
+      "value": 248.0
+    }
+  ],
+  "content_type": "text/plain",
+  "snapshot_path": "data/evidence/actuals/2026-11-03_bls-polymers_683887010e3a.txt",
+  "snapshot_sha256": "683887010e3ac6ae5bf5902524efa7c22da6635fded9acb36c2c5f7cd5c02247",
+  "outcome_source": "tier2",
+  "yfinance_symbol": "BLSPOLY.NS",
+  "yfinance_open": 248.0,
+  "second_source_name": "Chittorgarh Listing Section",
+  "second_source_url": "https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/",
+  "second_source_open": 248.0,
+  "relative_difference_pct": 0.0,
+  "issue_price_in_prediction": 150.0,
+  "official_opening_price": 248.0,
+  "computed_listing_gain_pct": 65.33,
+  "verification_status": "VERIFIED_TIER2_CROSS_CHECKED"
+}
