@@ -216,3 +216,18 @@ def test_dashboard_shadow_models_counts_only_valid_existing_artifacts(tmp_path):
 
     # Only v-valid should be counted
     assert count_valid_shadow_models(models_test, root_dir=tmp_path) == 1
+
+
+def test_dashboard_renders_freshness_line():
+    """Verify dashboard contains 'Published from commit <short sha> at <UTC time>'."""
+    render_dashboard_html()
+    dash_path = ROOT / "dashboard" / "index.html"
+    assert dash_path.exists(), "dashboard/index.html must exist"
+    content = dash_path.read_text(encoding="utf-8")
+
+    assert "Published from commit " in content, "Dashboard must contain freshness line 'Published from commit ...'"
+    m = re.search(r"Published from commit\s+([0-9a-fA-F]{7,40}|unknown)\s+at\s+([^\n<]+)", content)
+    assert m is not None, f"Freshness line not properly formatted: {content[-400:]}"
+    short_sha, utc_time = m.group(1), m.group(2).strip()
+    assert len(short_sha) >= 7 or short_sha == "unknown"
+    assert "UTC" in utc_time or "Z" in utc_time
