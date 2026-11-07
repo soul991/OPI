@@ -12,9 +12,12 @@ DASHBOARD_PATH = ROOT_DIR / "dashboard" / "index.html"
 def test_forward_cohort_mae_pinned_at_n_12():
     """Verify forward MAE calculation matches exact pre-registered cohort value at n=12."""
     res = compute_forward_cohort_mae()
-    assert res["n"] == 12, f"Expected exactly 12 evaluated forward IPOs, got {res['n']}"
-    assert res["mae"] == 5.6675, f"Expected cumulative forward MAE 5.6675, got {res['mae']}"
-    assert len(res["rows"]) == 12
+    assert res["n"] >= 12, f"Expected at least 12 evaluated forward IPOs, got {res['n']}"
+    first_12_errors = [r["abs_err"] for r in res["rows"][:12]]
+    first_12_mae = round(sum(first_12_errors) / 12, 4)
+    assert first_12_mae == 5.6675, f"Expected cumulative forward MAE 5.6675 at n=12, got {first_12_mae}"
+    if res["n"] == 12:
+        assert res["mae"] == 5.6675
 
 
 def test_dashboard_html_contains_forward_mae_value():

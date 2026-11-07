@@ -1,5 +1,5 @@
-[PASS] no absolute/local paths in docs or code                                              
-[PASS] pytest suite passes                                                                  280 passed, 1 skipped, 8 warnings in 173.80s (0:02:53)
+﻿[PASS] no absolute/local paths in docs or code                                              
+[PASS] pytest suite passes                                                                  282 passed, 1 skipped, 8 warnings in 182.20s (0:03:02)
 [PASS] no duplicate (company, listing_date)                                                 0 duplicates
 [PASS] listing_gain_pct matches prices                                                      0 mismatches
 [PASS] label_good matches gain                                                              0 mismatches
@@ -82,6 +82,6 @@
 [PASS] grounding: SFC Environmental Technologies inputs appear in saved snapshots           4 snapshot files
 [PASS] grounding: EAAA India Alternatives inputs appear in saved snapshots                  4 snapshot files
 [PASS] grounding: Bombay Coated & Special Steels inputs appear in saved snapshots           3 snapshot files
-[PASS] pytest passes on a fresh clone (no untracked/ignored files)                          266 passed, 1 skipped, 8 warnings in 150.26s (0:02:30)
+[PASS] pytest passes on a fresh clone (no untracked/ignored files)                          282 passed, 1 skipped, 9 warnings in 169.13s (0:02:49)
 
 SUMMARY: 85 pass, 0 warn, 0 fail
