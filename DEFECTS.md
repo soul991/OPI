@@ -116,3 +116,5 @@
 | D-110 | 20 | The dashboard does not show accuracy over time or per model version. | Medium | FIXED | 20 | tests/test_dashboard.py::test_dashboard_shows_autopilot_health_block |
 | D-111 | 20 | The research agent (opi/research_agent.py) failed schema validation on non-numeric strings with currency/unit text ('₹82', '182 Shares'); fixed with input sanitizer and visible alerting. | High | FIXED | 20 | tests/test_research_agent_schema.py::test_bombay_coated_sanitizer_fixes_validation_error |
 | D-112 | 20 | Chittorgarh second-source parser reads first numeric cell of "Open" row, selecting BSE column on dual-listed IPOs instead of respecting exchange column headers and primary exchange policy. | High | FIXED | 20 | tests/test_actuals_manifest.py::test_chittorgarh_exchange_column_headers_real_saved_fixture (Cloud proof: Actions run 42374128672, commit a8961d2) |
+
+* Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.

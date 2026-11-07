@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
@@ -73,6 +74,25 @@ def paired_bootstrap_diff(
         idx = rng.randint(0, n, size=n)
         diffs.append(err_cand[idx].mean() - err_champ[idx].mean())
     return float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))
+
+
+def check_artifact_git_ignored(
+    artifact_path: Path | str,
+    repo_root: Optional[Path] = None,
+) -> bool:
+    """Return True if git check-ignore indicates the artifact path is ignored."""
+    root = repo_root or ROOT_DIR
+    try:
+        proc = subprocess.run(
+            ["git", "check-ignore", str(artifact_path)],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode == 0
+    except Exception:
+        return False
 
 
 def get_next_minor_version(registry_data: Dict[str, Any], year_month: Optional[str] = None) -> str:
@@ -198,6 +218,12 @@ def train_monthly_shadow_model(
     # Save artifact
     joblib.dump(artifact_dict, artifact_full_path)
 
+    # Verify artifact exists on disk before proceeding
+    if not artifact_full_path.exists() or not artifact_full_path.is_file():
+        raise RuntimeError(
+            f"Cannot register shadow model {version_name}: artifact file {artifact_full_path} is missing"
+        )
+
     # Calculate SHA256
     with open(artifact_full_path, "rb") as f:
         sha256_hash = hashlib.sha256(f.read()).hexdigest()
@@ -210,6 +236,45 @@ def train_monthly_shadow_model(
         if artifact_full_path.exists():
             artifact_full_path.unlink()
         raise RuntimeError(f"Artifact loading verification failed for {version_name}: {e}")
+
+    # Verify artifact exists on disk before registration
+    if not artifact_full_path.exists() or not artifact_full_path.is_file():
+        raise RuntimeError(
+            f"Cannot register shadow model {version_name}: artifact file {artifact_full_path} is missing"
+        )
+
+    # Verify artifact is not git-ignored
+    git_root = ROOT_DIR
+    try:
+        curr = artifact_full_path.resolve()
+        for parent in [curr.parent] + list(curr.parents):
+            if (parent / ".git").exists():
+                git_root = parent
+                break
+    except Exception:
+        pass
+
+    paths_to_check = [artifact_rel_path]
+    try:
+        if artifact_full_path.is_relative_to(git_root):
+            paths_to_check.append(str(artifact_full_path.relative_to(git_root)))
+    except (ValueError, AttributeError):
+        pass
+
+    for p in paths_to_check:
+        if check_artifact_git_ignored(p, repo_root=git_root):
+            if artifact_full_path.exists():
+                artifact_full_path.unlink()
+            raise RuntimeError(
+                f"Cannot register shadow model {version_name}: artifact {p} is git-ignored"
+            )
+
+    if git_root != ROOT_DIR and check_artifact_git_ignored(artifact_rel_path, repo_root=ROOT_DIR):
+        if artifact_full_path.exists():
+            artifact_full_path.unlink()
+        raise RuntimeError(
+            f"Cannot register shadow model {version_name}: artifact {artifact_rel_path} is git-ignored"
+        )
 
     # Register as SHADOW in registry (never change active_champion here)
     if "models" not in registry:

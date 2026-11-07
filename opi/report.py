@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html as html_lib
 import json
 import os
@@ -460,6 +461,32 @@ def render_pre_listing_markdown(
         out_file.write_text(md_content, encoding="utf-8")
     return md_content
 
+def count_valid_shadow_models(reg_models: Dict[str, Any], root_dir: Optional[Path] = None) -> int:
+    """Count shadow models whose role is 'shadow', joblib file exists, and SHA-256 matches."""
+    r_dir = root_dir or ROOT_DIR
+    valid_count = 0
+    for m in reg_models.values():
+        if m.get("role") != "shadow":
+            continue
+        rel_art = m.get("artifact_path")
+        if not rel_art:
+            continue
+        art_path = r_dir / rel_art
+        if not (art_path.exists() and art_path.is_file()):
+            continue
+        expected_sha = m.get("sha256")
+        if not expected_sha:
+            continue
+        try:
+            with open(art_path, "rb") as f:
+                actual_sha = hashlib.sha256(f.read()).hexdigest()
+            if actual_sha.lower() == str(expected_sha).lower():
+                valid_count += 1
+        except Exception:
+            continue
+    return valid_count
+
+
 def generate_dashboard_data() -> Dict[str, Any]:
     """Compile all necessary data for the forward test dashboard."""
     data: Dict[str, Any] = {
@@ -630,7 +657,7 @@ def generate_dashboard_data() -> Dict[str, Any]:
     data["promotions_log"] = promotions_list
 
     defects = data["defects_summary"]
-    shadow_count = len([m for m in reg_models.values() if m.get("role") == "shadow" or not m.get("champion")])
+    shadow_count = count_valid_shadow_models(reg_models, ROOT_DIR)
     data["autopilot"] = {
         "last_daily_run": get_last_cloud_run_time("daily.yml"),
         "last_watchdog_run": get_last_cloud_run_time("watchdog.yml"),
