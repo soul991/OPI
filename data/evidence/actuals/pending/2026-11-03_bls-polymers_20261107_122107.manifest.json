@@ -1,0 +1,41 @@
+{
+  "company": "BLS Polymers",
+  "listing_date": "2026-11-03",
+  "status": "PENDING_REVIEW",
+  "reason": "Tier 2 sources diverge beyond 1.0% tolerance: yfinance=248.0 vs second_source=244.1 (diff=1.57%) (arbitration: SKIPPED_POLICY_NO_PRIMARY_EXCHANGE_MAJORITY: SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange agreement on primary exchange NSE)",
+  "sources": [
+    {
+      "publisher": "Yahoo Finance",
+      "exchange": "NSE",
+      "quantity": "open",
+      "bar_date": "2026-11-03",
+      "value": 248.0,
+      "url": "https://finance.yahoo.com/quote/BLSPOLY.NS",
+      "accessed_at": "2026-11-07T12:21:07.504541+00:00",
+      "sha256": "683887010e3ac6ae5bf5902524efa7c22da6635fded9acb36c2c5f7cd5c02247",
+      "file": "data/evidence/actuals/pending/2026-11-03_bls-polymers_yahoo-finance_20261107_122107.json"
+    },
+    {
+      "publisher": "Chittorgarh",
+      "exchange": "UNKNOWN",
+      "quantity": "open",
+      "bar_date": "2026-11-03",
+      "value": 244.1,
+      "url": "",
+      "accessed_at": "2026-11-07T12:21:07.504750+00:00",
+      "sha256": "ddda51f0f1b8d280138b0a88f103f857a3a5fc6780098f962155beadc73e6d2a",
+      "file": "data/evidence/actuals/pending/2026-11-03_bls-polymers_chittorgarh_20261107_122107.html"
+    },
+    {
+      "publisher": "Chittorgarh Quote",
+      "exchange": "BSE",
+      "quantity": "open",
+      "bar_date": "2026-11-03",
+      "value": 248.3,
+      "url": "https://www.chittorgarh.com/stockpricequote/bls-polymers-ltd/8113/",
+      "accessed_at": "2026-11-07T12:21:07.505460+00:00",
+      "sha256": "7fe3d3dc5b453edaa9cc9fe5dda172cad4b6f75427b81bb816c22c140a1f7d65",
+      "file": "data/evidence/actuals/pending/2026-11-03_bls-polymers_chittorgarh-quote_20261107_122107.html"
+    }
+  ]
+}
