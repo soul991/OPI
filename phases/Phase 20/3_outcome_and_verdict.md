@@ -109,6 +109,13 @@ Phase 20 established autonomous cloud execution verified across multiple GitHub 
 3. **Dashboard Deployment**:
    - Run ID: `42374524596` (`pages build and deployment` on commit `a8961d23089fdb1ba6bf19a383200f717700d8bb`, success).
    - Live URL: `https://soul991.github.io/OPI/dashboard/`.
+4. **Monthly Retraining & Autopilot Model Evaluation (D-107, D-108)**:
+   - Run ID: `42391933671` (`monthly_retrain.yml`, commit `63d691775c0857c4de4ee23cc1201975b821c5b2`, success).
+   - Bot committed retrained shadow model in commit `69c79c1c53f8ab0106949d1b42edcfa08f1f1a96`:
+     - `model/challengers/v4.2.0-202611.joblib` (915,008 bytes)
+     - `model/registry.json`: registered `v4.2.0-202611` with `role: "shadow"`
+     - `model/promotions_log.csv`: recorded `NOT_ENOUGH_PAIRS` decision (0 pairs)
+     - `dashboard/index.html`: updated Shadow Models count to 2
 
 ---
 
