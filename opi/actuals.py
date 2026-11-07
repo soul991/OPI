@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import statistics
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -299,6 +299,144 @@ def parse_source_value_metadata(
         "quantity": quantity,
         "bar_date": target_date.isoformat(),
         "value": float(price) if price is not None else None,
+    }
+
+
+
+
+def persist_pending_actuals_evidence(
+    *,
+    company: str,
+    listing_date: date,
+    status: str,
+    reason: str,
+    sources: list[dict[str, Any]],
+    pending_dir: Optional[Path] = None,
+) -> dict[str, Any]:
+    """Persist verbatim fetched pages and structured manifest for pending/diverging actuals (D-104).
+
+    When Tier 2 or arbitration terminates in PENDING_REVIEW, SKIPPED_ARBITRATION_*, or SKIPPED_NO_MATCH
+    after at least one source page was fetched:
+    1. Saves every fetched raw page verbatim as data/evidence/actuals/pending/<listing_date>_<slug>_<publisher>.html (or .json).
+    2. Writes structured manifest .manifest.json recording publisher, exchange, quantity, bar_date, value, url, accessed_at, sha256.
+    3. Idempotent: repeat run with identical bytes writes nothing new; changed bytes add a new timestamped file and never overwrite.
+    4. No outcome is written to prediction_log.csv.
+    """
+    target_dir = pending_dir or (ROOT_DIR / "data" / "evidence" / "actuals" / "pending")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "-", company.lower()).strip("-")
+    date_str = listing_date.isoformat()
+    stem = f"{date_str}_{slug}"
+
+    saved_manifest_sources = []
+
+    for s in sources:
+        raw_b = s.get("raw_bytes")
+        if raw_b is None:
+            content = s.get("content")
+            if content is not None:
+                raw_b = content.encode("utf-8") if isinstance(content, str) else content
+
+        pub = s.get("publisher", "unknown")
+        pub_slug = re.sub(r"[^a-z0-9]+", "-", pub.lower()).strip("-")
+        exch = s.get("exchange", "UNKNOWN")
+        qty = s.get("quantity", "open")
+        bar_d = s.get("bar_date", date_str)
+        val = s.get("value")
+        url = s.get("url") or s.get("source_url") or ""
+        accessed = s.get("accessed_at") or datetime.now(timezone.utc).isoformat()
+
+        file_rel = None
+        sha_hex = None
+
+        if raw_b is not None and len(raw_b) > 0:
+            sha_hex = hashlib.sha256(raw_b).hexdigest()
+            # Determine extension
+            if raw_b.strip().startswith(b"{") or raw_b.strip().startswith(b"["):
+                ext = ".json"
+            elif b"<html" in raw_b.lower() or b"<!doctype html" in raw_b.lower():
+                ext = ".html"
+            elif "yahoo" in pub.lower():
+                ext = ".json"
+            else:
+                ext = ".html"
+
+            filename = f"{stem}_{pub_slug}{ext}"
+            file_path = target_dir / filename
+
+            # Idempotency check:
+            # If file exists with identical SHA-256, write nothing new.
+            # If bytes change, add a new timestamped file and never overwrite.
+            if file_path.exists():
+                existing_bytes = file_path.read_bytes()
+                existing_sha = hashlib.sha256(existing_bytes).hexdigest()
+                if existing_sha == sha_hex:
+                    # Identical bytes: keep existing file unchanged
+                    try:
+                        file_rel = str(file_path.relative_to(ROOT_DIR)).replace("\\", "/")
+                    except ValueError:
+                        file_rel = str(file_path).replace("\\", "/")
+                else:
+                    # Changed bytes: write new timestamped file
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    ts_path = target_dir / f"{stem}_{pub_slug}_{ts}{ext}"
+                    ts_path.write_bytes(raw_b)
+                    try:
+                        file_rel = str(ts_path.relative_to(ROOT_DIR)).replace("\\", "/")
+                    except ValueError:
+                        file_rel = str(ts_path).replace("\\", "/")
+            else:
+                file_path.write_bytes(raw_b)
+                try:
+                    file_rel = str(file_path.relative_to(ROOT_DIR)).replace("\\", "/")
+                except ValueError:
+                    file_rel = str(file_path).replace("\\", "/")
+
+        manifest_entry = {
+            "publisher": pub,
+            "exchange": exch,
+            "quantity": qty,
+            "bar_date": bar_d,
+            "value": float(val) if val is not None else None,
+            "url": url,
+            "accessed_at": accessed,
+            "sha256": sha_hex,
+            "file": file_rel,
+        }
+        saved_manifest_sources.append(manifest_entry)
+
+    # Write manifest
+    manifest_path = target_dir / f"{stem}.manifest.json"
+    manifest_data = {
+        "company": company,
+        "listing_date": date_str,
+        "status": status,
+        "reason": reason,
+        "sources": saved_manifest_sources,
+    }
+
+    manifest_bytes = (json.dumps(manifest_data, indent=2) + "\n").encode("utf-8")
+    if manifest_path.exists():
+        try:
+            existing_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            exist_sources = existing_manifest.get("sources", [])
+            exist_shas = [x.get("sha256") for x in exist_sources]
+            new_shas = [x.get("sha256") for x in saved_manifest_sources]
+            if exist_shas == new_shas and existing_manifest.get("status") == status:
+                # Identical manifest: do not overwrite
+                pass
+            else:
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                (target_dir / f"{stem}_{ts}.manifest.json").write_bytes(manifest_bytes)
+        except Exception:
+            manifest_path.write_bytes(manifest_bytes)
+    else:
+        manifest_path.write_bytes(manifest_bytes)
+
+    return {
+        "manifest_path": str(manifest_path),
+        "manifest": manifest_data,
+        "sources_count": len(saved_manifest_sources),
     }
 
 
@@ -767,14 +905,32 @@ def record_actual_from_tier2(
             "reason": f"Tier 2 primary source ({ticker_sym}) failed: {yf_err or 'unknown error'}",
         }
 
+    yf_source_val = make_yfinance_source_value(ticker_sym, listing_date, yf_open)
+    yf_source_val["url"] = yf_url
+    yf_source_val["raw_bytes"] = yf_raw
+
     sec_open, sec_url, sec_err, sec_raw = fetch_second_source_open(
         overview_url, quote_url, listing_date, mock_text=mock_second_source_text
     )
     if sec_err or sec_open is None or sec_url is None:
+        sec_m = None
+        if sec_raw:
+            sec_m = parse_source_value_metadata(sec_raw, target_date=listing_date, publisher="Chittorgarh", url=overview_url)
+            sec_m["raw_bytes"] = sec_raw
         return {
             "status": "PENDING_REVIEW",
             "reason": f"Tier 2 second source missing or unparseable: {sec_err or 'unknown'}",
+            "fetched_sources": [yf_source_val] + ([sec_m] if sec_m else []),
         }
+
+    sec_meta = parse_source_value_metadata(
+        sec_raw or "",
+        target_date=listing_date,
+        publisher="Chittorgarh",
+        extracted_price=sec_open,
+        url=sec_url or overview_url,
+    )
+    sec_meta["raw_bytes"] = sec_raw
 
     rel_diff_pct = abs(yf_open - sec_open) / yf_open * 100.0
     if rel_diff_pct > 1.0:
@@ -784,6 +940,7 @@ def record_actual_from_tier2(
                 f"Tier 2 sources diverge beyond 1.0% tolerance: "
                 f"yfinance={yf_open} vs second_source={sec_open} (diff={rel_diff_pct:.2f}%)"
             ),
+            "fetched_sources": [yf_source_val, sec_meta],
         }
 
     content_hash = hashlib.sha256(yf_raw).hexdigest()
@@ -1167,23 +1324,38 @@ def record_actual_from_tier2_arbitrated(
         if s.get("exchange") in ("NSE", "BSE") and s.get("value") is not None and float(s["value"]) > 0
     ]
 
-    if len(labelled) < 2:
+    # Primary Exchange Policy (D-105, Phase 20 Workstream C / preregistration Section 1):
+    # If listed on NSE (nse_symbol provided), outcome is strictly first-session open on NSE.
+    # If sole BSE listing (no nse_symbol, bse_code provided), outcome is first-session open on BSE.
+    primary_exchange = "NSE" if (nse_symbol and str(nse_symbol).strip()) else "BSE"
+
+    primary_labelled = [
+        s for s in labelled if s.get("exchange") == primary_exchange
+    ]
+
+    if len(primary_labelled) < 2:
         distinct_exchs = set(s.get("exchange") for s in all_sources if s.get("value") is not None)
         if len(distinct_exchs - {"UNKNOWN"}) > 1:
             return {
                 "status": "PENDING_REVIEW",
-                "reason": "SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange agreement",
+                "reason": (
+                    f"SKIPPED_POLICY_NO_PRIMARY_EXCHANGE_MAJORITY: "
+                    f"SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange agreement on primary exchange {primary_exchange}"
+                ),
                 "all_sources": all_sources,
             }
         return {
             "status": "PENDING_REVIEW",
-            "reason": "SKIPPED_ARBITRATION_UNAVAILABLE: fewer than 2 independent labelled sources available",
+            "reason": (
+                f"SKIPPED_POLICY_NO_PRIMARY_EXCHANGE_MAJORITY: "
+                f"SKIPPED_ARBITRATION_UNAVAILABLE: fewer than 2 independent labelled sources available on primary exchange {primary_exchange}"
+            ),
             "all_sources": all_sources,
         }
 
-    # Group by (exchange, quantity)
+    # Group by (exchange, quantity) strictly on primary_exchange
     groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for s in labelled:
+    for s in primary_labelled:
         key = (s["exchange"], s.get("quantity", "open"))
         groups.setdefault(key, []).append(s)
 
@@ -1249,12 +1421,18 @@ def record_actual_from_tier2_arbitrated(
         if len(exchs) > 1:
             return {
                 "status": "PENDING_REVIEW",
-                "reason": "SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange majority",
+                "reason": (
+                    f"SKIPPED_POLICY_NO_PRIMARY_EXCHANGE_MAJORITY: "
+                    f"SKIPPED_ARBITRATION_EXCHANGE_MISMATCH: sources quote different exchanges without intra-exchange majority on primary exchange {primary_exchange}"
+                ),
                 "all_sources": all_sources,
             }
         return {
             "status": "PENDING_REVIEW",
-            "reason": "SKIPPED_ARBITRATION_NO_MAJORITY: no strict majority among agreeing sources",
+            "reason": (
+                f"SKIPPED_POLICY_NO_PRIMARY_EXCHANGE_MAJORITY: "
+                f"SKIPPED_ARBITRATION_NO_MAJORITY: no strict majority among agreeing sources on primary exchange {primary_exchange}"
+            ),
             "all_sources": all_sources,
         }
 
@@ -1456,10 +1634,15 @@ def execute_two_tier_outcome_chain(
             # Try to get yfinance open if available
             yf_o, yf_e, yf_r = fetch_yfinance_first_session_open(t_sym, listing_date, mock_history=mock_yfinance_history)
             if yf_o is not None:
-                init_sources.append(make_yfinance_source_value(t_sym, listing_date, yf_o))
+                yf_sv = make_yfinance_source_value(t_sym, listing_date, yf_o)
+                yf_sv["url"] = f"https://finance.yahoo.com/quote/{t_sym}"
+                yf_sv["raw_bytes"] = yf_r
+                init_sources.append(yf_sv)
         sec_o, sec_u, sec_e, sec_r = fetch_second_source_open(overview_url, quote_url, listing_date, mock_text=mock_second_source_text)
-        if sec_o is not None:
-            init_sources.append(parse_source_value_metadata(sec_r or "", target_date=listing_date, publisher="Chittorgarh", extracted_price=sec_o, url=sec_u or overview_url))
+        if sec_o is not None or sec_r is not None:
+            sec_sv = parse_source_value_metadata(sec_r or "", target_date=listing_date, publisher="Chittorgarh", extracted_price=sec_o, url=sec_u or overview_url)
+            sec_sv["raw_bytes"] = sec_r
+            init_sources.append(sec_sv)
 
         arb_res = record_actual_from_tier2_arbitrated(
             company=company,
@@ -1477,6 +1660,7 @@ def execute_two_tier_outcome_chain(
             return arb_res
         if arb_res.get("status") == "PENDING_REVIEW":
             tier2_res["reason"] = f"{tier2_res['reason']} (arbitration: {arb_res['reason']})"
+            tier2_res["all_sources"] = arb_res.get("all_sources", init_sources)
 
     # Tier 2b fallback (D-096):
     # When Tier 2 returns LISTING_DAY_BAR_MISSING or empty yfinance history, and listing date is in the past
@@ -1503,6 +1687,26 @@ def execute_two_tier_outcome_chain(
         if tier2b_res.get("status") == "RECORDED":
             return tier2b_res
         if tier2b_res.get("status") == "SKIPPED_TIER2B_DISAGREE":
-            return tier2b_res
+            tier2_res = tier2b_res
+
+    # Persist divergence and pending evidence snapshots and manifests (D-104)
+    final_status = tier2_res.get("status")
+    if final_status != "RECORDED":
+        cand_sources = tier2_res.get("all_sources") or tier2_res.get("fetched_sources") or []
+        if not cand_sources and 'init_sources' in locals():
+            cand_sources = init_sources
+        if not cand_sources and 'tier2b_res' in locals() and tier2b_res.get("sources"):
+            cand_sources = tier2b_res.get("sources")
+
+        valid_sources = [s for s in cand_sources if s.get("raw_bytes") is not None or s.get("content") is not None]
+        if valid_sources:
+            pending_out = persist_pending_actuals_evidence(
+                company=company,
+                listing_date=listing_date,
+                status=final_status,
+                reason=tier2_res.get("reason", ""),
+                sources=valid_sources,
+            )
+            tier2_res["pending_manifest"] = pending_out
 
     return tier2_res
