@@ -21,6 +21,7 @@ import pandas as pd
 import pytest
 
 from opi.actuals import (
+    fetch_second_source_open,
     make_yfinance_source_value,
     parse_source_value_metadata,
     record_actual_from_tier2,
@@ -248,3 +249,79 @@ def test_source_value_labelling_and_manifest_fields(tmp_path: Path, monkeypatch)
     assert cg_val["quantity"] == "open"
     assert cg_val["bar_date"] == "2026-10-28"
     assert cg_val["value"] == 110.50
+
+def test_chittorgarh_exchange_column_headers_real_saved_fixture():
+    """D-112: Real saved Chittorgarh page with 'Price Details | BSE | NSE' header table.
+
+    Validates:
+    (a) NSE column -> 248.00, labelled NSE for NSE-listed IPOs per Phase 20 policy.
+    (b) BSE column -> 244.10, labelled BSE for BSE-only listings.
+    (c) Page without exchange headers labels exchange as UNKNOWN.
+    """
+    real_fixture_path = FIXTURES_DIR / "real_chittorgarh_bls_polymers.html"
+    assert real_fixture_path.exists(), "Real saved BLS Polymers fixture must exist"
+    content = real_fixture_path.read_text(encoding="utf-8")
+    d = date(2026, 11, 3)
+
+    # 1. NSE-listed IPO: picks NSE column (248.00, labelled NSE)
+    meta_nse = parse_source_value_metadata(
+        content=content,
+        target_date=d,
+        publisher="Chittorgarh",
+        url="https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/",
+        preferred_exchange="NSE",
+        nse_symbol="BLSPOLY",
+    )
+    assert meta_nse["value"] == 248.00
+    assert meta_nse["exchange"] == "NSE"
+    assert meta_nse["quantity"] == "open"
+    assert meta_nse["publisher"] == "Chittorgarh"
+
+    val_nse, url_nse, err_nse, raw_nse = fetch_second_source_open(
+        overview_url="https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/",
+        quote_url=None,
+        target_date=d,
+        mock_text=content,
+        preferred_exchange="NSE",
+        nse_symbol="BLSPOLY",
+    )
+    assert err_nse is None
+    assert val_nse == 248.00
+
+    # 2. BSE-only listing: picks BSE column (244.10, labelled BSE)
+    meta_bse = parse_source_value_metadata(
+        content=content,
+        target_date=d,
+        publisher="Chittorgarh",
+        url="https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/",
+        preferred_exchange="BSE",
+        nse_symbol=None,
+        bse_code="544321",
+    )
+    assert meta_bse["value"] == 244.10
+    assert meta_bse["exchange"] == "BSE"
+    assert meta_bse["quantity"] == "open"
+
+    val_bse, url_bse, err_bse, raw_bse = fetch_second_source_open(
+        overview_url="https://www.chittorgarh.com/ipo/bls-polymers-ipo/2559/",
+        quote_url=None,
+        target_date=d,
+        mock_text=content,
+        preferred_exchange="BSE",
+        nse_symbol=None,
+        bse_code="544321",
+    )
+    assert err_bse is None
+    assert val_bse == 244.10
+
+    # 3. Page without exchange headers: labels exchange as UNKNOWN
+    unk_fixture_path = FIXTURES_DIR / "synthetic_chittorgarh_unknown.html"
+    unk_content = unk_fixture_path.read_text(encoding="utf-8")
+    meta_unk = parse_source_value_metadata(
+        content=unk_content,
+        target_date=d,
+        publisher="Chittorgarh",
+        url="https://www.chittorgarh.com/ipo/synthetic-ipo/1000/",
+    )
+    assert meta_unk["exchange"] == "UNKNOWN"
+    assert meta_unk["value"] == 244.10
