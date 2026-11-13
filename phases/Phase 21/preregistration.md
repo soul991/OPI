@@ -1,7 +1,7 @@
-# Phase 21 Preregistration: Telegram Alert System
+# Phase 21 Preregistration (v2): Telegram Alert System
 
 > **Protocol Reference**: `RULES.md`, `PHASE_PROTOCOL.md` (Step 2), and `phases/Phase 21/1_planning_and_goals.md` (Section 3).  
-> **Status**: PREREGISTERED — PENDING USER APPROVAL OF THRESHOLDS T1 AND T2.  
+> **Status**: APPROVED BY USER (v2 with MARGINAL Band and Historical Reference Table).  
 > **Regulatory Disclaimer**: Quantitative decision aid and research benchmark only. Not financial, investment, or trading advice.
 
 ---
@@ -17,10 +17,7 @@ Because GitHub Actions scheduled crons experience significant platform queue lag
 | **`listing`** | **11:30 IST** & **16:30 IST** daily | Evaluates IPOs with `listing_date <= today (IST)` that have a **verified outcome** in the repo and no sent listing alert. If an outcome is pending verification, sends **no message** (awaits verified exchange notice). | If outcome is pending verification, suppresses message delivery until verified by the two-tier chain. |
 
 ### Dispatch Latency Measurement
-Measured GitHub Actions `workflow_dispatch` execution characteristics across 15 recent runs on `soul991/OPI`:
-- **Runner Queue Delay**: 0.0 seconds (immediate job pick-up).
-- **Execution Duration**: 45 to 53 seconds for lightweight reporting/probing workflows.
-- **Conclusion**: A dispatch scheduled at 11:45 IST triggers by 11:45:05 IST and completes delivery by ~11:46 IST, well in advance of the 12:00 PM milestone and hours before retail bidding closes (17:00 IST).
+- Dispatch queue latency and runtime: **To be measured in WS-F with 5 dispatches of `notify.yml`** (recording `created_at`, `started_at`, `completed_at`, and queue latency directly from the GitHub API).
 
 ---
 
@@ -42,7 +39,7 @@ Measured GitHub Actions `workflow_dispatch` execution characteristics across 15 
 
 ---
 
-## 3. Apply / Skip Decision Rule (Preview Alert)
+## 3. Apply / Skip / Marginal Decision Rule (Preview Alert)
 
 ### Epistemic Grounding & Labelling
 The champion model (`v4.0.0-champion`) was trained on **final post-close subscription figures**. At 11:45 AM on the close date, subscription figures are **live/intraday**. Therefore:
@@ -55,33 +52,49 @@ README empirical findings on 321 historical IPOs demonstrate:
 - Raw GMP is the superior point estimator when observed (MAE 8.86 pp vs Model 11.48 pp; blend difference straddles zero).
 - Therefore, **Raw GMP is the primary signal when observed**. The ML model provides contextual bounding and calibrated probability. When GMP is absent, the ML model serves as the primary estimator.
 
-### Proposed Thresholds for User Approval
+---
 
-#### 1. Threshold `T1` (Raw GMP Threshold): **`+15.0%`**
-- **Reasoning**: IPOs with grey market premiums below 10–12% frequently flip to flat or negative listing gains under minor intraday market swings, transaction fees, and broker charges. Requiring $\ge 15.0\%$ provides a statistical margin of safety for retail participation.
+### Approved Thresholds & Decision Bands
 
-#### 2. Threshold `T2` (Model Estimate Threshold, No GMP): **`+15.0%`**
-- **Reasoning**: When an IPO has no active grey market quote, uncertainty is elevated. To ensure symmetric conservatism and prevent low-conviction applications, `T2` requires the model's point estimate to be $\ge 15.0\%$.
+The primary threshold $T1 = 15.0\%$ was chosen as a **conservative hurdle**, not as a mathematical guarantee of positive return. Historical distribution of listing gains by GMP bucket from `data/ipo_master.csv` ($n=349$ observed issues) is reported below for descriptive context:
 
-#### 3. Calibrated Probability Gate (`P_min`): **`P(gain > 10%) >= 0.60` (60.0%)**
-- **Reasoning**: In Regime B (no GMP), the model's Platt-calibrated probability must confirm directional confidence $\ge 60\%$ to accompany the point estimate.
+#### Historical Listing Gain by GMP Bucket (`data/ipo_master.csv`, Descriptive Only)
+| GMP Bin | $n$ | Mean Listing Gain | Median Listing Gain | Share Gained > 0% |
+|---|:---:|:---:|:---:|:---:|
+| $< 0\%$ | 36 | -7.10% | -6.65% | 19.4% |
+| $0\%$ to $< 5\%$ | 90 | -0.72% | +0.00% | 45.6% |
+| **$5\%$ to $< 15\%$ (Marginal)** | **83** | **+7.50%** | **+7.14%** | **80.7%** |
+| $15\%$ to $< 30\%$ | 55 | +19.28% | +18.18% | 89.1% |
+| $30\%$ to $< 50\%$ | 53 | +37.07% | +36.57% | 100.0% |
+| $\ge 50\%$ | 32 | +72.86% | +66.50% | 100.0% |
 
-### Decision Rule Logic Tree:
-1. **Regime A — GMP Observed**:
-   - If `gmp_pct >= T1` (+15.0%): Suggestion = **`APPLY`**  
-     *(Reason: "Observed GMP (+X.X%) >= T1 (+15.0%)")*
-   - If `0.0% <= gmp_pct < T1`: Suggestion = **`SKIP`**  
-     *(Reason: "Observed GMP (+X.X%) below minimum margin threshold T1 (+15.0%)")*
-   - If `gmp_pct < 0.0%`: Suggestion = **`SKIP`**  
-     *(Reason: "Negative GMP discount (-X.X%) indicates listing risk")*
-2. **Regime B — No GMP Recorded (Model Fallback)**:
-   - If `pred_gain_pct >= T2` (+15.0%) **AND** `pred_prob_gt10 >= P_min` (0.60): Suggestion = **`APPLY`**  
-     *(Reason: "Model PREVIEW estimate (+X.X%) >= T2 (+15.0%) with calibrated P(>10%) >= 60%")*
-   - Otherwise: Suggestion = **`SKIP`**  
-     *(Reason: "Model PREVIEW estimate (+X.X%) or probability does not meet threshold")*
-3. **Regime C — Critical Missing Data**:
-   - If live subscription cannot be fetched or price band is unrecorded: Suggestion = **`NO SUGGESTION (Insufficient data)`**.  
-     *(Reason: Honestly states the missing inputs without guessing or hallucinating).*
+*(Descriptive historical summary only. Past listing performance does not guarantee future outcomes).*
+
+---
+
+### Decision Rules:
+
+#### 1. Regime A — GMP Observed (Primary Path)
+- **`APPLY`**: `gmp_pct >= 15.0%`  
+  *(Basis: "Observed GMP (+X.X%) >= T1 (+15.0%)")*
+- **`MARGINAL: small expected gain, your call`**: `5.0% <= gmp_pct < 15.0%`  
+  *(Basis: "Observed GMP (+X.X%) is in the marginal band [5.0% to 15.0%)")*
+- **`SKIP`**: `0.0% <= gmp_pct < 5.0%`  
+  *(Basis: "Observed GMP (+X.X%) below 5.0% minimum threshold; historical mean return is flat/negative")*
+- **`SKIP`**: `gmp_pct < 0.0%`  
+  *(Basis: "Negative GMP discount (-X.X%) indicates elevated listing risk")*
+
+#### 2. Regime B — No GMP Recorded (Model Fallback)
+- **`APPLY`**: `pred_gain_pct >= 15.0%` **AND** `pred_prob_gt10 >= 0.60`  
+  *(Basis: "Model PREVIEW estimate (+X.X%) >= T2 (+15.0%) with calibrated P(>10%) >= 60%")*
+- **`MARGINAL: small expected gain, your call`**: `5.0% <= pred_gain_pct < 15.0%` **AND** `pred_prob_gt10 >= 0.50`  
+  *(Basis: "Model PREVIEW estimate (+X.X%) is in marginal band [5.0% to 15.0%) with P(>10%) >= 50%")*
+- **`SKIP`**: Otherwise  
+  *(Basis: "Model PREVIEW estimate (+X.X%) or calibrated probability below threshold")*
+
+#### 3. Regime C — Critical Missing Data
+- **`NO SUGGESTION (Insufficient data)`**: If live subscription cannot be scraped or price band is unrecorded.  
+  *(Basis: Honestly reports missing fields without guessing or hallucinatory imputation).*
 
 ---
 
@@ -122,13 +135,13 @@ Status: Bidding Closes Today (11:45 AM IST Snapshot)
   • Total: <X.XX>x
 
 📈 Market Signals:
-  • Grey Market Premium (GMP): <+X.X% / ₹X> (<Source>, <Date>) [or 'No GMP recorded']
+  • Grey Market Premium (GMP): <+X.X% / ₹X> (<Source>, as of <YYYY-MM-DD HH:MM IST>) [or 'No GMP recorded']
   • Model PREVIEW Estimate: <+X.X%> (live subscription; model trained on final figures)
   • Calibrated P(Gain > 10%): <X.X%>
   • 80% Conformal Prediction Interval: [<Min%>, <Max%>]
 
-💡 Decision Suggestion: [APPLY / SKIP / NO SUGGESTION]
-  • Basis: <Rule statement, e.g. 'Raw GMP +22.5% >= T1 (+15.0%)'>
+💡 Decision Suggestion: [APPLY / MARGINAL: small expected gain, your call / SKIP / NO SUGGESTION]
+  • Basis: <Rule statement>
 
 ⚠️ Sample Size Notice: n listed = 13 of 30 (Provisional)
 Decision aid only, not financial advice.
