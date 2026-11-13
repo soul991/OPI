@@ -406,6 +406,30 @@ def check_forward_grounding():
         add("FAIL" if miss else "PASS", f"grounding: {row.company} inputs appear in saved snapshots",
             "not found: " + ", ".join(miss) if miss else f"{len(files)} snapshot files")
 
+def check_phase21_alerts():
+    a_path = ROOT / "predictions" / "alerts_sent.csv"
+    if a_path.exists():
+        adf = pd.read_csv(a_path, dtype=str).fillna("")
+        if len(adf) > 0:
+            dup = adf.duplicated(subset=["company", "close_date", "alert_type"]).sum()
+            add("FAIL" if dup else "PASS", "alerts_sent.csv has no duplicate keys", f"{dup} duplicates")
+            valid_types = {"announce", "preview", "listing"}
+            bad_types = (~adf["alert_type"].str.lower().isin(valid_types)).sum()
+            add("FAIL" if bad_types else "PASS", "alerts_sent.csv rows have valid alert_type", f"{bad_types} invalid")
+        else:
+            add("PASS", "alerts_sent.csv has no duplicate keys", "0 duplicates")
+            add("PASS", "alerts_sent.csv rows have valid alert_type", "0 invalid")
+    else:
+        add("PASS", "alerts_sent.csv has no duplicate keys", "file not yet created")
+        add("PASS", "alerts_sent.csv rows have valid alert_type", "0 invalid")
+
+    l = read("predictions/prediction_log.csv")
+    if l is not None:
+        has_preview = (l["status"].astype(str).str.upper() == "PREVIEW").sum()
+        has_alert = (l["status"].astype(str).str.upper().str.contains("ALERT")).sum()
+        bad = has_preview + has_alert
+        add("FAIL" if bad else "PASS", "no preview or alert row in prediction_log.csv", f"{bad} invalid rows")
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--no-tests", action="store_true"); a = ap.parse_args()
     check_hygiene()
@@ -414,7 +438,7 @@ def main():
     m = check_master()
     fns = [lambda: check_gmp(m), check_forward, check_phases_and_defects, check_git, check_recompute,
            check_ci_model, check_immutable_history, lambda: check_gmp_outliers_evidence(m),
-           check_mock_quarantine, check_forward_grounding]
+           check_mock_quarantine, check_forward_grounding, check_phase21_alerts]
     if not a.no_tests:
         fns.append(check_fresh_clone)
     for fn in fns:
