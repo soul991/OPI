@@ -118,5 +118,6 @@
 | D-112 | 20 | Chittorgarh second-source parser reads first numeric cell of "Open" row, selecting BSE column on dual-listed IPOs instead of respecting exchange column headers and primary exchange policy. | High | FIXED | 20 | tests/test_actuals_manifest.py::test_chittorgarh_exchange_column_headers_real_saved_fixture (Cloud proof: Actions run 42374128672, commit a8961d2) |
 | D-113 | 20 | `docs/AUTOPILOT.md` schedule documentation disagrees with `.github/workflows/daily.yml` (`0 6,14 * * *`) and `watchdog.yml` (`0 10 * * *`). | Low | FIXED | 21 | tests/test_reporting.py::test_autopilot_docs_match_workflow_schedules |
 | D-114 | 20 | `README.md` Section 4 (Forward Test Status) is stale, citing 6 logged and 1 listed instead of 13 logged and 13 listed with resolved actuals (MAE 5.2962 pp via `scripts/forward_mae.py`). | Low | FIXED | 21 | tests/test_reporting.py::test_readme_forward_status_up_to_date |
+| D-115 | 21 | Telegram alert client missing from codebase; implemented `opi/notify.py` with exponential backoff retry, 4096-char chunk splitting, dry-run mode, and zero-token error sanitization. | Medium | FIXED | 21 | tests/test_notify.py::test_send_telegram_success |
 
 * Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.
