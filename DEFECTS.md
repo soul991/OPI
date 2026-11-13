@@ -116,5 +116,7 @@
 | D-110 | 20 | The dashboard does not show accuracy over time or per model version. | Medium | FIXED | 20 | tests/test_dashboard.py::test_dashboard_shows_autopilot_health_block |
 | D-111 | 20 | The research agent (opi/research_agent.py) failed schema validation on non-numeric strings with currency/unit text ('₹82', '182 Shares'); fixed with input sanitizer and visible alerting. | High | FIXED | 20 | tests/test_research_agent_schema.py::test_bombay_coated_sanitizer_fixes_validation_error |
 | D-112 | 20 | Chittorgarh second-source parser reads first numeric cell of "Open" row, selecting BSE column on dual-listed IPOs instead of respecting exchange column headers and primary exchange policy. | High | FIXED | 20 | tests/test_actuals_manifest.py::test_chittorgarh_exchange_column_headers_real_saved_fixture (Cloud proof: Actions run 42374128672, commit a8961d2) |
+| D-113 | 20 | `docs/AUTOPILOT.md` schedule documentation disagrees with `.github/workflows/daily.yml` (`0 6,14 * * *`) and `watchdog.yml` (`0 10 * * *`). | Low | FIXED | 21 | tests/test_reporting.py::test_autopilot_docs_match_workflow_schedules |
+| D-114 | 20 | `README.md` Section 4 (Forward Test Status) is stale, citing 6 logged and 1 listed instead of 13 logged and 13 listed with resolved actuals (MAE 5.2962 pp via `scripts/forward_mae.py`). | Low | FIXED | 21 | tests/test_reporting.py::test_readme_forward_status_up_to_date |
 
 * Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.
