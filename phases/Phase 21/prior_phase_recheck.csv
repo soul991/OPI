@@ -1,0 +1,11 @@
+claim,file,evidence,result
+Total Logged Rows: 19,predictions/prediction_log.csv,actual rows: 19,PASS
+Genuine FORWARD Rows: 13,predictions/prediction_log.csv,actual FORWARD: 13,PASS
+HD Fire Protect actual gain +23.39%,predictions/prediction_log.csv,actual: 23.39%,PASS
+Fusion CX actual gain +5.54%,predictions/prediction_log.csv,actual: 5.54%,PASS
+"Zetwerk Model -0.77%, Actual +5.46%",predictions/prediction_log.csv,"pred: -0.77%, actual: 5.46%",PASS
+Tracked Defects Health: 112 total,DEFECTS.md,count: 112,PASS
+"Retrained shadow model size 915,008 bytes",model/challengers/v4.2.0-202611.joblib,size: 915008,PASS
+model/registry.json registers v4.2.0-202611 as shadow,model/registry.json,role: shadow,PASS
+model/promotions_log.csv recorded NOT_ENOUGH_PAIRS,model/promotions_log.csv,found in file,PASS
+BLS Polymers actual listing price 248.00 in evidence file,data/evidence/actuals/2026-11-03_bls-polymers_683887010e3a.json,official_opening_price: 248.0,PASS

@@ -25,9 +25,9 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - **Probability Reliability Warning**: Do not treat predicted probabilities above approximately **0.882** or below approximately **0.091** as certainty (the out-of-sample calibrated probability range measured across 398 rolling-origin evaluations is **[0.091, 0.882]**; values outside this range are suppressed in the app and report as uncalibrated). Empirical binomial Wilson intervals show wide dispersion in extreme bins.
 
 ### 4. Forward Test Status
-- Genuine FORWARD predictions logged: **6** (`HD Fire Protect Limited`, `Fusion CX Limited`, `Zetwerk Manufacturing Business Limited`, `Sahajanand Medical Technologies Limited`, `Tonbo Imaging India Limited`, `Bonfiglioli Transmissions Limited`).
-- Genuine FORWARD listings completed: **1** (`HD Fire Protect Limited`, listed 2026-10-21, Issue: INR 271.00, Listing: INR 334.40, Gain: +23.39%, Model: +26.12%, GMP: +30.26%).
-- Status: **Provisional (n = 1 of 30), descriptive only, no performance claims permitted below n = 30** (per pre-registered rules).
+- Genuine FORWARD predictions logged: **13** (`HD Fire Protect Limited`, `Fusion CX Limited`, `Zetwerk Manufacturing Business Limited`, `Sahajanand Medical Technologies Limited`, `Tonbo Imaging India Limited`, `Bonfiglioli Transmissions Limited`, `Jio Platforms Limited`, `Paras Healthcare Limited`, `M.K.Sons Fine Jewels`, `BLS Polymers`, `SFC Environmental Technologies`, `EAAA India Alternatives`, `Bombay Coated & Special Steels`).
+- Genuine FORWARD listings completed: **13 of 30** listed with verified outcomes recorded. Cumulative forward MAE: **5.2962 percentage points** (reproducible via `scripts/forward_mae.py`).
+- Status: **Provisional (n = 13 of 30), descriptive only, no performance claims permitted below n = 30** (per pre-registered rules).
 
 ### 4a. Champion Replay and Live Accuracy Dashboard
 - **Live Public Dashboard**: [https://soul991.github.io/OPI/dashboard/](https://soul991.github.io/OPI/dashboard/) (served via GitHub Pages from branch `main`, verified HTTP 200).
@@ -38,7 +38,7 @@ The model was evaluated using a strict expanding walk-forward protocol across 20
 - This is a retrospective replay using stored historical feature values; it is not a prospectively recorded prediction series, and not every historical feature has a verified pre-listing snapshot. The replay is shown separately from genuine FORWARD predictions and must not be presented as the live track record.
 - Newly completed listings after the master data cutoff were checked; R.K. Fashion Accessories listed on NSE SME on 2026-10-12 and is outside this Mainboard model's scope, so it was not added or scored.
 - `dashboard/index.html` compares replay predictions with actual listing gains and separately tracks the champion's genuine FORWARD predictions. `opi.run_daily` refreshes it during the daily run, and `scripts/update_actuals.py` refreshes it immediately after an official exchange outcome is recorded.
-- Fusion CX's final bidding figures were available only after its 2026-10-16 close; the live champion prediction is **+4.33%**, with calibrated P(gain > 10%) of **30.1%**. No GMP input was recorded. It is due to be compared with the official listing outcome after 2026-10-22.
+- Fusion CX completed its listing on 2026-10-22 (Issue: INR 289.00, Listing Open: INR 305.00, Gain: +5.54%, Model: +4.33%, Abs Err: 1.21 pp). Live forward predictions and verified actuals are audited continuously by `scripts/forward_mae.py`.
 
 ### 5. Known Limitations
 - **D-006 (Accounting Fundamentals Completeness)**: Fundamentals columns `roce` and `revenue_growth_pct` are 0% filled; `pe_ratio`/`peer_median_pe` are ~61-62% filled. All fundamental ratios are aggregator-sourced (medium confidence). Pre-IPO accounting fundamentals showed no demonstrated effect in Phase 6/7 evaluations ($\Delta\text{MAE} = +0.08\%$, 95% CI: [-0.16%, +0.33%]); line closed as `ACCEPTED`.

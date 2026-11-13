@@ -423,3 +423,22 @@ def test_phase20_quoted_paths_and_run_ids_exist():
 
     assert not missing_paths, f"Quoted evidence paths missing on disk: {missing_paths}"
     assert not missing_run_ids, f"Quoted 11-digit run IDs not in run_ids_raw.json: {missing_run_ids}"
+
+
+def test_autopilot_docs_match_workflow_schedules():
+    """D-113: docs/AUTOPILOT.md documented schedules must match .github/workflows/daily.yml and watchdog.yml."""
+    root = Path(__file__).resolve().parents[1]
+    doc = (root / "docs" / "AUTOPILOT.md").read_text(encoding="utf-8")
+    assert "06:00 UTC" in doc or "11:30 IST" in doc, "Daily pipeline morning run not documented in docs/AUTOPILOT.md"
+    assert "14:00 UTC" in doc or "19:30 IST" in doc, "Daily pipeline evening run not documented in docs/AUTOPILOT.md"
+    assert "10:00 UTC" in doc or "15:30 IST" in doc, "Watchdog pipeline run not documented in docs/AUTOPILOT.md"
+
+
+def test_readme_forward_status_up_to_date():
+    """D-114: README.md Section 4 must reflect genuine forward test count and reference forward_mae.py."""
+    root = Path(__file__).resolve().parents[1]
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    assert "13 of 30" in readme, "README.md must cite current listed count (13 of 30)"
+    assert "scripts/forward_mae.py" in readme, "README.md must reference scripts/forward_mae.py"
+    assert "due to be compared with the official listing outcome after 2026-10-22" not in readme, "Outdated Fusion CX pending text still present in README.md"
+

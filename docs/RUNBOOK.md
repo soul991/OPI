@@ -22,7 +22,8 @@ Every day, running in GitHub Actions cloud infrastructure (independent of any pe
 
 When checking system health, look at these three sources:
 1. **GitHub Actions Tab** (`https://github.com/soul991/OPI/actions`):
-   - Shows the status of the twice-daily automated runs (`Daily Forward Test & Verification`), the daily watchdog health check, and weekly canary builds.
+   - Shows the status of the twice-daily automated runs (`Daily Forward Test & Verification`, 06:00 & 14:00 UTC), the daily watchdog health check (10:00 UTC), and weekly canary builds.
+   - *Operational Note*: GitHub Actions `schedule` events experience inherent platform queue lag (mean 4.66 hours, measured in `phases/Phase 12/actions_schedule_lag.md`). Scheduled runs at 06:00 UTC (11:30 IST) will typically execute hours later; real-time operations requiring precise timing (e.g. 12 PM close-day previews) use external scheduler triggers via `workflow_dispatch`.
 2. **The Public Web Dashboard** (`https://soul991.github.io/OPI/dashboard/`):
    - Visualizes live running model MAE, GMP MAE, conformal prediction bounds, recent IPO outcomes, and cloud run timestamps.
 3. **The Defect Ledger** (`DEFECTS.md`):
