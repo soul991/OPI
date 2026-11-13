@@ -1,7 +1,7 @@
 # Phase 21 Preregistration (v2): Telegram Alert System
 
 > **Protocol Reference**: `RULES.md`, `PHASE_PROTOCOL.md` (Step 2), and `phases/Phase 21/1_planning_and_goals.md` (Section 3).  
-> **Status**: APPROVED BY USER (v2 with MARGINAL Band and Historical Reference Table).  
+> **Status**: APPROVED BY USER (v2: T1=10%, Marginal Band [5%, 10%) on GMP only).  
 > **Regulatory Disclaimer**: Quantitative decision aid and research benchmark only. Not financial, investment, or trading advice.
 
 ---
@@ -56,14 +56,15 @@ README empirical findings on 321 historical IPOs demonstrate:
 
 ### Approved Thresholds & Decision Bands
 
-The primary threshold $T1 = 15.0\%$ was chosen as a **conservative hurdle**, not as a mathematical guarantee of positive return. Historical distribution of listing gains by GMP bucket from `data/ipo_master.csv` ($n=349$ observed issues) is reported below for descriptive context:
+The primary threshold $T1 = 10.0\%$ was chosen as a **hurdle**, not as a mathematical guarantee of positive return. Historical distribution of listing gains by GMP bucket from `data/ipo_master.csv` ($n=349$ observed issues) is reported below for descriptive context:
 
 #### Historical Listing Gain by GMP Bucket (`data/ipo_master.csv`, Descriptive Only)
 | GMP Bin | $n$ | Mean Listing Gain | Median Listing Gain | Share Gained > 0% |
 |---|:---:|:---:|:---:|:---:|
 | $< 0\%$ | 36 | -7.10% | -6.65% | 19.4% |
 | $0\%$ to $< 5\%$ | 90 | -0.72% | +0.00% | 45.6% |
-| **$5\%$ to $< 15\%$ (Marginal)** | **83** | **+7.50%** | **+7.14%** | **80.7%** |
+| **$5\%$ to $< 10\%$ (Marginal)** | **49** | **+6.08%** | **+6.52%** | **79.6%** |
+| $10\%$ to $< 15\%$ | 34 | +9.53% | +11.23% | 82.4% |
 | $15\%$ to $< 30\%$ | 55 | +19.28% | +18.18% | 89.1% |
 | $30\%$ to $< 50\%$ | 53 | +37.07% | +36.57% | 100.0% |
 | $\ge 50\%$ | 32 | +72.86% | +66.50% | 100.0% |
@@ -75,20 +76,19 @@ The primary threshold $T1 = 15.0\%$ was chosen as a **conservative hurdle**, not
 ### Decision Rules:
 
 #### 1. Regime A — GMP Observed (Primary Path)
-- **`APPLY`**: `gmp_pct >= 15.0%`  
-  *(Basis: "Observed GMP (+X.X%) >= T1 (+15.0%)")*
-- **`MARGINAL: small expected gain, your call`**: `5.0% <= gmp_pct < 15.0%`  
-  *(Basis: "Observed GMP (+X.X%) is in the marginal band [5.0% to 15.0%)")*
+- **`APPLY`**: `gmp_pct >= 10.0%`  
+  *(Basis: "Observed GMP (+X.X%) >= T1 (+10.0%)")*
+- **`MARGINAL: small expected gain, your call`**: `5.0% <= gmp_pct < 10.0%`  
+  *(Basis: "Observed GMP (+X.X%) is in the marginal band [5.0% to 10.0%)")*
 - **`SKIP`**: `0.0% <= gmp_pct < 5.0%`  
   *(Basis: "Observed GMP (+X.X%) below 5.0% minimum threshold; historical mean return is flat/negative")*
 - **`SKIP`**: `gmp_pct < 0.0%`  
   *(Basis: "Negative GMP discount (-X.X%) indicates elevated listing risk")*
 
 #### 2. Regime B — No GMP Recorded (Model Fallback)
+*(Note: No marginal band applies to model-only predictions; model estimates require strict threshold clearance).*
 - **`APPLY`**: `pred_gain_pct >= 15.0%` **AND** `pred_prob_gt10 >= 0.60`  
   *(Basis: "Model PREVIEW estimate (+X.X%) >= T2 (+15.0%) with calibrated P(>10%) >= 60%")*
-- **`MARGINAL: small expected gain, your call`**: `5.0% <= pred_gain_pct < 15.0%` **AND** `pred_prob_gt10 >= 0.50`  
-  *(Basis: "Model PREVIEW estimate (+X.X%) is in marginal band [5.0% to 15.0%) with P(>10%) >= 50%")*
 - **`SKIP`**: Otherwise  
   *(Basis: "Model PREVIEW estimate (+X.X%) or calibrated probability below threshold")*
 
