@@ -120,5 +120,6 @@
 | D-114 | 20 | `README.md` Section 4 (Forward Test Status) is stale, citing 6 logged and 1 listed instead of 13 logged and 13 listed with resolved actuals (MAE 5.2962 pp via `scripts/forward_mae.py`). | Low | FIXED | 21 | tests/test_reporting.py::test_readme_forward_status_up_to_date |
 | D-115 | 21 | Telegram alert sender module (opi/notify.py) missing with chunking, retry with exponential backoff, dry-run CLI, and zero-token-leak sanitization. | High | FIXED | 21 | tests/test_notify.py::test_send_telegram_success |
 | D-116 | 21 | Alert state and idempotency tracker (opi/alert_state.py, predictions/alerts_sent.csv) missing, and verify_all.py lacks checks preventing duplicate alert sends or alert pollution in prediction_log.csv. | High | FIXED | 21 | tests/test_alert_state.py::test_already_sent_and_record_alert |
+| D-117 | 21 | Stage announce alert runner (opi/stage_announce.py) missing, preventing automated dispatch of new Mainboard IPO announcements. | High | FIXED | 21 | tests/test_stage_announce.py::test_announce_sends_new_ipo |
 
 * Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.
