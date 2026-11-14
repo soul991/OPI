@@ -13,7 +13,7 @@ on:
         type: boolean
 
 concurrency:
-  group: daily-forward-test
+  group: opi-predictions-writer
   cancel-in-progress: false
 
 permissions:
