@@ -122,5 +122,6 @@
 | D-116 | 21 | Alert state and idempotency tracker (opi/alert_state.py, predictions/alerts_sent.csv) missing, and verify_all.py lacks checks preventing duplicate alert sends or alert pollution in prediction_log.csv. | High | FIXED | 21 | tests/test_alert_state.py::test_already_sent_and_record_alert |
 | D-117 | 21 | Stage announce alert runner (opi/stage_announce.py) missing, preventing automated dispatch of new Mainboard IPO announcements. | High | FIXED | 21 | tests/test_stage_announce.py::test_announce_sends_new_ipo |
 | D-118 | 21 | Stage preview alert runner (opi/stage_preview.py) and preview vs forward comparison report (scripts/preview_vs_forward.py) missing. | High | FIXED | 21 | tests/test_stage_preview.py::test_compute_suggestion_regime_a_gmp |
+| D-119 | 21 | Stage listing alert runner (opi/stage_listing.py) missing, preventing verified listing day outcome delivery with per-lot P&L and pre-listing signal audit. | High | FIXED | 21 | tests/test_stage_listing.py::test_format_listing_message_hd_fire |
 
 * Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.
