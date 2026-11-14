@@ -1,0 +1,6 @@
+{
+  "name": "opi_trigger",
+  "type": "cron",
+  "stack": "python",
+  "memory": 256
+}

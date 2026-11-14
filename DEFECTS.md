@@ -124,5 +124,6 @@
 | D-118 | 21 | Stage preview alert runner (opi/stage_preview.py) and preview vs forward comparison report (scripts/preview_vs_forward.py) missing. | High | FIXED | 21 | tests/test_stage_preview.py::test_compute_suggestion_regime_a_gmp |
 | D-119 | 21 | Stage listing alert runner (opi/stage_listing.py) missing, preventing verified listing day outcome delivery with per-lot P&L and pre-listing signal audit. | High | FIXED | 21 | tests/test_stage_listing.py::test_format_listing_message_hd_fire |
 | D-120 | 21 | Telegram notification workflow (.github/workflows/notify.yml) and unified runner (opi/notify_run.py) missing with shared concurrency and failure alerting. | High | FIXED | 21 | tests/test_notify_run.py::test_notify_run_cli_help |
+| D-121 | 21 | Zoho Catalyst notification trigger function (catalyst/opi_trigger), cron schedules, and emergency fallback alerting missing. | High | FIXED | 21 | tests/test_catalyst.py::test_dispatch_github_workflow_success_204 |
 
 * Note on D-107: D-107 had an orphan registry entry (v4.1.0-202611), found in the Part 2 audit and fixed here.

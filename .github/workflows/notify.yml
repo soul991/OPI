@@ -121,6 +121,11 @@ jobs:
             done
           fi
 
+      - name: Auto-close open failure alerts on success
+        if: success()
+        run: |
+          python scripts/manage_alerts.py --on-success --run-id "${{ github.run_id }}" --workflow-name "notify.yml" || true
+
       - name: Alert on Failure
         if: failure()
         run: |
@@ -128,7 +133,8 @@ jobs:
           python -m opi.notify --message "⚠️ OPI Alert Runner Failed: stage=${{ github.event.inputs.stage }}, run_id=${{ github.run_id }}." || true
           
           # 2. File GitHub Issue using existing manage_alerts flow
-          python scripts/manage_alerts.py --action open \
-            --title "OPI Alert Runner Failure: stage=${{ github.event.inputs.stage }}" \
-            --body "Workflow notify.yml failed at stage ${{ github.event.inputs.stage }}. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --reason-file step_output.txt 2>/dev/null || true
+          python scripts/manage_alerts.py --on-failure \
+            --run-id "${{ github.run_id }}" \
+            --workflow-name "notify.yml" \
+            --failed-step "Alert Runner (${{ github.event.inputs.stage }})" \
+            --reason "Workflow notify.yml failed at stage ${{ github.event.inputs.stage }}. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true
