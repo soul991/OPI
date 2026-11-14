@@ -1,0 +1,2 @@
+# opi_trigger uses Python standard library modules only
+# (urllib.request, json, logging, time, os, re, datetime)

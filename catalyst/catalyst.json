@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "targets": [
+      "opi_trigger"
+    ],
+    "source": "."
+  }
+}
